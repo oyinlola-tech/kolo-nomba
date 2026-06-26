@@ -1,4 +1,4 @@
-# 🔐 Kolo Security Policy
+# Kolo Security Policy
 
 <p align="center">
 
