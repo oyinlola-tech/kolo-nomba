@@ -35,7 +35,7 @@ export class ReconciliationController {
       throw new ValidationError("Validation failed", details);
     }
 
-    const result = await this.reconciliationService.resolve(id, parsed.data.status, parsed.data.resolvedBy);
+    const result = await this.reconciliationService.resolve(id, parsed.data.status, request.userId!);
     ResponseUtil.success(reply, result);
   }
 }
