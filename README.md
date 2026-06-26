@@ -321,7 +321,7 @@ Capabilities:
 
 ---
 
-# 🔐 Security Approach
+# Security Approach
 
 Financial applications require strong protection.
 
@@ -353,7 +353,7 @@ Kolo implements:
 ```
 Kolo
 
-├── frontend
+├── public
 │
 ├── kolo-backend
 │
