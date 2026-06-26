@@ -1,3 +1,5 @@
+import { PrismaDatabase } from "../database/prisma";
+import type { Prisma } from "../generated/prisma/client";
 import { PaymentRepository } from "../repositories/payment.repository";
 import { TransactionRepository } from "../repositories/transaction.repository";
 import { MemberContributionRepository } from "../repositories/member-contribution.repository";
@@ -184,8 +186,8 @@ export class PaymentService {
     }));
   }
 
-  async processSuccessfulPayment(paymentId: string, providerReference: string): Promise<void> {
-    const payment = await this.paymentRepository.findById(paymentId);
+  async processSuccessfulPayment(paymentId: string, providerReference: string, tx?: Prisma.TransactionClient): Promise<void> {
+    const payment = await this.paymentRepository.findById(paymentId, tx);
     if (!payment) {
       this.logger.error("Payment not found for webhook processing", { paymentId });
       return;
@@ -204,15 +206,16 @@ export class PaymentService {
       status: "SUCCESSFUL",
       reference: providerReference,
       metadata: { paymentId, providerReference },
-    });
+    }, tx);
 
-    await this.paymentRepository.updateStatus(payment.id, "SUCCESSFUL", transaction.id, providerReference);
+    await this.paymentRepository.updateStatus(payment.id, "SUCCESSFUL", transaction.id, providerReference, tx);
 
     if (payment.contributionId) {
       await this.memberContributionRepository.updateStatus(
         payment.contributionId,
         "PAID",
         payment.amount,
+        tx,
       );
     }
 
@@ -250,20 +253,23 @@ export class PaymentService {
 
       const providerRef = verification.providerReference || reference;
 
-      if (payment.groupId) {
-        const groupWallet = await this.walletService.getOrCreateWallet("GROUP", payment.groupId);
-        await this.walletService.processContributionPayment(groupWallet.id, payment.amount, `Contribution payment ${paymentId}`);
+      const prisma = PrismaDatabase.getInstance().getClient();
+      await prisma.$transaction(async (tx) => {
+        if (payment.groupId) {
+          const groupWallet = await this.walletService.getOrCreateWallet("GROUP", payment.groupId, "NGN", tx);
+          await this.walletService.processContributionPayment(groupWallet.id, payment.amount, `Contribution payment ${paymentId}`, tx);
+        }
 
-        await this.notificationService.create({
-          userId: payment.userId,
-          type: "PAYMENT",
-          title: "Payment Successful",
-          message: `Your payment of ${payment.amount} NGN has been received successfully.`,
-          metadata: { paymentId, reference: providerRef },
-        });
-      }
+        await this.processSuccessfulPayment(paymentId, providerRef, tx);
+      });
 
-      await this.processSuccessfulPayment(paymentId, providerRef);
+      await this.notificationService.create({
+        userId: payment.userId,
+        type: "PAYMENT",
+        title: "Payment Successful",
+        message: `Your payment of ${payment.amount} NGN has been received successfully.`,
+        metadata: { paymentId, reference: providerRef },
+      });
     } catch (error) {
       this.logger.error("Payment verification failed with error", {
         paymentId,
