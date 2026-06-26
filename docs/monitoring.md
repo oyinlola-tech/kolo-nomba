@@ -8,27 +8,32 @@ This document describes the monitoring, logging, health checking, error tracking
 
 Kolo uses a structured JSON logging framework built on **Pino** — one of the fastest Node.js loggers.
 
-```
-┌──────────────────────────────────────────┐
-│            Logging Architecture          │
-├──────────────────────────────────────────┤
-│                                          │
-│  ┌──────────┐    ┌──────────────────┐   │
-│  │ Services │───▶│  Logger (Pino)   │   │
-│  │ Jobs     │    │  ┌────────────┐  │   │
-│  │ Controll │    │  │ Redact     │  │   │
-│  │ ers      │    │  │ Sensitive  │  │   │
-│  └──────────┘    │  │ Fields     │  │   │
-│                  │  └────────────┘  │   │
-│                  └────────┬─────────┘   │
-│                           │             │
-│              ┌────────────┼────────────┐│
-│              ▼            ▼            ▼│
-│        ┌──────────┐ ┌──────────┐ ┌────┐│
-│        │ Console  │ │  File    │ │DB  ││
-│        │ Transport│ │ Transport│ │Tran││
-│        └──────────┘ └──────────┘ └────┘│
-└──────────────────────────────────────────┘
+```mermaid
+flowchart TB
+    subgraph Producers["Log Producers"]
+        Services["Services"]
+        Jobs["Background Jobs"]
+        Controllers["Controllers"]
+        Middleware["Middleware"]
+    end
+
+    subgraph Logger["Logger (Pino)"]
+        Redact["Sensitive Data Redaction\npassword, token, apiKey, otp, ..."]
+        Levels["Log Levels\nfatal, error, warn, info, debug"]
+    end
+
+    subgraph Transports["Log Transports"]
+        Console["Console Transport\n(pino-pretty in dev)"]
+        File["File Transport\n(JSON lines)"]
+        DB["Database Transport\n(AuditLog table)"]
+    end
+
+    Producers -->|"structured log calls"| Logger
+    Logger --> Redact
+    Redact --> Levels
+    Levels --> Console
+    Levels --> File
+    Levels --> DB
 ```
 
 ### Log Levels
@@ -220,6 +225,18 @@ Kolo uses Pino for minimal overhead (~1μs per log entry at 10,000 ops/sec).
 ---
 
 ## Audit Logging
+
+```mermaid
+flowchart LR
+    Action["Sensitive Operation\n(e.g., Payout Approved)"]
+    AuditSvc["AuditService"]
+    Logger["AuditLogger\n(Structured Log)"]
+    DB["AuditLog Table\n(PostgreSQL)"]
+
+    Action --> AuditSvc
+    AuditSvc --> Logger
+    AuditSvc --> DB
+```
 
 All sensitive operations are logged with full context:
 
