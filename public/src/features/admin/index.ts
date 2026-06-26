@@ -1,4 +1,3 @@
-export { SuperAdminLogin } from "./pages/super-admin-login.page";
 export { SuperAdminApp } from "./pages/super-admin.page";
 export { SADashboard } from "./pages/sa-dashboard.page";
 export { SAUsers } from "./pages/sa-users.page";
