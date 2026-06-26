@@ -23,14 +23,38 @@ export class MiddlewareLoader {
   async load(app: FastifyInstance): Promise<void> {
     const origins = this.config.allowedOrigins;
     const isProduction = this.config.isProduction;
-    const corsOptions = isProduction
-      ? { origin: this.config.allowedOrigins.filter(o => o !== "*") }
-      : origins.includes("*")
-        ? { origin: true }
-        : { origin: origins };
+
+    if (isProduction && origins.length === 0) {
+      throw new Error("CORS_ORIGIN must be explicitly set in production (cannot be '*')");
+    }
+
+    const baseOptions = { credentials: true };
+    const explicitOrigins = origins.filter(o => o !== "*");
+    if (explicitOrigins.length === 0) {
+      explicitOrigins.push("http://localhost:5173", "http://localhost:5174");
+    }
+    const corsOptions = { ...baseOptions, origin: explicitOrigins };
 
     await app.register(cors, corsOptions);
-    await app.register(helmet);
+    const scriptSrc = isProduction ? ["'self'"] : ["'self'", "'unsafe-inline'"];
+    const styleSrc = isProduction ? ["'self'", "https://fonts.googleapis.com"] : ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"];
+
+    await app.register(helmet, {
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          scriptSrc,
+          styleSrc,
+          fontSrc: ["'self'", "https://fonts.gstatic.com"],
+          imgSrc: ["'self'", "data:"],
+          connectSrc: ["'self'", "https://api.nomba.com"],
+          frameAncestors: ["'none'"],
+          baseUri: ["'self'"],
+        },
+      },
+      crossOriginOpenerPolicy: { policy: "same-origin" },
+      crossOriginEmbedderPolicy: false,
+    });
     await app.register(rateLimit, {
       max: this.config.rateLimitMax,
       timeWindow: "1 minute",
