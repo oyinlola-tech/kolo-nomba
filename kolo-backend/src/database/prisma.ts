@@ -1,4 +1,6 @@
+import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../generated/prisma/client";
+import { EnvConfig } from "../config/env.config";
 import { Logger } from "../logger/core/logger";
 
 export class PrismaDatabase {
@@ -8,7 +10,8 @@ export class PrismaDatabase {
 
   private constructor() {
     this.logger = new Logger("database");
-    this.client = new PrismaClient({} as never);
+    const adapter = new PrismaPg({ connectionString: EnvConfig.getInstance().DATABASE_URL });
+    this.client = new PrismaClient({ adapter });
   }
 
   static getInstance(): PrismaDatabase {
