@@ -20,13 +20,18 @@ export class FinancialTransactionRepository {
   }
 
   async findByUser(userId: string) {
+    const walletIds = await this.db.wallet.findMany({
+      where: { ownerId: userId },
+      select: { id: true },
+    }).then(w => w.map(w => w.id));
+
     return this.db.financialTransaction.findMany({
       where: {
         OR: [
-          { sourceWalletId: { in: this.db.wallet.findMany({ where: { ownerId: userId }, select: { id: true } }).then(w => w.map(w => w.id)) } as never },
-          { destinationWalletId: { in: this.db.wallet.findMany({ where: { ownerId: userId }, select: { id: true } }).then(w => w.map(w => w.id)) } as never },
+          { sourceWalletId: { in: walletIds } },
+          { destinationWalletId: { in: walletIds } },
         ],
-      } as never,
+      },
       orderBy: { createdAt: "desc" },
     });
   }
