@@ -155,8 +155,9 @@ export class EnvConfig {
       throw new Error("Missing required environment variable: COOKIE_SECRET must be explicitly set in production");
     }
     this.COOKIE_SECURE = EnvConfig.getEnvOrDefault("COOKIE_SECURE", String(!this.isDevelopment)) === "true";
-    this.COOKIE_SAME_SITE = EnvConfig.getEnvOrDefault("COOKIE_SAME_SITE", "strict") as "strict" | "lax" | "none";
+    this.COOKIE_SAME_SITE = this.parseSameSite();
     this.COOKIE_DOMAIN = EnvConfig.getEnvOrDefault("COOKIE_DOMAIN", "");
+    this.validateCookieConfig();
     this.NOMBA_TRANSFER_BASE_URL = EnvConfig.getEnvOrDefault("NOMBA_TRANSFER_BASE_URL", "https://api.nomba.com/v1");
   }
 
@@ -199,6 +200,21 @@ export class EnvConfig {
     }
     if (localhostPattern.test(this.ADMIN_FRONTEND_URL)) {
       throw new Error("ADMIN_FRONTEND_URL must be an explicit HTTPS URL in production");
+    }
+  }
+
+  private parseSameSite(): "strict" | "lax" | "none" {
+    const raw = EnvConfig.getEnvOrDefault("COOKIE_SAME_SITE", "strict").toLowerCase();
+    if (raw === "strict" || raw === "lax" || raw === "none") return raw;
+    throw new Error(`Invalid COOKIE_SAME_SITE value: "${raw}". Must be "strict", "lax", or "none"`);
+  }
+
+  private validateCookieConfig(): void {
+    if (this.isProduction && !this.COOKIE_SECURE) {
+      throw new Error("COOKIE_SECURE must be true in production");
+    }
+    if (this.COOKIE_SAME_SITE === "none" && !this.COOKIE_SECURE) {
+      throw new Error("COOKIE_SECURE must be true when COOKIE_SAME_SITE is 'none'");
     }
   }
 
