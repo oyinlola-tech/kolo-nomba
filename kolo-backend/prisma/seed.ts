@@ -1,3 +1,4 @@
+import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../src/generated/prisma/client";
 import * as argon2 from "argon2";
 import { EnvConfig } from "../src/config/env.config";
@@ -11,7 +12,8 @@ async function main(): Promise<void> {
   const firstName = config.SUPER_ADMIN_FIRST_NAME;
   const lastName = config.SUPER_ADMIN_LAST_NAME;
 
-  const prisma = new PrismaClient({} as never);
+  const adapter = new PrismaPg({ connectionString: config.DATABASE_URL });
+  const prisma = new PrismaClient({ adapter });
   const passwordHash = await argon2.hash(password);
 
   const admin = await prisma.user.upsert({
