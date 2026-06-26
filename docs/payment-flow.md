@@ -6,24 +6,25 @@ This document explains how money moves through the Kolo platform — from member
 
 ## Payment Lifecycle
 
-```
-┌────────────┐    ┌────────────┐    ┌────────────┐    ┌────────────┐
-│  INITIATED  │───▶│  PENDING   │───▶│ VERIFYING  │───▶│COMPLETED   │
-└────────────┘    └────────────┘    └────────────┘    └────────────┘
-       │                │                 │
-       ▼                ▼                 ▼
-  User chooses    Redirected to      Webhook received
-  payment method  Nomba gateway      Payment verified
-                                        │
-                                   ┌────┴────┐
-                                   ▼         ▼
-                              SUCCESSFUL   FAILED
-                                   │
-                              ┌────┴────┐
-                              │         │
-                              ▼         ▼
-                          Wallet    Refund &
-                          Credited  Notification
+```mermaid
+stateDiagram-v2
+    [*] --> INITIALIZED: User initiates payment
+    INITIALIZED --> PENDING: Redirected to Nomba
+    PENDING --> VERIFYING: Nomba sends webhook
+    VERIFYING --> SUCCESSFUL: Payment confirmed
+    VERIFYING --> FAILED: Payment declined
+    PENDING --> CANCELLED: User cancels
+    SUCCESSFUL --> REFUNDED: Admin reverses
+    FAILED --> PENDING: User retries
+    SUCCESSFUL --> [*]
+    FAILED --> [*]
+    CANCELLED --> [*]
+    REFUNDED --> [*]
+
+    note right of INITIALIZED: Payment record created\nprovider not yet called
+    note right of PENDING: Sent to Nomba\nawaiting user action
+    note right of VERIFYING: Webhook received\nverifying with Nomba
+    note right of SUCCESSFUL: Wallet credited\ncontribution updated
 ```
 
 ---
@@ -32,50 +33,44 @@ This document explains how money moves through the Kolo platform — from member
 
 ### Step-by-Step
 
-```
-1. Member initiates payment of ₦10,000
-           │
-2. Kolo initiates payment with Nomba
-           │
-3. Member redirected to Nomba → pays ₦10,000
-           │
-4. Nomba sends webhook → Kolo verifies
-           │
-5. Kolo calculates fee:
-   fee = min(10,000 × 1%, 2,000) = ₦100
-           │
-6. Double-entry ledger updates:
-           │
-   ┌─────────────────────────────────────────────────┐
-   │ FinancialTransaction (reference: TXN-xxx)       │
-   │  Type: CONTRIBUTION                             │
-   │  Amount: 10,000 (kobo: 1,000,000)               │
-   │  Status: SUCCESSFUL                              │
-   ├─────────────────────────────────────────────────┤
-   │ LedgerEntry 1:                                   │
-   │   Wallet: Group (Lagos Savings Circle)           │
-   │   Direction: IN                                  │
-   │   Amount: 9,900 (kobo: 990,000)                  │
-   │   Balance: 0 → 9,900                             │
-   │   Description: "Contribution from Chioma"        │
-   ├─────────────────────────────────────────────────┤
-   │ LedgerEntry 2:                                   │
-   │   Wallet: Platform (fee account)                 │
-   │   Direction: IN                                  │
-   │   Amount: 100 (kobo: 10,000)                     │
-   │   Balance: X → X + 100                           │
-   │   Description: "Platform fee for contribution"   │
-   └─────────────────────────────────────────────────┘
-           │
-7. MemberContribution updated:
-   paidAmount = 0 → 10,000
-   status: PAID
-           │
-8. Notification sent:
-   "Your contribution of ₦10,000 has been received"
-           │
-9. Group admin sees updated dashboard:
-   Cycle 1: ₦15,000 / ₦20,000 collected
+```mermaid
+sequenceDiagram
+    participant User
+    participant Kolo as Kolo API
+    participant Nomba as Nomba Gateway
+    participant DB as PostgreSQL
+    participant Queue as BullMQ
+
+    User->>Kolo: Initiate payment (₦10,000)
+    Kolo->>DB: Create Payment (status: INITIALIZED)
+    Kolo->>Nomba: initiatePayment(amount, reference)
+    Nomba-->>Kolo: paymentUrl
+    Kolo->>DB: Update Payment (status: PENDING)
+    Kolo-->>User: Redirect URL
+
+    User->>Nomba: Complete payment (card/bank/USSD)
+    Nomba-->>User: Payment confirmation
+    Nomba->>Kolo: POST /webhooks/nomba (HMAC signed)
+    Kolo->>Kolo: Verify signature (HMAC-SHA256)
+    Kolo->>Kolo: Check duplicate event
+    Kolo->>DB: Store WebhookEvent
+    Kolo->>Queue: Enqueue verification job
+
+    Queue->>Kolo: VerifyPaymentProcessor
+    Kolo->>Nomba: verifyPayment(reference)
+    Nomba-->>Kolo: Confirmed (SUCCESSFUL)
+
+    Kolo->>DB: Begin Prisma $transaction
+    Kolo->>DB: Update Payment → SUCCESSFUL
+    Kolo->>DB: Credit Group Wallet (atomic: +₦9,900)
+    Kolo->>DB: Credit Platform Wallet (atomic: +₦100 fee)
+    Kolo->>DB: Create FinancialTransaction (CONTRIBUTION)
+    Kolo->>DB: Create LedgerEntry records
+    Kolo->>DB: Update MemberContribution → PAID
+    Kolo->>DB: Commit transaction
+    Kolo->>Kolo: Publish payment.successful event
+    Kolo->>Kolo: Send notification to user
+    Kolo-->>User: Real-time update (dashboard)
 ```
 
 ### Atomic Wallet Operations
@@ -133,52 +128,60 @@ await prisma.$transaction(async (tx) => {
 
 ### 1. Bank Transfer (via Virtual Account)
 
-```
-User selects "Bank Transfer"
-        │
-Kolo provides virtual account number
-        │
-User transfers from banking app
-        │
-Nomba detects incoming transfer
-        │
-Nomba sends virtual_account_transaction webhook
-        │
-Kolo matches transfer to user
-        │
-Wallet credited
+```mermaid
+sequenceDiagram
+    participant User
+    participant Kolo
+    participant Nomba
+    participant Bank as User's Bank
+
+    User->>Kolo: Select "Bank Transfer"
+    Kolo->>Nomba: createVirtualAccount(reference, ownerId)
+    Nomba-->>Kolo: { accountNumber, accountName, bankName }
+    Kolo->>DB: Store VirtualAccount (status: ACTIVE)
+    Kolo-->>User: Display account number
+
+    User->>Bank: Transfer from banking app
+    Bank->>Nomba: Incoming transfer notification
+    Nomba->>Kolo: Webhook: virtual_account_transaction
+    Kolo->>Kolo: Match transfer to user
+    Kolo->>DB: Credit wallet
 ```
 
 ### 2. Card Payment
 
-```
-User selects "Card Payment"
-        │
-Kolo calls NombaPayment.initiatePayment()
-        │
-User redirected to Nomba checkout
-        │
-User enters card details (secured by Nomba)
-        │
-Nomba processes payment
-        │
-Nomba sends payment.success webhook
-        │
-Kolo verifies and credits wallet
+```mermaid
+sequenceDiagram
+    participant User
+    participant Kolo
+    participant Nomba
+
+    User->>Kolo: Select "Card Payment"
+    Kolo->>Nomba: initiatePayment(amount, reference, callback)
+    Nomba-->>Kolo: paymentUrl
+    Kolo-->>User: Redirect to Nomba checkout
+    User->>Nomba: Enter card details (secured by Nomba)
+    Nomba->>Nomba: Process payment
+    Nomba->>Kolo: Webhook: payment.success
+    Kolo->>Kolo: Verify and credit wallet
 ```
 
 ### 3. Nomba Wallet
 
-```
-User selects "Nomba Wallet"
-        │
-User logs into Nomba wallet
-        │
-User confirms payment
-        │
-Nomba processes and sends webhook
-        │
-Kolo verifies and credits wallet
+```mermaid
+flowchart LR
+    User["User selects\nNomba Wallet"]
+    Login["User logs into\nNomba Wallet"]
+    Confirm["User confirms\npayment"]
+    Process["Nomba processes\npayment"]
+    Webhook["Nomba sends\nwebhook"]
+    Credit["Kolo verifies\nand credits wallet"]
+
+    User --> Login
+    Login --> Confirm
+    Confirm --> Process
+    Process --> Webhook
+    Webhook --> Credit
 ```
 
 ---
@@ -215,14 +218,20 @@ class FeeEngine {
 
 ## Payment States
 
-```
-INITIALIZED → PENDING → VERIFYING → SUCCESSFUL
-                 │           │
-                 ▼           ▼
-              CANCELLED    FAILED → RETRYING → SUCCESSFUL
-                                        │
-                                        ▼
-                                      FAILED (final)
+```mermaid
+stateDiagram-v2
+    [*] --> INITIALIZED
+    INITIALIZED --> PENDING: Sent to Nomba
+    PENDING --> SUCCESSFUL: Webhook confirmed
+    PENDING --> FAILED: Webhook failure
+    PENDING --> CANCELLED: User cancels
+    FAILED --> PENDING: Retry
+    FAILED --> FAILED: Max retries
+    SUCCESSFUL --> REFUNDED: Admin refund
+    FAILED --> [*]
+    SUCCESSFUL --> [*]
+    REFUNDED --> [*]
+    CANCELLED --> [*]
 ```
 
 | State | Description |
