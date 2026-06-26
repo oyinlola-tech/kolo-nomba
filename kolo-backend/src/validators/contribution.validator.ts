@@ -1,9 +1,10 @@
 import { z } from "zod";
+import { MAX_KOBO } from "../constants/financial.constant";
 
 export const createContributionPlanSchema = z.object({
   name: z.string().min(1, "Plan name is required").max(200),
   description: z.string().max(500).optional(),
-  amount: z.number().int("Amount must be a whole number").positive("Amount must be positive").max(100_000_000, "Amount exceeds maximum allowed"),
+  amount: z.number().int("Amount must be a whole number").positive("Amount must be positive").max(MAX_KOBO, "Amount exceeds maximum allowed"),
   currency: z.string().length(3).default("NGN"),
   frequency: z.enum(["DAILY", "WEEKLY", "MONTHLY", "CUSTOM"]),
   startDate: z.string().datetime({ message: "Invalid start date" }),
@@ -13,7 +14,7 @@ export const createContributionPlanSchema = z.object({
 export const updateContributionPlanSchema = z.object({
   name: z.string().min(1).max(200).optional(),
   description: z.string().max(500).optional(),
-  amount: z.number().int("Amount must be a whole number").positive().max(100_000_000, "Amount exceeds maximum allowed").optional(),
+  amount: z.number().int("Amount must be a whole number").positive().max(MAX_KOBO, "Amount exceeds maximum allowed").optional(),
   currency: z.string().length(3).optional(),
   frequency: z.enum(["DAILY", "WEEKLY", "MONTHLY", "CUSTOM"]).optional(),
   status: z.enum(["ACTIVE", "PAUSED", "COMPLETED"]).optional(),
