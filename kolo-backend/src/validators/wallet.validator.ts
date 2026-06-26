@@ -9,7 +9,7 @@ export const createWalletSchema = z.object({
 export const transferSchema = z.object({
   sourceWalletId: z.string().uuid("Invalid source wallet"),
   destinationWalletId: z.string().uuid("Invalid destination wallet"),
-  amount: z.number().positive("Amount must be positive"),
+  amount: z.number().int("Amount must be a whole number").positive("Amount must be positive").max(100_000_000, "Amount exceeds maximum allowed"),
   description: z.string().max(500).optional(),
 });
 
