@@ -107,7 +107,7 @@ export class PayoutController {
 
   async listSchedules(request: FastifyRequest, reply: FastifyReply): Promise<void> {
     const { groupId } = request.params as { groupId: string };
-    const result = await this.payoutService.getSchedules(groupId);
+    const result = await this.payoutService.getSchedules(groupId, request.userId);
     ResponseUtil.success(reply, result);
   }
 
