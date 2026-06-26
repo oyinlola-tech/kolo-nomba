@@ -6,28 +6,23 @@ This document describes how different user roles interact with Kolo, from accoun
 
 ## User Roles Overview
 
-```
-                    ┌──────────────┐
-                    │   Visitor    │
-                    └──────┬───────┘
-                           │ Register
-                           ▼
-                    ┌──────────────┐
-                    │    User     │
-                    │  (PENDING)  │
-                    └──────┬───────┘
-                           │ Verify OTP
-                           ▼
-                    ┌──────────────┐
-                    │    User     │
-                    │  (ACTIVE)   │
-                    └──────┬───────┘
-                           │
-              ┌────────────┼────────────────┐
-              ▼            ▼                ▼
-       ┌──────────┐ ┌──────────┐   ┌──────────────┐
-       │  MEMBER  │ │GRP ADMIN │   │ SUPER_ADMIN  │
-       └──────────┘ └──────────┘   └──────────────┘
+```mermaid
+flowchart TB
+    Visitor["Visitor"]
+    PendingUser["User (PENDING)\nAfter Registration"]
+    ActiveUser["User (ACTIVE)\nAfter OTP Verification"]
+
+    subgraph Roles["User Roles"]
+        Member["MEMBER\nJoin groups\nMake contributions\nReceive payouts"]
+        GroupAdmin["GROUP_ADMIN / GROUP_OWNER\nCreate groups\nManage members\nApprove payouts"]
+        SuperAdmin["SUPER_ADMIN\nFull platform access\nUser management\nRevenue analytics"]
+    end
+
+    Visitor -->|"Register"| PendingUser
+    PendingUser -->|"Verify OTP"| ActiveUser
+    ActiveUser --> Member
+    ActiveUser --> GroupAdmin
+    ActiveUser --> SuperAdmin
 ```
 
 ---
