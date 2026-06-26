@@ -16,6 +16,7 @@ export const apiClient = axios.create({
   baseURL,
   headers: {
     "Content-Type": "application/json",
+    "X-Requested-With": "XMLHttpRequest",
   },
   withCredentials: true,
 });
@@ -61,7 +62,7 @@ apiClient.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        const { data } = await axios.post(`${baseURL}/auth/refresh`, {}, { withCredentials: true });
+        const { data } = await axios.post(`${baseURL}/auth/refresh`, {}, { headers: { "X-Requested-With": "XMLHttpRequest" }, withCredentials: true });
         const newAccessToken = data.accessToken ?? data.data?.accessToken ?? data.tokens?.accessToken;
 
         if (newAccessToken) {

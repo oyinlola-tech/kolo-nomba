@@ -55,6 +55,9 @@ export class AuthController {
     if (!normalizedAllowed.includes(parsedOrigin)) {
       throw new ValidationError("Invalid request origin");
     }
+    if (request.headers["x-requested-with"] !== "XMLHttpRequest") {
+      throw new ValidationError("Missing anti-CSRF header");
+    }
   }
 
   async register(request: FastifyRequest, reply: FastifyReply): Promise<void> {

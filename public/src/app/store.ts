@@ -68,7 +68,7 @@ export const useAppStore = create<AppState>((set, get) => ({
 
 export async function initAuth(): Promise<void> {
   try {
-    const refreshRes = await axios.post(`${BASE_URL}/auth/refresh`, {}, { withCredentials: true });
+    const refreshRes = await axios.post(`${BASE_URL}/auth/refresh`, {}, { headers: { "X-Requested-With": "XMLHttpRequest" }, withCredentials: true });
     const newToken = refreshRes.data.accessToken ?? refreshRes.data.data?.accessToken;
 
     if (!newToken) {
