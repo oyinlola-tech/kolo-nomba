@@ -108,6 +108,7 @@ export class EnvConfig {
 
     this.FRONTEND_URL = EnvConfig.getEnvOrDefault("FRONTEND_URL", "http://localhost:5173");
     this.ADMIN_FRONTEND_URL = EnvConfig.getEnvOrDefault("ADMIN_FRONTEND_URL", "http://localhost:5174");
+    this.validateFrontendUrls();
 
     this.ENABLE_EMAIL_NOTIFICATIONS = EnvConfig.getEnvOrDefault("ENABLE_EMAIL_NOTIFICATIONS", "true") === "true";
     this.ENABLE_SMS_NOTIFICATIONS = EnvConfig.getEnvOrDefault("ENABLE_SMS_NOTIFICATIONS", "false") === "true";
@@ -184,6 +185,20 @@ export class EnvConfig {
     }
     if (!this.NOMBA_PRIVATE_KEY) {
       throw new Error(`Missing required environment variable: NOMBA_${this.NOMBA_ENVIRONMENT.toUpperCase()}_PRIVATE_KEY`);
+    }
+  }
+
+  private validateFrontendUrls(): void {
+    if (!this.isProduction) return;
+    if (this.CORS_ORIGIN === "*") {
+      throw new Error("CORS_ORIGIN cannot be '*' in production");
+    }
+    const localhostPattern = /^http:\/\/localhost(:\d+)?$/;
+    if (localhostPattern.test(this.FRONTEND_URL)) {
+      throw new Error("FRONTEND_URL must be an explicit HTTPS URL in production");
+    }
+    if (localhostPattern.test(this.ADMIN_FRONTEND_URL)) {
+      throw new Error("ADMIN_FRONTEND_URL must be an explicit HTTPS URL in production");
     }
   }
 

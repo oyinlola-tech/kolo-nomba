@@ -24,7 +24,7 @@ export class MiddlewareLoader {
     const origins = this.config.allowedOrigins;
     const isProduction = this.config.isProduction;
 
-    if (isProduction && origins.length === 0) {
+    if (isProduction && (origins.length === 0 || origins.includes("*"))) {
       throw new Error("CORS_ORIGIN must be explicitly set in production (cannot be '*')");
     }
 
