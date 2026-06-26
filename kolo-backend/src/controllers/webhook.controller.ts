@@ -3,10 +3,6 @@ import { WebhookService } from "../services/webhook.service";
 import { ResponseUtil } from "../utils/response.util";
 import { WebhookLogger } from "../logger/implementations/webhook.logger";
 
-interface RawBodyRequest extends FastifyRequest {
-  rawBody?: string;
-}
-
 export class WebhookController {
   private readonly webhookService: WebhookService;
   private readonly logger: WebhookLogger;
@@ -16,7 +12,7 @@ export class WebhookController {
     this.logger = new WebhookLogger();
   }
 
-  async handleNomba(request: RawBodyRequest, reply: FastifyReply): Promise<void> {
+  async handleNomba(request: FastifyRequest, reply: FastifyReply): Promise<void> {
     const signature = (
       request.headers["x-nomba-signature"]
       ?? request.headers["nomba-signature"]
@@ -27,7 +23,11 @@ export class WebhookController {
       ?? request.headers["nomba-timestamp"]
       ?? request.headers["x-timestamp"]
     ) as string | undefined;
-    const rawBody = request.rawBody ?? JSON.stringify(request.body);
+    const rawBody = (request as unknown as Record<string, string>).rawBody;
+    if (!rawBody) {
+      reply.status(400).send({ success: false, message: "Missing raw body" });
+      return;
+    }
 
     try {
       const result = await this.webhookService.processNombaWebhook(signature, rawBody, request.body as Record<string, unknown>, timestamp);
