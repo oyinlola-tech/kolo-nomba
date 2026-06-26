@@ -30,7 +30,7 @@ export class EmailTemplateService {
   }
 
   private stripHtml(s: string): string {
-    return s.replace(/<[^>]*>/g, "").replace(/[<>]/g, "");
+    return s.replace(/[<>]/g, "");
   }
 
   private safeUrl(href: string): string {
