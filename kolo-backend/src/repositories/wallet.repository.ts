@@ -14,8 +14,8 @@ export class WalletRepository {
     return this.getClient(tx).wallet.findUnique({ where: { id } });
   }
 
-  async findByOwner(ownerType: string, ownerId: string) {
-    return this.db.wallet.findFirst({
+  async findByOwner(ownerType: string, ownerId: string, tx?: Prisma.TransactionClient) {
+    return this.getClient(tx).wallet.findFirst({
       where: { ownerType: ownerType as never, ownerId },
     });
   }
@@ -24,8 +24,8 @@ export class WalletRepository {
     ownerType: string;
     ownerId: string;
     currency: string;
-  }) {
-    return this.db.wallet.create({ data: data as never });
+  }, tx?: Prisma.TransactionClient) {
+    return this.getClient(tx).wallet.create({ data: data as never });
   }
 
   async updateBalance(id: string, newBalance: number, tx?: Prisma.TransactionClient) {
