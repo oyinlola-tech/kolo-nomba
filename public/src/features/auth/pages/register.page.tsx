@@ -4,32 +4,32 @@ import { User, Mail, Phone, Lock, RefreshCw, ArrowRight } from "lucide-react";
 import { AuthLayout } from "../../../components/layout/AuthLayout";
 import { Input } from "../../../components/shared/Input";
 import { Button } from "../../../components/shared/Button";
-import { useAuth } from "../../../hooks/use-auth";
+import { apiClient } from "../../../api/client";
 import { ValidationError } from "../../../components/shared/ErrorState";
 
 export function RegisterPage() {
   const navigate = useNavigate();
-  const { register } = useAuth();
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
     setError("");
-    register.mutate(
-      { firstName, lastName, email, phone, password },
-      {
-        onSuccess: () => {
-          navigate("/member/home");
-        },
-        onError: (err: Error) => {
-          setError(err.message || "Registration failed");
-        },
-      },
-    );
+    setLoading(true);
+    try {
+      const { data } = await apiClient.post("/auth/register", { firstName, lastName, email, phone, password });
+      const userId = data.data?.userId ?? data.userId;
+      navigate(`/verify-otp?userId=${userId}&email=${encodeURIComponent(email)}`);
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Registration failed";
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -45,10 +45,10 @@ export function RegisterPage() {
       <Input label="Email Address" type="email" placeholder="you@example.com" value={email} onChange={setEmail} icon={Mail} required />
       <Input label="Phone Number" placeholder="+1 (000) 000-0000" value={phone} onChange={setPhone} icon={Phone} required />
       <Input label="Password" type="password" placeholder="Min 8 characters" value={password} onChange={setPassword} icon={Lock} required hint="Must be at least 8 characters" />
-      <Button full onClick={handleRegister} disabled={register.isPending} className="mt-2">
-        {register.isPending ? <RefreshCw className="w-4 h-4 animate-spin" /> : null}
-        {register.isPending ? "Creating account\u2026" : "Continue"}
-        {!register.isPending && <ArrowRight className="w-4 h-4" />}
+      <Button full onClick={handleRegister} disabled={loading} className="mt-2">
+        {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : null}
+        {loading ? "Creating account\u2026" : "Continue"}
+        {!loading && <ArrowRight className="w-4 h-4" />}
       </Button>
       <p className="text-center text-sm text-gray-500 dark:text-muted-foreground mt-5">
         Already have an account?{" "}
