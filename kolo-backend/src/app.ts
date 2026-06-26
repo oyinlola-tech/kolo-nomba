@@ -1,4 +1,5 @@
 import Fastify, { type FastifyInstance } from "fastify";
+import cookie from "@fastify/cookie";
 import { AppConfig } from "./config/app.config";
 import { AppLoader } from "./loaders/index";
 import { Logger } from "./logger/core/logger";
@@ -17,6 +18,10 @@ export class Application {
     this.app = Fastify({
       logger: false,
       bodyLimit: 1048576,
+    });
+
+    this.app.register(cookie, {
+      secret: this.config.cookieSecret,
     });
   }
 
