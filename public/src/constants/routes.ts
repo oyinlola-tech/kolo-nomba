@@ -1,0 +1,15 @@
+export const routes = {
+  login: "/login",
+  register: "/register",
+  memberDashboard: "/dashboard",
+  memberContributions: "/contributions",
+  memberPayments: "/payments",
+  memberTransactions: "/transactions",
+  groupAdminDashboard: "/group/admin/dashboard",
+  groupAdminMembers: "/group/admin/members",
+  groupAdminReports: "/group/admin/reports",
+  platformAdminDashboard: "/ajo/admin/dashboard",
+  platformAdminUsers: "/ajo/admin/users",
+  platformAdminTransactions: "/ajo/admin/transactions",
+  platformAdminLogs: "/ajo/admin/logs",
+} as const;
