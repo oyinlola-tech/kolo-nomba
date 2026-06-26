@@ -257,15 +257,11 @@ export class WalletService {
       }, tx);
 
       if (fee > 0) {
-        let platformWallet = await this.walletRepository.findByOwner("PLATFORM", "platform");
-        let platformWalletId: string;
-        if (platformWallet) {
-          platformWalletId = platformWallet.id;
-        } else {
-          platformWallet = await this.walletRepository.create({ ownerType: "PLATFORM", ownerId: "platform", currency: "NGN" });
-          platformWalletId = platformWallet.id;
+        let platformWallet = await this.walletRepository.findByOwner("PLATFORM", "platform", tx);
+        if (!platformWallet) {
+          platformWallet = await this.walletRepository.create({ ownerType: "PLATFORM", ownerId: "platform", currency: "NGN" }, tx);
         }
-
+        const platformWalletId = platformWallet.id;
         const platformBalanceBefore = platformWallet.balance;
 
         await this.walletRepository.incrementBalance(platformWalletId, fee, tx);
