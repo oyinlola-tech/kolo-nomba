@@ -131,7 +131,7 @@ sequenceDiagram
 |---|---|
 | **React 18** + TypeScript | UI framework |
 | **Vite 6** | Build tool and dev server |
-| **Tailwind CSS 4** + shadcn/ui | Design system and styling |
+| **Tailwind CSS 4** + shadcn/ui + MUI | Design system and component library |
 | **TanStack Query 5** | Server state management and caching |
 | **Zustand 5** | Client state (auth, theme, UI) |
 | **React Router 6** | SPA routing |
@@ -315,6 +315,10 @@ All engineering documentation is in the `docs/` directory and uses **Mermaid dia
 - PostgreSQL 15+
 - Redis 7+
 
+### API
+
+The backend API runs on **`http://localhost:4000`** by default. All routes are prefixed with `/api/v1/*`.
+
 ### Backend Setup
 
 ```bash
@@ -437,6 +441,19 @@ See `docs/deployment.md` for complete production deployment guide including:
 - PM2 process management
 - Database backup and restore procedures
 - Namecheap-specific guidance
+
+---
+
+## Testing
+
+```bash
+# Backend tests (Vitest)
+cd kolo-backend
+npm test
+
+# TypeScript type checking
+npm run build
+```
 
 ---
 
