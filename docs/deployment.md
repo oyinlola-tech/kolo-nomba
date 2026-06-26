@@ -17,25 +17,42 @@ This document describes how to deploy Kolo to production, with specific guidance
 
 ## Deployment Architecture
 
-```
-┌─────────────────────────────────┐
-│         Load Balancer           │
-│    (Namecheap / Cloudflare)     │
-└────────────┬────────────────────┘
-             │
-    ┌────────┴────────┐
-    │                  │
-┌───▼──────┐    ┌─────▼────┐
-│  Static  │    │  Node.js │
-│  Assets  │    │  Server  │
-│  (CDN)   │    │  (PM2)   │
-└──────────┘    └────┬─────┘
-                     │
-            ┌────────┴────────┐
-            │                  │
-        ┌───▼────┐      ┌─────▼───┐
-        │PostgreSQL│    │  Redis  │
-        └─────────┘    └─────────┘
+```mermaid
+flowchart TB
+    subgraph CDN["CDN / Load Balancer"]
+        LB["Namecheap / Cloudflare\n(DNS + DDoS Protection)"]
+    end
+
+    subgraph Frontend["Frontend Layer"]
+        Static["Static Assets\n(public/dist/)"]
+        SPA["React SPA\n(Vite Build)"]
+    end
+
+    subgraph Backend["Application Layer"]
+        API["Node.js Server\n(Fastify 5 via PM2)"]
+        QueueW["BullMQ Workers\n(10+ queue processors)"]
+    end
+
+    subgraph Data["Data Layer"]
+        PG[("PostgreSQL 15+\n(Prisma ORM)")]
+        Redis[("Redis 7+\n(BullMQ + Cache)")]
+    end
+
+    subgraph External["External Services"]
+        Nomba["Nomba API\n(Payment Gateway)"]
+        SMTP["SMTP Server\n(Email)"]
+    end
+
+    User["Users"] --> LB
+    LB --> Static
+    LB --> API
+    SPA --> Static
+    API --> PG
+    API --> Redis
+    QueueW --> PG
+    QueueW --> Redis
+    API --> Nomba
+    API --> SMTP
 ```
 
 ---
@@ -142,6 +159,37 @@ pm2 startup
 ```
 
 ### 7. Configure Nginx (Reverse Proxy)
+
+```mermaid
+flowchart TB
+    subgraph DNS["DNS Layer"]
+        API["api.kolosavings.com"]
+        App["kolosavings.com"]
+    end
+
+    subgraph Nginx["Nginx Reverse Proxy"]
+        APISS["API Server Block\n(443 SSL)"]
+        AppSS["App Server Block\n(443 SSL)"]
+        Redirect["HTTP → HTTPS\n(301 Redirect)"]
+    end
+
+    subgraph Backend["Backend"]
+        APIProc["Node.js :4000\n(Fastify)"]
+    end
+
+    subgraph Frontend["Frontend"]
+        Static["Static Files\n(public/dist/)"]
+    end
+
+    API --> APISS
+    App --> AppSS
+    API -->|"port 80"| Redirect
+    App -->|"port 80"| Redirect
+    Redirect --> APISS
+    Redirect --> AppSS
+    APISS --> APIProc
+    AppSS --> Static
+```
 
 ```nginx
 server {
