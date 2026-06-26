@@ -27,6 +27,10 @@ export class AppConfig {
     return this.env.CORS_ORIGIN;
   }
 
+  get cookieSecret(): string {
+    return this.env.COOKIE_SECRET;
+  }
+
   get rateLimitMax(): number {
     return this.env.RATE_LIMIT_MAX;
   }
