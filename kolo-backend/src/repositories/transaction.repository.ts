@@ -1,4 +1,5 @@
 import { PrismaDatabase } from "../database/prisma";
+import type { Prisma } from "../generated/prisma/client";
 import { v4 as uuidv4 } from "uuid";
 
 export class TransactionRepository {
@@ -6,8 +7,12 @@ export class TransactionRepository {
     return PrismaDatabase.getInstance().getClient();
   }
 
-  async findById(id: string) {
-    return this.db.transaction.findUnique({ where: { id } });
+  private getClient(tx?: Prisma.TransactionClient) {
+    return tx ?? this.db;
+  }
+
+  async findById(id: string, tx?: Prisma.TransactionClient) {
+    return this.getClient(tx).transaction.findUnique({ where: { id } });
   }
 
   async findByReference(reference: string) {
@@ -29,8 +34,8 @@ export class TransactionRepository {
     status: string;
     reference?: string;
     metadata?: Record<string, unknown>;
-  }) {
-    return this.db.transaction.create({
+  }, tx?: Prisma.TransactionClient) {
+    return this.getClient(tx).transaction.create({
       data: {
         reference: data.reference ?? `TXN-${uuidv4().slice(0, 8).toUpperCase()}`,
         userId: data.userId,
