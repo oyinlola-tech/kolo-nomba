@@ -4,8 +4,8 @@ import {
   LandingPage, AboutPage, ContactPage, PricingPage,
   SecurityPage, HelpPage, TermsPage, PrivacyPage, HowItWorksPage,
 } from "../features/landing";
-import { LoginPage, RegisterPage, RegisterCoopPage, VerifyOTPPage, ForgotPasswordPage, ResetPasswordPage } from "../features/auth";
-import { SuperAdminLogin, SuperAdminApp } from "../features/admin";
+import { LoginPage, RegisterPage, RegisterCoopPage, VerifyOTPPage } from "../features/auth";
+import { SuperAdminApp } from "../features/admin";
 import {
   SADashboard, SAUsers, SAGroups, SATransactions, SAPayments,
   SARevenue, SAWithdrawals, SADisputes, SAVerification,
@@ -35,10 +35,6 @@ export const router = createBrowserRouter([
   { path: "/register", element: <RegisterPage /> },
   { path: "/register/cooperative", element: <RegisterCoopPage /> },
   { path: "/verify-otp", element: <VerifyOTPPage /> },
-  { path: "/forgot-password", element: <ForgotPasswordPage /> },
-  { path: "/reset-password", element: <ResetPasswordPage /> },
-
-  { path: "/ajo/admin/login", element: <SuperAdminLogin /> },
   {
     path: "/ajo/admin",
     element: <ProtectedRoute allowedRoles={["SUPER_ADMIN"] as UserRole[]}><SuperAdminApp /></ProtectedRoute>,
