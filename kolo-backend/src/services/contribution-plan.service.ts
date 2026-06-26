@@ -3,7 +3,7 @@ import { ContributionCycleRepository } from "../repositories/contribution-cycle.
 import { MemberContributionRepository } from "../repositories/member-contribution.repository";
 import { GroupMemberRepository } from "../repositories/group-member.repository";
 import { AuditService } from "./audit.service";
-import { AuthError } from "../errors/auth.error";
+import { AuthError, ForbiddenError } from "../errors/auth.error";
 import type { CreateContributionPlanDto, UpdateContributionPlanDto, ContributionPlanResponse, ContributionCycleResponse } from "../dto/contribution.dto";
 import { Logger } from "../logger/core/logger";
 
@@ -61,6 +61,16 @@ export class ContributionPlanService {
     }
   }
 
+  private async validateGroupAdminAccess(groupId: string, userId: string): Promise<void> {
+    const membership = await this.groupMemberRepository.findByGroupAndUser(groupId, userId);
+    if (!membership || membership.status !== "ACTIVE") {
+      throw new ForbiddenError("You are not a member of this group");
+    }
+    if (membership.role !== "GROUP_OWNER" && membership.role !== "GROUP_ADMIN") {
+      throw new ForbiddenError("Only group admins can modify contribution plans");
+    }
+  }
+
   private async getPlanGroupId(planId: string): Promise<string> {
     const plan = await this.planRepository.findById(planId);
     if (!plan) {
@@ -83,7 +93,7 @@ export class ContributionPlanService {
   async updatePlan(id: string, dto: UpdateContributionPlanDto, userId?: string): Promise<ContributionPlanResponse> {
     const groupId = await this.getPlanGroupId(id);
     if (userId) {
-      await this.validateGroupAccess(groupId, userId);
+      await this.validateGroupAdminAccess(groupId, userId);
     }
 
     const updated = await this.planRepository.update(id, dto);
@@ -100,7 +110,7 @@ export class ContributionPlanService {
   async deletePlan(id: string, userId?: string): Promise<void> {
     const groupId = await this.getPlanGroupId(id);
     if (userId) {
-      await this.validateGroupAccess(groupId, userId);
+      await this.validateGroupAdminAccess(groupId, userId);
     }
 
     await this.planRepository.updateStatus(id, "COMPLETED");
