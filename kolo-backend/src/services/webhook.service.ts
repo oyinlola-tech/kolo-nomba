@@ -29,7 +29,7 @@ export class WebhookService {
     signature: string | undefined,
     rawBody: string,
     body: Record<string, unknown>,
-    timestamp?: string,
+    timestamp: string | undefined,
   ): Promise<{ received: boolean }> {
     const isValid = this.nombaWebhook.verifySignature(signature, rawBody, timestamp);
     if (!isValid) {

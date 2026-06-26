@@ -11,9 +11,14 @@ export class NombaWebhook {
     this.logger = new WebhookLogger();
   }
 
-  verifySignature(signature: string | undefined, body: string, timestamp?: string): boolean {
+  verifySignature(signature: string | undefined, body: string, timestamp: string): boolean {
     if (!signature) {
       this.logger.log("Webhook signature missing");
+      return false;
+    }
+
+    if (!timestamp) {
+      this.logger.log("Webhook timestamp missing");
       return false;
     }
 
@@ -24,12 +29,12 @@ export class NombaWebhook {
     }
 
     try {
-      if (timestamp && !this.isTimestampValid(timestamp)) {
+      if (!this.isTimestampValid(timestamp)) {
         this.logger.log("Webhook timestamp outside tolerance");
         return false;
       }
 
-      const signedPayload = timestamp ? `${timestamp}.${body}` : body;
+      const signedPayload = `${timestamp}.${body}`;
       const expected = createHmac("sha256", secret)
         .update(signedPayload)
         .digest("hex");
