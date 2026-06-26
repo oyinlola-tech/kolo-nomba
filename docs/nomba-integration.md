@@ -20,27 +20,43 @@ Kolo chose Nomba for its comprehensive API, Nigerian market focus, and reliable 
 
 ## Integration Architecture
 
-```
-┌──────────┐    ┌──────────────┐    ┌───────────┐
-│  Kolo    │    │  Nomba API   │    │  Banks    │
-│  Backend │    │  Gateway     │    │           │
-├──────────┤    ├──────────────┤    ├───────────┤
-│          │    │              │    │           │
-│ ● Initiate│───▶│ ● Payment   │───▶│ ● Process │
-│   Payment│    │   Request    │    │   Payment │
-│          │    │              │    │           │
-│ ● Verify │◀───│ ● Payment   │    │           │
-│   Payment│    │   Status     │    │           │
-│          │    │              │    │           │
-│ ● Webhook│◀───│ ● Event     │    │           │
-│   Handler│    │   Callback   │    │           │
-│          │    │              │    │           │
-│ ● Virtual│───▶│ ● Create VA  │───▶│ ● Generate│
-│   Account│    │              │    │   Acct No │
-│          │    │              │    │           │
-│ ● Tranfer│───▶│ ● Transfer   │───▶│ ● Send    │
-│          │    │   Request    │    │   Money   │
-└──────────┘    └──────────────┘    └───────────┘
+```mermaid
+flowchart TB
+    subgraph Kolo["Kolo Backend"]
+        NombaSvc["NombaService\n(Facade)"]
+        NombaClient["NombaClient\n(HTTP with auto-retry)"]
+        NombaAuth["NombaAuthService\n(OAuth2 Token Cache)"]
+        NombaPayment["NombaPayment\n(Initiate, Verify)"]
+        NombaTransfer["NombaTransfer\n(Create, Check Status)"]
+        NombaVA["NombaVirtualAccount\n(Create, Get, Deactivate)"]
+        NombaWH["NombaWebhook\n(HMAC Verification)"]
+    end
+
+    subgraph NombaAPI["Nomba API Gateway"]
+        Auth["/auth/token\n(OAuth2)"]
+        PaymentAPI["/payments/initiate\n/payments/verify"]
+        TransferAPI["/transfers/send\n/transfers/{ref}/status"]
+        VAAPI["/virtual-accounts"]
+        WebhookAPI["Webhook Callback"]
+    end
+
+    subgraph External["External Systems"]
+        Banks["Banking Partners"]
+        Cards["Card Networks"]
+        Wallets["Nomba Wallet"]
+    end
+
+    Kolo --> NombaAPI
+    NombaClient --> NombaAuth
+    NombaAuth --> Auth
+    NombaPayment --> PaymentAPI
+    NombaTransfer --> TransferAPI
+    NombaVA --> VAAPI
+    NombaWH --> WebhookAPI
+    PaymentAPI --> Banks
+    PaymentAPI --> Cards
+    PaymentAPI --> Wallets
+    TransferAPI --> Banks
 ```
 
 ---
@@ -49,20 +65,26 @@ Kolo chose Nomba for its comprehensive API, Nigerian market focus, and reliable 
 
 Nomba uses OAuth2 client credentials for API authentication:
 
-```
-┌────────────┐                    ┌──────────┐
-│  Kolo      │                    │  Nomba   │
-│            │                    │          │
-│── POST ────▶ /auth/token        │          │
-│  client_id  │                    │          │
-│  private_key│                    │          │
-│            │◀─── access_token ────┤          │
-│            │     (1hr expiry)    │          │
-│            │                    │          │
-│── API call ─────────────────────▶│          │
-│  Bearer    │                    │          │
-│  token     │                    │          │
-└────────────┘                    └──────────┘
+```mermaid
+sequenceDiagram
+    participant Kolo as Kolo Backend
+    participant Redis as Redis Cache
+    participant Nomba as Nomba API
+
+    Kolo->>Redis: Check cached token
+    Redis-->>Kolo: Cache miss / expired
+
+    Kolo->>Nomba: POST /auth/token
+    Note over Kolo,Nomba: { client_id, private_key, accountId }
+    Nomba-->>Kolo: { access_token, expires_in }
+
+    Kolo->>Redis: Cache token (TTL: 55 min)
+    Kolo->>Nomba: API call with Bearer token
+    Note over Kolo,Nomba: Automatic retry on 401
+
+    Kolo->>Redis: Invalidated & refreshed
+    Kolo->>Nomba: POST /auth/token (new)
+    Nomba-->>Kolo: New access token
 ```
 
 - Token cached in Redis with 55-minute TTL
@@ -90,42 +112,48 @@ NOMBA_TRANSFER_BASE_URL=https://api.nomba.com/v1
 
 ## Payment Flow
 
-```
-1. User initiates payment on Kolo
-           │
-2. Kolo creates Payment record (status: INITIALIZED)
-           │
-3. Kolo calls NombaPayment.initiatePayment(amount, reference, callbackUrl)
-           │
-4. Nomba returns paymentUrl (redirect URL)
-           │
-5. User redirected to Nomba checkout page
-           │
-6. User completes payment (card, bank, USSD)
-           │
-7. Nomba sends webhook to Kolo
-           │
-8. Kolo verifies HMAC signature
-           │
-9. Kolo checks for duplicate event
-           │
-10. Kolo stores WebhookEvent (status: RECEIVED)
-           │
-11. Kolo enqueues nomba-webhook job
-           │
-12. Job processor calls NombaPayment.verifyPayment(providerReference)
-           │
-13. If confirmed:
-    ├── Update Payment (status: SUCCESSFUL)
-    ├── Create Transaction
-    ├── Credit group wallet (atomic increment)
-    ├── Credit platform wallet (fee)
-    ├── Update MemberContribution (status: PAID)
-    └── Send notification
-           │
-14. If failed:
-    ├── Update Payment (status: FAILED)
-    └── Send failure notification
+```mermaid
+sequenceDiagram
+    participant User
+    participant Kolo as Kolo Backend
+    participant Nomba as Nomba API
+    participant Queue as BullMQ
+    participant DB as PostgreSQL
+
+    User->>Kolo: Initiate payment
+    Kolo->>DB: Create Payment (status: INITIALIZED)
+    Kolo->>Nomba: initiatePayment(amount, reference, callbackUrl)
+    Nomba-->>Kolo: { paymentUrl }
+
+    Kolo->>DB: Update Payment (status: PENDING)
+    Kolo-->>User: Redirect to Nomba checkout
+
+    User->>Nomba: Complete payment (card/bank/USSD)
+    Nomba-->>User: Payment confirmation
+
+    Nomba->>Kolo: POST webhook (HMAC signed)
+    Kolo->>Kolo: Verify HMAC signature
+    Kolo->>Kolo: Check duplicate (eventId)
+    Kolo->>DB: Store WebhookEvent (status: RECEIVED)
+    Kolo->>Queue: Enqueue nomba-webhook job
+
+    Queue->>Kolo: ProcessWebhookProcessor
+    Kolo->>Nomba: verifyPayment(providerReference)
+    Nomba-->>Kolo: Confirmed / Failed
+
+    alt Confirmed
+        Kolo->>DB: $transaction
+        Kolo->>DB: Update Payment → SUCCESSFUL
+        Kolo->>DB: Create Transaction
+        Kolo->>DB: Atomic wallet credit (group)
+        Kolo->>DB: Atomic wallet credit (platform fee)
+        Kolo->>DB: Update MemberContribution → PAID
+        Kolo->>Kolo: Publish event + send notification
+        Kolo-->>User: Dashboard update
+    else Failed
+        Kolo->>DB: Update Payment → FAILED
+        Kolo->>Kolo: Send failure notification
+    end
 ```
 
 ---
@@ -134,25 +162,28 @@ NOMBA_TRANSFER_BASE_URL=https://api.nomba.com/v1
 
 Kolo uses Nomba virtual accounts to receive bank transfers:
 
-```
-1. User selects "Bank Transfer" payment method
-           │
-2. Kolo checks if virtual account exists for this user+group
-           │
-3. If not, Kolo calls NombaVirtualAccount.create(ownerId, ownerType, bvn?)
-           │
-4. Nomba returns account details:
-   { accountNumber: "0123456789", accountName: "Kolo/Chioma Okafor", bankName: "Providus Bank" }
-           │
-5. Kolo stores VirtualAccount record (status: ACTIVE)
-           │
-6. User sees account number on payment page
-           │
-7. User transfers money from their bank app
-           │
-8. Nomba sends webhook: virtual_account_transaction
-           │
-9. Kolo processes: match to user, credit wallet
+```mermaid
+sequenceDiagram
+    participant User
+    participant Kolo as Kolo Backend
+    participant Nomba as Nomba API
+    participant DB as PostgreSQL
+
+    User->>Kolo: Select "Bank Transfer"
+    Kolo->>DB: Check existing VA for user+group
+    alt No VA exists
+        Kolo->>Nomba: createVirtualAccount(reference, accountName, owner)
+        Nomba-->>Kolo: { accountNumber, accountName, bankName }
+        Kolo->>DB: Store VirtualAccount (status: ACTIVE)
+    end
+    Kolo-->>User: Display account details
+
+    User->>User's Bank: Transfer money
+    User's Bank->>Nomba: Incoming transfer
+    Nomba->>Kolo: Webhook: virtual_account_transaction
+    Kolo->>Kolo: Match transfer to user via VirtualAccount
+    Kolo->>DB: Credit wallet
+    Kolo->>Kolo: Send notification
 ```
 
 ---
@@ -161,26 +192,34 @@ Kolo uses Nomba virtual accounts to receive bank transfers:
 
 Kolo uses Nomba transfers for payouts:
 
-```
-1. Group admin creates and approves payout
-           │
-2. Kolo initiates transfer via NombaTransfer.createTransfer(
-     amount,
-     destinationAccount: { bankCode, accountNumber },
-     reference
-   )
-           │
-3. Nomba queues the transfer for processing
-           │
-4. Kolo stores transfer reference on PayoutRecipient
-           │
-5. Nomba sends webhook: transfer_success or transfer.failed
-           │
-6. Kolo updates recipient status
-           │
-7. If successful: mark payout as completed, send receipt
-           │
-8. If failed: increment retry count, retry up to 3 times
+```mermaid
+sequenceDiagram
+    participant Admin as Group Admin
+    participant Kolo as Kolo Backend
+    participant Nomba as Nomba API
+    participant Queue as BullMQ
+    participant DB as PostgreSQL
+
+    Admin->>Kolo: Create & approve payout
+    Kolo->>DB: Debit group wallet (atomic)
+    Kolo->>Nomba: createTransfer(amount, account, bank, reference)
+    Nomba-->>Kolo: { providerReference, status }
+    Kolo->>DB: Store reference on PayoutRecipient
+
+    alt Transfer Success
+        Nomba->>Kolo: Webhook: transfer_success
+        Kolo->>DB: Update recipient → SUCCESSFUL
+        Kolo->>Kolo: Generate receipt
+        Kolo->>Admin: Notification
+    else Transfer Failed
+        Nomba->>Kolo: Webhook: transfer.failed
+        Kolo->>Queue: Retry (exponential backoff, max 3)
+        alt Max retries exhausted
+            Kolo->>DB: Credit back group wallet
+            Kolo->>DB: Mark FAILED
+            Kolo->>Admin: Manual review required
+        end
+    end
 ```
 
 ---
@@ -208,25 +247,48 @@ class NombaWebhook {
 
 ### Webhook Processing Pipeline
 
-```
-HTTP POST /webhooks/nomba
-  ├── Capture raw body (preParsing hook)
-  ├── Extract x-nomba-signature, x-nomba-timestamp headers
-  ├── Verify signature → 401 if invalid
-  ├── Check for duplicate (by eventId, signature, payload content)
-  ├── Store WebhookEvent
-  └── Enqueue nomba-webhook job (async)
-        │
-        ▼
-  Process stored webhook
-    ├── payment.success → PaymentService.verifyAndCompletePayment()
-    ├── charge.success → PaymentService.verifyAndCompletePayment()
-    ├── payment.failed → Mark payment as failed
-    ├── payment_reversal → Handle reversal
-    ├── transfer_success → Mark payout as completed
-    ├── transfer.failed → Retry or mark as failed
-    ├── virtual_account_created → Activate virtual account
-    └── virtual_account_transaction → Match and credit
+```mermaid
+flowchart TB
+    subgraph Incoming["Webhook Reception"]
+        Raw["Capture raw body\n(preParsing hook)"]
+        Headers["Extract headers\nx-nomba-signature\nx-nomba-timestamp"]
+        Verify["Verify HMAC-SHA256\nsignature"]
+        Dup["Duplicate check\neventId / signature / payload"]
+        Store["Store WebhookEvent\n(status: RECEIVED)"]
+        Enqueue["Enqueue nomba-webhook\n(BullMQ)"]
+    end
+
+    subgraph Processing["Async Processing"]
+        Process["ProcessWebhookProcessor"]
+        Route{"Event Type"}
+    end
+
+    subgraph Actions["Actions"]
+        PaySuccess["payment.success / charge.success\n→ verifyAndCompletePayment()"]
+        PayFailed["payment.failed\n→ Mark payment as FAILED"]
+        Reversal["payment_reversal\n→ Handle reversal"]
+        TransferOK["transfer_success\n→ Mark payout COMPLETED"]
+        TransferFail["transfer.failed\n→ Retry or mark FAILED"]
+        VA["virtual_account_created\n→ Activate VA"]
+        VATxn["virtual_account_transaction\n→ Match and credit wallet"]
+    end
+
+    Raw --> Headers
+    Headers --> Verify
+    Verify -->|"Invalid → 401"| Reject["Reject"]
+    Verify -->|"Valid"| Dup
+    Dup -->|"Duplicate → 200"| Ignore["Ignore"]
+    Dup -->|"New"| Store
+    Store --> Enqueue
+    Enqueue --> Process
+    Process --> Route
+    Route --> PaySuccess
+    Route --> PayFailed
+    Route --> Reversal
+    Route --> TransferOK
+    Route --> TransferFail
+    Route --> VA
+    Route --> VATxn
 ```
 
 ---
@@ -254,14 +316,41 @@ Webhook events are deduplicated at multiple levels:
 
 ---
 
-## Nomba Files
+## Integration Files
+
+```mermaid
+flowchart LR
+    subgraph Integrations["integrations/nomba/"]
+        Client["nomba.client.ts\nNombaClient"]
+        Auth["nomba.auth.ts\nNombaAuthService"]
+        Payment["nomba.payment.ts\nNombaPayment"]
+        Transfer["nomba.transfer.ts\nNombaTransfer"]
+        VA["nomba.virtual-account.ts\nNombaVirtualAccount"]
+        Webhook["nomba.webhook.ts\nNombaWebhook"]
+    end
+
+    subgraph Service["services/"]
+        Facade["nomba.service.ts\nNombaService (Facade)"]
+    end
+
+    Facade --> Client
+    Facade --> Auth
+    Facade --> Payment
+    Facade --> Transfer
+    Facade --> VA
+    Facade --> Webhook
+    Client --> Auth
+    Payment --> Client
+    Transfer --> Client
+    VA --> Client
+```
 
 | File | Class | Purpose |
 |---|---|---|
 | `integrations/nomba/nomba.client.ts` | `NombaClient` | HTTP client with auto-retry, token injection |
-| `integrations/nomba/nomba.auth.ts` | `NombaAuthService` | OAuth2 token acquisition and caching |
+| `integrations/nomba/nomba.auth.ts` | `NombaAuthService` | OAuth2 token acquisition and Redis caching |
 | `integrations/nomba/nomba.payment.ts` | `NombaPayment` | Initiate, verify, lookup payments |
 | `integrations/nomba/nomba.transfer.ts` | `NombaTransfer` | Create transfer, check status, verify |
 | `integrations/nomba/nomba.virtual-account.ts` | `NombaVirtualAccount` | Create, get, list, deactivate VAs |
-| `integrations/nomba/nomba.webhook.ts` | `NombaWebhook` | HMAC signature verification |
-| `services/nomba.service.ts` | `NombaService` | Orchestration facade |
+| `integrations/nomba/nomba.webhook.ts` | `NombaWebhook` | HMAC-SHA256 signature verification |
+| `services/nomba.service.ts` | `NombaService` | Orchestration facade for all Nomba operations |
