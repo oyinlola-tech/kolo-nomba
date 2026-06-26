@@ -17,7 +17,7 @@ export class EmailTemplateService {
   }
 
   private get appName(): string { return this.env.APP_NAME; }
-  private get logoUrl(): string { return this.env.APP_LOGO_URL || `<h1 style="margin:0;font-size:26px;font-weight:700;color:${this.primaryColor};">${this.appName}<span style="color:${this.secondaryColor};">.</span></h1>`; }
+  private get logoUrl(): string { return this.env.APP_LOGO_URL || `<h1 style="margin:0;font-size:26px;font-weight:700;color:${this.primaryColor};">${this.escapeHtml(this.appName)}<span style="color:${this.secondaryColor};">.</span></h1>`; }
   private get frontendUrl(): string { return this.env.APP_FRONTEND_URL; }
   private get supportEmail(): string { return this.env.APP_SUPPORT_EMAIL; }
   private get privacyUrl(): string { return this.env.APP_PRIVACY_URL; }
@@ -25,7 +25,28 @@ export class EmailTemplateService {
   private get primaryColor(): string { return this.env.PRIMARY_COLOR; }
   private get secondaryColor(): string { return this.env.SECONDARY_COLOR; }
 
-  render(templateName: string, vars: Record<string, string>): EmailTemplate {
+  private escapeHtml(s: string): string {
+    return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+  }
+
+  private safeUrl(href: string): string {
+    try {
+      const url = new URL(href, this.frontendUrl);
+      if (url.protocol === "https:" || url.protocol === "http:") return url.href;
+    } catch {}
+    return this.frontendUrl;
+  }
+
+  render(templateName: string, raw: Record<string, string>): EmailTemplate {
+    const vars: Record<string, string> = {};
+    for (const [key, value] of Object.entries(raw)) {
+      if (key === "verificationCode" || key === "confirmLink" || key === "inviteCode") {
+        vars[key] = value;
+      } else {
+        vars[key] = this.escapeHtml(value);
+      }
+    }
+
     const renderer = this.getTemplate(templateName);
     if (!renderer) {
       this.logger.warn("Template not found, using fallback", { templateName });
@@ -144,22 +165,23 @@ export class EmailTemplateService {
   }
 
   private greeting(vars: Record<string, string>): string {
-    return `<p>Hello ${vars.firstName ?? vars.recipientName ?? "there"},</p>`;
+    const name = this.escapeHtml(vars.firstName ?? vars.recipientName ?? "there");
+    return `<p>Hello ${name},</p>`;
   }
 
   private summaryCard(items: { label: string; value: string }[]): string {
     const rows = items.map(i =>
-      `<tr><td>${i.label}</td><td>${i.value}</td></tr>`
+      `<tr><td>${this.escapeHtml(i.label)}</td><td>${i.value}</td></tr>`
     ).join("");
     return `<div class="card-summary"><table>${rows}</table></div>`;
   }
 
   private amountBox(amount: string, label: string): string {
-    return `<div class="amount-box"><p class="amount">${amount}</p><p class="label">${label}</p></div>`;
+    return `<div class="amount-box"><p class="amount">${this.escapeHtml(amount)}</p><p class="label">${this.escapeHtml(label)}</p></div>`;
   }
 
   private button(href: string, text: string): string {
-    return `<div class="btn"><a href="${href}">${text}</a></div>`;
+    return `<div class="btn"><a href="${this.safeUrl(href)}">${this.escapeHtml(text)}</a></div>`;
   }
 
   private securityNotice(message: string): string {
@@ -168,7 +190,7 @@ export class EmailTemplateService {
 
   private badge(type: "success" | "warning" | "error", text: string): string {
     const cls = type === "success" ? "badge-success" : type === "warning" ? "badge-warning" : "badge-error";
-    return `<span class="badge ${cls}">${text}</span>`;
+    return `<span class="badge ${cls}">${this.escapeHtml(text)}</span>`;
   }
 
   // --- AUTHENTICATION TEMPLATES ---
@@ -204,10 +226,10 @@ export class EmailTemplateService {
         <div style="text-align:center;margin:24px 0;padding:16px;background-color:${this.primaryColor}10;border-radius:8px;border:1px solid ${this.primaryColor}30;">
           <span style="font-size:32px;font-weight:700;letter-spacing:8px;color:${this.primaryColor};">${code}</span>
         </div>
-        <p style="font-size:13px;color:#6b7280;">This code expires in 30 minutes. If you did not create an account, please ignore this email.</p>
+        <p style="font-size:13px;color:#6b7280;">This code expires in 10 minutes. If you did not create an account, please ignore this email.</p>
         ${vars.confirmLink ? this.button(vars.confirmLink, "Verify Email") : ""}
       `),
-      text: `Verify Your ${this.appName} Account\n\nHello ${name},\n\nThank you for creating an account. Use this verification code:\n\n${code}\n\nThis code expires in 30 minutes.`,
+      text: `Verify Your ${this.appName} Account\n\nHello ${name},\n\nThank you for creating an account. Use this verification code:\n\n${code}\n\nThis code expires in 10 minutes.`,
     };
   }
 
