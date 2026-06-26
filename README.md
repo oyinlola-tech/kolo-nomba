@@ -446,7 +446,7 @@ kolo-backend/docs/deployment.md
 
 ---
 
-# 🏆 Why Kolo Can Win a Hackathon
+# Why Kolo Can Win a Hackathon
 
 ## Real African Problem
 
