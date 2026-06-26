@@ -1,14 +1,60 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
 import { AuthService } from "../services/auth.service";
 import { ResponseUtil } from "../utils/response.util";
-import { registerSchema, loginSchema, refreshTokenSchema } from "../validators/auth.validator";
+import { registerSchema, loginSchema, verifyOtpSchema, resendOtpSchema } from "../validators/auth.validator";
 import { ValidationError } from "../errors/validation.error";
+import { EnvConfig } from "../config/env.config";
+
+const REFRESH_COOKIE = "refreshToken";
+const COOKIE_PATH = "/api/v1/auth";
+const COOKIE_MAX_AGE = 7 * 24 * 60 * 60;
 
 export class AuthController {
   private readonly authService: AuthService;
+  private readonly env: EnvConfig;
 
   constructor() {
     this.authService = new AuthService();
+    this.env = EnvConfig.getInstance();
+  }
+
+  private domain(): string | undefined {
+    return this.env.COOKIE_DOMAIN || undefined;
+  }
+
+  private setRefreshCookie(reply: FastifyReply, token: string): void {
+    reply.setCookie(REFRESH_COOKIE, token, {
+      httpOnly: true,
+      secure: this.env.COOKIE_SECURE,
+      sameSite: this.env.COOKIE_SAME_SITE,
+      path: COOKIE_PATH,
+      maxAge: COOKIE_MAX_AGE,
+      domain: this.domain(),
+    });
+  }
+
+  private clearRefreshCookie(reply: FastifyReply): void {
+    reply.clearCookie(REFRESH_COOKIE, { path: COOKIE_PATH, domain: this.domain() });
+  }
+
+  private assertCookieOrigin(request: FastifyRequest): void {
+    if (this.env.isDevelopment) return;
+    const rawOrigin = request.headers.origin ?? request.headers.referer;
+    if (!rawOrigin) {
+      throw new ValidationError("Missing Origin or Referer header");
+    }
+    let parsedOrigin: string;
+    try {
+      parsedOrigin = new URL(rawOrigin).origin;
+    } catch {
+      throw new ValidationError("Invalid Origin or Referer header");
+    }
+    const normalizedAllowed = [this.env.FRONTEND_URL, this.env.ADMIN_FRONTEND_URL].map(
+      (u) => { try { return new URL(u).origin; } catch { return u; } },
+    );
+    if (!normalizedAllowed.includes(parsedOrigin)) {
+      throw new ValidationError("Invalid request origin");
+    }
   }
 
   async register(request: FastifyRequest, reply: FastifyReply): Promise<void> {
@@ -27,7 +73,50 @@ export class AuthController {
     const userAgent = request.headers["user-agent"];
 
     const result = await this.authService.register(parsed.data, ipAddress, userAgent);
-    ResponseUtil.created(reply, result);
+    ResponseUtil.created(reply, {
+      userId: result.userId,
+      message: "Account created. Check your email for verification code.",
+    });
+  }
+
+  async verifyOtp(request: FastifyRequest, reply: FastifyReply): Promise<void> {
+    const parsed = verifyOtpSchema.safeParse(request.body);
+    if (!parsed.success) {
+      const details: Record<string, string[]> = {};
+      for (const issue of parsed.error.issues) {
+        const key = issue.path.join(".");
+        if (!details[key]) details[key] = [];
+        details[key].push(issue.message);
+      }
+      throw new ValidationError("Validation failed", details);
+    }
+
+    const ipAddress = request.ip;
+    const userAgent = request.headers["user-agent"];
+
+    const result = await this.authService.verifyEmailOtp(parsed.data.userId, parsed.data.code, ipAddress, userAgent);
+    this.setRefreshCookie(reply, result.refreshToken);
+    ResponseUtil.success(reply, {
+      user: result.user,
+      accessToken: result.accessToken,
+      role: result.role,
+    });
+  }
+
+  async resendOtp(request: FastifyRequest, reply: FastifyReply): Promise<void> {
+    const parsed = resendOtpSchema.safeParse(request.body);
+    if (!parsed.success) {
+      const details: Record<string, string[]> = {};
+      for (const issue of parsed.error.issues) {
+        const key = issue.path.join(".");
+        if (!details[key]) details[key] = [];
+        details[key].push(issue.message);
+      }
+      throw new ValidationError("Validation failed", details);
+    }
+
+    await this.authService.resendOtp(parsed.data.userId);
+    ResponseUtil.success(reply, { message: "Verification code resent to your email." });
   }
 
   async login(request: FastifyRequest, reply: FastifyReply): Promise<void> {
@@ -46,29 +135,73 @@ export class AuthController {
     const userAgent = request.headers["user-agent"];
 
     const result = await this.authService.login(parsed.data, ipAddress, userAgent);
-    ResponseUtil.success(reply, result);
+
+    if ("challengeId" in result) {
+      ResponseUtil.success(reply, {
+        challengeId: result.challengeId,
+        email: result.email.replace(/(.{3}).+(@.+)/, "$1•••$2"),
+        type: "login_challenge",
+      });
+      return;
+    }
+
+    this.setRefreshCookie(reply, result.refreshToken);
+    ResponseUtil.success(reply, {
+      user: result.user,
+      accessToken: result.accessToken,
+      role: result.role,
+    });
+  }
+
+  async verifyLoginOtp(request: FastifyRequest, reply: FastifyReply): Promise<void> {
+    const parsed = verifyOtpSchema.safeParse(request.body);
+    if (!parsed.success) {
+      const details: Record<string, string[]> = {};
+      for (const issue of parsed.error.issues) {
+        const key = issue.path.join(".");
+        if (!details[key]) details[key] = [];
+        details[key].push(issue.message);
+      }
+      throw new ValidationError("Validation failed", details);
+    }
+
+    const ipAddress = request.ip;
+    const userAgent = request.headers["user-agent"];
+
+    const result = await this.authService.verifyLoginOtp(parsed.data.userId, parsed.data.code, ipAddress, userAgent);
+    this.setRefreshCookie(reply, result.refreshToken);
+    ResponseUtil.success(reply, {
+      user: result.user,
+      accessToken: result.accessToken,
+      role: result.role,
+    });
   }
 
   async refresh(request: FastifyRequest, reply: FastifyReply): Promise<void> {
-    const parsed = refreshTokenSchema.safeParse(request.body);
-    if (!parsed.success) {
+    this.assertCookieOrigin(request);
+    const refreshToken = request.cookies?.[REFRESH_COOKIE];
+    if (!refreshToken) {
       throw new ValidationError("Refresh token is required");
     }
 
     const ipAddress = request.ip;
     const userAgent = request.headers["user-agent"];
 
-    const tokens = await this.authService.refresh(parsed.data.refreshToken, ipAddress, userAgent);
-    ResponseUtil.success(reply, tokens);
+    const tokens = await this.authService.refresh(refreshToken, ipAddress, userAgent);
+    this.setRefreshCookie(reply, tokens.refreshToken);
+    ResponseUtil.success(reply, {
+      accessToken: tokens.accessToken,
+      expiresIn: tokens.expiresIn,
+    });
   }
 
   async logout(request: FastifyRequest, reply: FastifyReply): Promise<void> {
-    const parsed = refreshTokenSchema.safeParse(request.body);
-    if (!parsed.success) {
-      throw new ValidationError("Refresh token is required");
+    this.assertCookieOrigin(request);
+    const refreshToken = request.cookies?.[REFRESH_COOKIE];
+    if (refreshToken) {
+      await this.authService.logout(refreshToken, request.userId);
     }
-
-    await this.authService.logout(parsed.data.refreshToken, request.userId);
+    this.clearRefreshCookie(reply);
     ResponseUtil.success(reply, { message: "Logged out successfully" });
   }
 
