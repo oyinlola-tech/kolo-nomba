@@ -496,7 +496,7 @@ Future improvements:
 
 ---
 
-# 🤝 Contributing
+#  Contributing
 
 Contributions are welcome.
 
@@ -508,7 +508,7 @@ CONTRIBUTING.md
 
 ---
 
-# 📜 License
+# License
 
 Kolo is licensed under:
 
@@ -518,7 +518,7 @@ LICENSE.md
 
 ---
 
-# 👨🏽‍💻 Author
+#  Author
 
 ## Oluwayemi Oyinlola
 
