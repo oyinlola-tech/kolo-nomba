@@ -6,95 +6,99 @@ This document describes the security architecture of Kolo — covering authentic
 
 ## Security Layers
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                     Security Layers                          │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│  Layer 1: Transport Security                                │
-│  ├── HTTPS (TLS 1.3)                                        │
-│  ├── Helmet HTTP Headers (CSP, HSTS, X-Frame-Options)       │
-│  └── CORS (explicit origin allowlist, no wildcard)          │
-│                                                             │
-│  Layer 2: Request Security                                  │
-│  ├── Global rate limiting (100 req/min)                     │
-│  ├── Per-route rate limiting (tighter limits on auth)       │
-│  ├── Zod input validation (all endpoints)                   │
-│  └── Request body size limits (1MB)                         │
-│                                                             │
-│  Layer 3: Authentication                                    │
-│  ├── JWT access tokens (15 min expiry, in-memory only)      │
-│  ├── Refresh tokens (HttpOnly Secure cookie, 7 day expiry)  │
-│  ├── Argon2 password hashing                                │
-│  └── Origin/Referer validation on refresh/logout            │
-│                                                             │
-│  Layer 4: Device Verification                               │
-│  ├── Device fingerprinting (SHA-256 of UA + IP)             │
-│  ├── Unknown device → OTP challenge via email               │
-│  └── Known device marked via session tracking               │
-│                                                             │
-│  Layer 5: Authorization                                     │
-│  ├── Role-based access (SUPER_ADMIN, GROUP_ADMIN, MEMBER)   │
-│  ├── Group-level role checks (OWNER, ADMIN, MEMBER)         │
-│  ├── Wallet ownership checks                                │
-│  └── Resource-level authorization in service layer          │
-│                                                             │
-│  Layer 6: Financial Integrity                               │
-│  ├── Atomic wallet operations                               │
-│  ├── Webhook HMAC verification                              │
-│  ├── Double-entry ledger                                    │
-│  ├── Prisma transactions for multi-step ops                 │
-│  └── Duplicate webhook detection                            │
-│                                                             │
-│  Layer 7: Audit & Monitoring                                │
-│  ├── Audit logging for all sensitive operations             │
-│  ├── Structured JSON logging                                │
-│  ├── Security event monitoring                              │
-│  └── Background job tracking                                │
-│                                                             │
-│  Layer 8: Secrets Management                                │
-│  ├── All credentials from environment variables             │
-│  ├── Never hardcode secrets in code                         │
-│  ├── Separate JWT secrets (access vs refresh)               │
-│  └── Cookie secret independent from JWT secret              │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TB
+    subgraph L1["Layer 1: Transport Security"]
+        TLS["HTTPS (TLS 1.3)"]
+        Helmet["Helmet HTTP Headers\nCSP, HSTS, X-Frame-Options"]
+        CORS["CORS\nExplicit origin allowlist\n(no wildcard in production)"]
+    end
+
+    subgraph L2["Layer 2: Request Security"]
+        RateLimit["Global rate limiting (100 req/min)\nPer-route auth limits"]
+        Validation["Zod input validation\n(all endpoints)"]
+        BodyLimit["Request body size limits (1MB)"]
+    end
+
+    subgraph L3["Layer 3: Authentication"]
+        JWT["JWT access tokens\n(15 min, in-memory only)"]
+        Refresh["Refresh tokens\n(HttpOnly Secure cookie, 7 day)"]
+        Argon2["Argon2 password hashing\n(memory=19MiB, time=2)"]
+        OriginCheck["Origin/Referer validation\non refresh/logout"]
+    end
+
+    subgraph L4["Layer 4: Device Verification"]
+        Fingerprint["Device fingerprinting\nSHA-256(UA + IP)"]
+        OTPChallenge["Unknown device → OTP challenge\nvia email"]
+        SessionTrack["Known device marked\nvia session tracking"]
+    end
+
+    subgraph L5["Layer 5: Authorization"]
+        RoleCheck["Role-based access\nSUPER_ADMIN / GROUP_ADMIN / MEMBER"]
+        GroupRole["Group-level role checks\nOWNER / ADMIN / MEMBER"]
+        WalletCheck["Wallet ownership checks"]
+        ResourceAuth["Resource-level authorization\nin service layer"]
+    end
+
+    subgraph L6["Layer 6: Financial Integrity"]
+        AtomicOps["Atomic wallet operations\n(balance = balance ± amount)"]
+        HMAC["Webhook HMAC-SHA256 verification"]
+        DoubleEntry["Double-entry ledger\n(LedgerEntry table)"]
+        PrismaTx["Prisma transactions\nfor multi-step operations"]
+        Dedup["Duplicate webhook detection\n(provider + eventId unique)"]
+    end
+
+    subgraph L7["Layer 7: Audit & Monitoring"]
+        AuditLog["Audit logging\nfor all sensitive operations"]
+        StructuredLog["Structured JSON logging\n(Pino)"]
+        SecurityEvents["Security event monitoring"]
+        JobTracking["Background job tracking\n(BackgroundJob table)"]
+    end
+
+    subgraph L8["Layer 8: Secrets Management"]
+        EnvVars["All credentials from\nenvironment variables"]
+        NoHardcode["Never hardcode secrets\nin code"]
+        SeparateJWT["Separate JWT secrets\n(access vs refresh)"]
+        CookieSecret["Cookie secret independent\nfrom JWT secret"]
+    end
+
+    L1 --> L2 --> L3 --> L4 --> L5 --> L6 --> L7 --> L8
 ```
 
 ---
 
 ## Authentication Architecture
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    Auth Architecture                         │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│  Passwords: Argon2id (memory=19MiB, time=2, parallelism=1) │
-│                                                             │
-│  Access Tokens:                                             │
-│  ├── Algorithm: HS256 (HMAC-SHA256)                         │
-│  ├── Secret: JWT_SECRET (env var)                           │
-│  ├── Expiry: 15 minutes                                     │
-│  ├── Payload: { sub: userId, role: Role, type: "access" }   │
-│  └── Storage: In-memory only (module variable + Zustand)    │
-│                                                             │
-│  Refresh Tokens:                                            │
-│  ├── Algorithm: HS256                                       │
-│  ├── Secret: JWT_REFRESH_SECRET (separate env var)          │
-│  ├── Expiry: 7 days                                         │
-│  ├── Payload: { sub: userId, type: "refresh" }              │
-│  ├── Storage: SHA-256 hash in Session table                 │
-│  └── Delivery: HttpOnly, Secure, SameSite=Strict cookie     │
-│                                                             │
-│  OTP Codes:                                                 │
-│  ├── Storage: SHA-256 hash (raw code never persisted)       │
-│  ├── Expiry: 10 minutes                                     │
-│  ├── Attempt limit: 3 per code                              │
-│  ├── Lockout: 15 minutes after 3 failures                   │
-│  └── Resend cooldown: 60 seconds                            │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TB
+    subgraph Passwords["Password Security"]
+        Argon2["Argon2id\nmemory=19MiB, time=2, parallelism=1"]
+    end
+
+    subgraph AccessTokens["Access Tokens"]
+        ATAlgo["Algorithm: HS256 (HMAC-SHA256)"]
+        ATSecret["Secret: JWT_SECRET (env var)"]
+        ATExpiry["Expiry: 15 minutes"]
+        ATStorage["Storage: In-memory only\n(module variable + Zustand)"]
+        ATPayload["Payload: { sub, role, type: 'access' }"]
+    end
+
+    subgraph RefreshTokens["Refresh Tokens"]
+        RTAlgo["Algorithm: HS256"]
+        RTSecret["Secret: JWT_REFRESH_SECRET (separate env var)"]
+        RTExpiry["Expiry: 7 days"]
+        RTStorage["Storage: SHA-256 hash in Session table"]
+        RTDelivery["Delivery: HttpOnly, Secure, SameSite=Strict cookie"]
+        RTPayload["Payload: { sub, type: 'refresh' }"]
+    end
+
+    subgraph OTP["OTP Codes"]
+        OTPStorage["Storage: SHA-256 hash\n(raw code never persisted)"]
+        OTPExpiry["Expiry: 10 minutes"]
+        OTPAttempts["Attempt limit: 3 per code"]
+        OTPLockout["Lockout: 15 minutes after 3 failures"]
+        OTPCooldown["Resend cooldown: 60 seconds"]
+    end
 ```
 
 ### JWT Token Verification
@@ -121,16 +125,36 @@ class JwtUtil {
 
 ## Authorization Flow
 
-```
-Request → AuthMiddleware → RoleMiddleware → GroupMiddleware → Controller
-    │           │               │               │
-    │     1. Extract Bearer   2. Check         3. Check group
-    │        token              User.role         membership
-    │     2. Verify JWT        against           and role
-    │     3. Load user         allowed roles     (if applicable)
-    │     4. Check ACTIVE
-    │     5. Set request.
-    │        userId & role
+```mermaid
+sequenceDiagram
+    participant Request as HTTP Request
+    participant AuthMW as AuthMiddleware
+    participant RoleMW as RoleMiddleware
+    participant GroupMW as GroupMiddleware
+    participant Controller
+
+    Request->>AuthMW: Incoming request with Bearer token
+    AuthMW->>AuthMW: Extract Bearer token from Authorization header
+    AuthMW->>AuthMW: Verify JWT (jose library, HS256)
+    AuthMW->>AuthMW: Load user from database
+    AuthMW->>AuthMW: Check user status = ACTIVE
+    AuthMW->>AuthMW: Set request.userId & request.userRole
+
+    AuthMW->>RoleMW: Pass to role check
+    RoleMW->>RoleMW: Check User.role against allowed roles
+    alt Insufficient role
+        RoleMW-->>Request: 403 Forbidden
+    else Role OK
+        RoleMW->>GroupMW: Pass to group check (if applicable)
+        GroupMW->>GroupMW: Check group membership
+        GroupMW->>GroupMW: Check group role (OWNER/ADMIN/MEMBER)
+        alt Not a member
+            GroupMW-->>Request: 403 Forbidden
+        else Member with valid role
+            GroupMW->>Controller: Execute handler
+            Controller-->>Request: Response
+        end
+    end
 ```
 
 ### AuthMiddleware
@@ -186,18 +210,41 @@ Rate limiting is enforced by `@fastify/rate-limit` plugin with configurable per-
 
 ### OTP Flow
 
-```
-1. Generate 6-digit random code
-2. Hash with SHA-256 → store codeHash
-3. Send raw code via email
-4. On verify:
-   a. Hash submitted code
-   b. Compare hashes
-   c. Check expiry (10 min)
-   d. Check attempt count (< 3)
-   e. Check lockout (15 min after 3 failures)
-   f. On success: mark OTP as used
-   g. On failure: increment attemptCount
+```mermaid
+sequenceDiagram
+    participant User
+    participant Server as Kolo Backend
+    participant DB as PostgreSQL
+
+    User->>Server: Request OTP
+    Server->>Server: Generate 6-digit random code
+    Server->>DB: SHA-256 hash → store codeHash
+    Server->>User: Send raw code via email
+
+    User->>Server: Submit code
+    Server->>Server: SHA-256 hash submitted code
+    Server->>DB: Compare hashes
+
+    alt Hash matches
+        Server->>Server: Check expiry (10 min window)
+        Server->>Server: Check attemptCount (< 3)
+        Server->>Server: Check lockout (15 min after 3 failures)
+
+        alt All checks pass
+            Server->>DB: Mark OTP as used
+            Server-->>User: Success
+        else Check fails
+            Server-->>User: Error (expired / locked out)
+        end
+    else Hash doesn't match
+        Server->>DB: Increment attemptCount
+        alt attemptCount >= 3
+            Server->>DB: Set lockedUntil = now + 15 min
+            Server-->>User: Too many attempts. Try again later.
+        else
+            Server-->>User: Invalid code. X attempts remaining.
+        end
+    end
 ```
 
 ### Attempt Tracking
@@ -230,6 +277,33 @@ async verify(userId: string, code: string, type: string): Promise<boolean> {
 ## Webhook Security
 
 ### HMAC Signature Verification
+
+```mermaid
+flowchart LR
+    Payload["Webhook Body"]
+    Timestamp["x-nomba-timestamp"]
+    Signature["x-nomba-signature"]
+    Secret["NOMBA_WEBHOOK_SECRET"]
+
+    SignedPayload["timestamp + '.' + body"]
+    HMAC["HMAC-SHA256"]
+    Digest["hex digest"]
+    Normalize["Normalize signature\nremove sha256= prefix"]
+    Compare["timingSafeEqual"]
+    Result{"Match?"}
+
+    Payload --> SignedPayload
+    Timestamp --> SignedPayload
+    SignedPayload --> HMAC
+    Secret --> HMAC
+    HMAC --> Digest
+    Digest --> Compare
+    Signature --> Normalize
+    Normalize --> Compare
+    Compare --> Result
+    Result -->|"Yes"| Process["Process webhook"]
+    Result -->|"No"| Reject["Return 401"]
+```
 
 ```typescript
 class NombaWebhook {
