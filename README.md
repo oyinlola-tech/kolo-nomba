@@ -446,7 +446,7 @@ kolo-backend/docs/deployment.md
 
 ---
 
-# Why Kolo Can Win a Hackathon
+# Why Kolo Matters
 
 ## Real African Problem
 
@@ -483,7 +483,7 @@ The architecture allows expansion into:
 
 ---
 
-# 🛣️ Future Roadmap
+# Future Roadmap
 
 Future improvements:
 
