@@ -1,12 +1,17 @@
 import { PrismaDatabase } from "../database/prisma";
+import type { Prisma } from "../generated/prisma/client";
 
 export class PaymentRepository {
   private get db() {
     return PrismaDatabase.getInstance().getClient();
   }
 
-  async findById(id: string) {
-    return this.db.payment.findUnique({ where: { id } });
+  private getClient(tx?: Prisma.TransactionClient) {
+    return tx ?? this.db;
+  }
+
+  async findById(id: string, tx?: Prisma.TransactionClient) {
+    return this.getClient(tx).payment.findUnique({ where: { id } });
   }
 
   async findByUser(userId: string) {
@@ -49,10 +54,10 @@ export class PaymentRepository {
     return this.db.payment.create({ data: data as never });
   }
 
-  async updateStatus(id: string, status: string, transactionId?: string, providerReference?: string) {
+  async updateStatus(id: string, status: string, transactionId?: string, providerReference?: string, tx?: Prisma.TransactionClient) {
     const data: Record<string, unknown> = { status: status as never };
     if (transactionId) data.transactionId = transactionId;
     if (providerReference) data.providerReference = providerReference;
-    return this.db.payment.update({ where: { id }, data: data as never });
+    return this.getClient(tx).payment.update({ where: { id }, data: data as never });
   }
 }
