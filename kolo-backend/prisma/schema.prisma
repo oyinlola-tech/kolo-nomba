@@ -55,9 +55,11 @@ model Session {
   userId       String
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   refreshToken String   @unique
+  deviceHash   String?
   expiresAt    DateTime
   createdAt    DateTime @default(now())
 
+  @@index([userId, deviceHash])
   @@map("sessions")
 }
 
@@ -176,7 +178,7 @@ model ContributionPlan {
   group       Group         @relation(fields: [groupId], references: [id], onDelete: Cascade)
   name        String
   description String?
-  amount      Float
+  amount      Int
   currency    String        @default("NGN")
   frequency   PlanFrequency
   startDate   DateTime
@@ -198,8 +200,8 @@ model ContributionCycle {
   cycleNumber     Int
   periodStart     DateTime
   periodEnd       DateTime
-  expectedAmount  Float
-  receivedAmount  Float         @default(0)
+  expectedAmount  Int
+  receivedAmount  Int         @default(0)
   status          CycleStatus   @default(OPEN)
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
@@ -214,8 +216,8 @@ model MemberContribution {
   cycle               ContributionCycle  @relation(fields: [cycleId], references: [id], onDelete: Cascade)
   groupMemberId       String
   groupMember         GroupMember        @relation(fields: [groupMemberId], references: [id])
-  expectedAmount      Float
-  paidAmount          Float              @default(0)
+  expectedAmount      Int
+  paidAmount          Int              @default(0)
   status              ContributionStatus @default(PENDING)
   paidAt              DateTime?
   createdAt           DateTime           @default(now())
@@ -281,7 +283,7 @@ model Payment {
   contribution      MemberContribution? @relation(fields: [contributionId], references: [id])
   transactionId     String?   @unique
   transaction       Transaction?  @relation(fields: [transactionId], references: [id])
-  amount            Float
+  amount            Int
   currency          String        @default("NGN")
   provider          String        @default("nomba")
   providerReference String?
@@ -299,7 +301,7 @@ model Transaction {
   reference String            @unique
   userId    String
   user      User              @relation(fields: [userId], references: [id])
-  amount    Float
+  amount    Int
   currency  String            @default("NGN")
   type      TransactionType
   status    TransactionStatus @default(PENDING)
@@ -343,6 +345,22 @@ model VirtualAccount {
 
   @@index([ownerType, ownerId])
   @@map("virtual_accounts")
+}
+
+model OtpCode {
+  id           String    @id @default(uuid())
+  userId       String
+  codeHash     String
+  type         String    @default("EMAIL_VERIFICATION")
+  channel      String    @default("EMAIL")
+  expiresAt    DateTime
+  used         Boolean   @default(false)
+  attemptCount Int       @default(0)
+  lockedUntil  DateTime?
+  createdAt    DateTime  @default(now())
+
+  @@index([userId, type])
+  @@map("otp_codes")
 }
 
 enum OwnerType {
@@ -401,7 +419,7 @@ model Wallet {
   id        String       @id @default(uuid())
   ownerType OwnerType
   ownerId   String
-  balance   Float        @default(0)
+  balance   Int        @default(0)
   currency  String       @default("NGN")
   status    WalletStatus @default(ACTIVE)
   createdAt DateTime     @default(now())
@@ -409,6 +427,7 @@ model Wallet {
   accounts  LedgerAccount[]
   entries   LedgerEntry[]
 
+  @@unique([ownerType, ownerId])
   @@map("wallets")
 }
 
@@ -429,10 +448,10 @@ model LedgerEntry {
   walletId       String
   wallet         Wallet    @relation(fields: [walletId], references: [id])
   entryType      EntryType
-  amount         Float
+  amount         Int
   direction      Direction
-  balanceBefore  Float
-  balanceAfter   Float
+  balanceBefore  Int
+  balanceAfter   Int
   description    String?
   createdAt      DateTime  @default(now())
 
@@ -443,7 +462,7 @@ model FinancialTransaction {
   id                  String                     @id @default(uuid())
   reference           String                     @unique
   type                FinancialTransactionType
-  amount              Float
+  amount              Int
   currency            String                     @default("NGN")
   status              FinancialTransactionStatus @default(PENDING)
   sourceWalletId      String?
@@ -461,9 +480,9 @@ model ReconciliationRecord {
   provider          String
   providerReference String
   internalReference String?
-  amount            Float
+  amount            Int
   status            ReconciliationStatus @default(PENDING)
-  difference        Float                @default(0)
+  difference        Int                @default(0)
   resolvedBy        String?
   resolvedAt        DateTime?
   createdAt         DateTime             @default(now())
@@ -526,7 +545,7 @@ model Payout {
   group       Group        @relation(fields: [groupId], references: [id])
   requestedBy String
   requester   User         @relation("requestedPayouts", fields: [requestedBy], references: [id])
-  amount      Float
+  amount      Int
   currency    String       @default("NGN")
   type        PayoutType   @default(MANUAL)
   status      PayoutStatus @default(PENDING)
@@ -551,7 +570,7 @@ model PayoutRecipient {
   payout             Payout          @relation(fields: [payoutId], references: [id], onDelete: Cascade)
   userId             String
   user               User            @relation(fields: [userId], references: [id])
-  amount             Float
+  amount             Int
   destinationAccount String?
   recipientAccountId String?
   recipientAccount   PayoutRecipientAccount? @relation(fields: [recipientAccountId], references: [id])
@@ -588,7 +607,7 @@ model PayoutSchedule {
   type              PayoutType
   frequency         ScheduleFrequency @default(MONTHLY)
   customInterval    Int?
-  amount            Float
+  amount            Int
   nextExecutionDate DateTime
   dayOfMonth        Int?
   dayOfWeek         Int?
@@ -623,7 +642,7 @@ model WithdrawalRequest {
   userId      String
   user        User             @relation(fields: [userId], references: [id])
   walletId    String
-  amount      Float
+  amount      Int
   destination String?
   status      WithdrawalStatus @default(PENDING)
   createdAt   DateTime         @default(now())
