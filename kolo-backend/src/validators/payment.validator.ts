@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { MAX_KOBO } from "../constants/financial.constant";
 
 export const PAYMENT_METHODS = [
   "card",
@@ -10,7 +11,7 @@ export const PAYMENT_METHODS = [
 
 export const initiatePaymentSchema = z.object({
   contributionId: z.string().uuid("Invalid contribution ID"),
-  amount: z.number().int("Amount must be a whole number").positive("Amount must be positive").max(100_000_000, "Amount exceeds maximum allowed"),
+  amount: z.number().int("Amount must be a whole number").positive("Amount must be positive").max(MAX_KOBO, "Amount exceeds maximum allowed"),
   paymentMethod: z.enum(PAYMENT_METHODS, { errorMap: () => ({ message: `Payment method must be one of: ${PAYMENT_METHODS.join(", ")}` }) }),
 });
 
