@@ -31,25 +31,15 @@ function applyTheme(theme: ThemeMode) {
 
 applyTheme(getStoredTheme());
 
-function parseStoredUser(): AuthUser | null {
-  try {
-    const raw = window.localStorage.getItem("kolo.user");
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
-}
-
 export const useAppStore = create<AppState>((set, get) => ({
-  user: parseStoredUser(),
-  role: parseStoredUser()?.role ?? null,
+  user: null,
+  role: null,
   accessToken: null,
   isHydrated: false,
   theme: getStoredTheme(),
 
   initSession: () => {
-    const user = parseStoredUser();
-    set({ user, role: user?.role ?? null });
+    set({ isHydrated: true });
   },
 
   setSession: (user, accessToken) => {
@@ -77,18 +67,13 @@ export const useAppStore = create<AppState>((set, get) => ({
 }));
 
 export async function initAuth(): Promise<void> {
-  const storedUser = parseStoredUser();
-  if (!storedUser) {
-    useAppStore.getState().clearSession();
-    return;
-  }
-
   try {
     const refreshRes = await axios.post(`${BASE_URL}/auth/refresh`, {}, { withCredentials: true });
     const newToken = refreshRes.data.accessToken ?? refreshRes.data.data?.accessToken;
 
     if (!newToken) {
-      useAppStore.getState().clearSession();
+      window.localStorage.removeItem("kolo.user");
+      useAppStore.setState({ user: null, role: null, accessToken: null, isHydrated: true });
       return;
     }
 
