@@ -213,7 +213,11 @@ export class NotificationService {
     };
   }
 
-  async getDeliveries(notificationId: string): Promise<NotificationDeliveryResponse[]> {
+  async getDeliveries(notificationId: string, userId: string): Promise<NotificationDeliveryResponse[]> {
+    const notification = await this.notificationRepository.findById(notificationId);
+    if (!notification) throw new AuthError("Notification not found");
+    if (notification.userId !== userId) throw new AuthError("You do not own this notification");
+
     const deliveries = await this.deliveryRepository.findByNotification(notificationId);
     return deliveries.map(d => ({
       id: d.id,
