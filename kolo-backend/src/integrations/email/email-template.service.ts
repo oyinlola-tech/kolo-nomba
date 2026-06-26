@@ -29,6 +29,10 @@ export class EmailTemplateService {
     return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
   }
 
+  private stripHtml(s: string): string {
+    return s.replace(/<[^>]*>/g, "");
+  }
+
   private safeUrl(href: string): string {
     try {
       const url = new URL(href, this.frontendUrl);
@@ -210,7 +214,7 @@ export class EmailTemplateService {
         ${this.button(`${this.frontendUrl}/dashboard`, "Go to Dashboard")}
         <p style="font-size:13px;color:#6b7280;margin:16px 0 0;">Need help? Contact us at <a href="mailto:${this.supportEmail}">${this.supportEmail}</a></p>
       `),
-      text: `${title}\n\nHello ${name},\n\n${message.replace(/<[^>]+>/g, "")}\n\nTime: ${time}\n\nDashboard: ${this.frontendUrl}/dashboard`,
+      text: `${title}\n\nHello ${name},\n\n${this.stripHtml(message)}\n\nTime: ${time}\n\nDashboard: ${this.frontendUrl}/dashboard`,
     };
   }
 
@@ -273,7 +277,7 @@ export class EmailTemplateService {
         ])}
         ${this.button(`${this.frontendUrl}/groups/${vars.groupId ?? ""}`, "View Group")}
       `),
-      text: `${title}\n\n${message.replace(/<[^>]+>/g, "")}\n\nGroup: ${vars.groupName ?? "N/A"}\n\nView group: ${this.frontendUrl}/groups/${vars.groupId ?? ""}`,
+      text: `${title}\n\n${this.stripHtml(message)}\n\nGroup: ${vars.groupName ?? "N/A"}\n\nView group: ${this.frontendUrl}/groups/${vars.groupId ?? ""}`,
     };
   }
 
@@ -320,7 +324,7 @@ export class EmailTemplateService {
         ])}
         ${this.button(`${this.frontendUrl}/contributions`, "View Contributions")}
       `),
-      text: `${title}\n\n${message.replace(/<[^>]+>/g, "")}\n\nGroup: ${vars.groupName ?? "N/A"}\nAmount: ${vars.amount ? `${vars.amount} NGN` : "N/A"}\n\nView contributions: ${this.frontendUrl}/contributions`,
+      text: `${title}\n\n${this.stripHtml(message)}\n\nGroup: ${vars.groupName ?? "N/A"}\nAmount: ${vars.amount ? `${vars.amount} NGN` : "N/A"}\n\nView contributions: ${this.frontendUrl}/contributions`,
     };
   }
 
@@ -392,7 +396,7 @@ export class EmailTemplateService {
         ])}
         ${this.button(`${this.frontendUrl}/payments`, "View Payment History")}
       `),
-      text: `${title}\n\n${message.replace(/<[^>]+>/g, "")}\n\nAmount: ${vars.amount ? `${vars.amount} NGN` : "N/A"}\nReference: ${vars.reference ?? "N/A"}\n\nView payments: ${this.frontendUrl}/payments`,
+      text: `${title}\n\n${this.stripHtml(message)}\n\nAmount: ${vars.amount ? `${vars.amount} NGN` : "N/A"}\nReference: ${vars.reference ?? "N/A"}\n\nView payments: ${this.frontendUrl}/payments`,
     };
   }
 
@@ -483,7 +487,7 @@ export class EmailTemplateService {
         ${this.button(`${this.frontendUrl}/payouts`, "View Payouts")}
         <p style="font-size:13px;color:#6b7280;">Need help? Contact <a href="mailto:${this.supportEmail}">${this.supportEmail}</a></p>
       `),
-      text: `${title}\n\n${message.replace(/<[^>]+>/g, "")}\n\nAmount: ${vars.amount ? `${vars.amount} NGN` : "N/A"}\n\nView payouts: ${this.frontendUrl}/payouts`,
+      text: `${title}\n\n${this.stripHtml(message)}\n\nAmount: ${vars.amount ? `${vars.amount} NGN` : "N/A"}\n\nView payouts: ${this.frontendUrl}/payouts`,
     };
   }
 
