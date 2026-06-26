@@ -45,9 +45,6 @@ export function LoginPage() {
       )}
       <Input label="Email Address" type="email" placeholder="you@example.com" value={email} onChange={setEmail} icon={Mail} required />
       <Input label="Password" type="password" placeholder="Enter your password" value={password} onChange={setPassword} icon={Lock} required />
-      <div className="flex justify-end mb-5">
-        <button onClick={() => navigate("/forgot-password")} className="text-sm font-medium text-primary hover:underline">Forgot password?</button>
-      </div>
       <Button full type="submit" onClick={handleLogin} disabled={login.isPending}>
         {login.isPending ? <RefreshCw className="w-4 h-4 animate-spin" /> : null}
         {login.isPending ? "Signing in\u2026" : "Sign In"}
