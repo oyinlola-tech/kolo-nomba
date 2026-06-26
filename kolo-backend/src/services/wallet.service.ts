@@ -1,4 +1,5 @@
 import { PrismaDatabase } from "../database/prisma";
+import type { Prisma } from "../generated/prisma/client";
 import { WalletRepository } from "../repositories/wallet.repository";
 import { LedgerEntryRepository } from "../repositories/ledger-entry.repository";
 import { FinancialTransactionRepository } from "../repositories/financial-transaction.repository";
@@ -30,10 +31,10 @@ export class WalletService {
     this.logger = new Logger("wallet-service");
   }
 
-  async getOrCreateWallet(ownerType: string, ownerId: string, currency = "NGN"): Promise<WalletResponse> {
-    let wallet = await this.walletRepository.findByOwner(ownerType, ownerId);
+  async getOrCreateWallet(ownerType: string, ownerId: string, currency = "NGN", tx?: Prisma.TransactionClient): Promise<WalletResponse> {
+    let wallet = await this.walletRepository.findByOwner(ownerType, ownerId, tx);
     if (!wallet) {
-      wallet = await this.walletRepository.create({ ownerType, ownerId, currency });
+      wallet = await this.walletRepository.create({ ownerType, ownerId, currency }, tx);
       await this.auditService.log("WALLET_CREATED", {
         metadata: { walletId: wallet.id, ownerType, ownerId },
       });
@@ -223,12 +224,11 @@ export class WalletService {
     this.logger.info("Transfer completed", { sourceWalletId, destinationWalletId, amount });
   }
 
-  async processContributionPayment(groupWalletId: string, amount: number, description?: string): Promise<void> {
+  async processContributionPayment(groupWalletId: string, amount: number, description?: string, tx?: Prisma.TransactionClient): Promise<void> {
     const fee = this.feeEngine.calculateFee(amount);
     const netAmount = amount - fee;
 
-    const prisma = PrismaDatabase.getInstance().getClient();
-    await prisma.$transaction(async (tx) => {
+    const execute = async (client: Prisma.TransactionClient) => {
       const transaction = await this.financialTransactionRepository.create({
         type: "CONTRIBUTION",
         amount,
@@ -236,14 +236,14 @@ export class WalletService {
         status: "SUCCESSFUL",
         destinationWalletId: groupWalletId,
         metadata: { description, fee },
-      }, tx);
+      }, client);
 
-      const wallet = await this.walletRepository.findById(groupWalletId, tx);
+      const wallet = await this.walletRepository.findById(groupWalletId, client);
       if (!wallet) throw new AuthError("Group wallet not found");
 
-      await this.walletRepository.incrementBalance(groupWalletId, netAmount, tx);
+      await this.walletRepository.incrementBalance(groupWalletId, netAmount, client);
 
-      const updatedWallet = await this.walletRepository.findById(groupWalletId, tx);
+      const updatedWallet = await this.walletRepository.findById(groupWalletId, client);
 
       await this.ledgerEntryRepository.create({
         transactionId: transaction.id,
@@ -254,19 +254,19 @@ export class WalletService {
         balanceBefore: wallet.balance,
         balanceAfter: updatedWallet!.balance,
         description: description ?? "Contribution payment",
-      }, tx);
+      }, client);
 
       if (fee > 0) {
-        let platformWallet = await this.walletRepository.findByOwner("PLATFORM", "platform", tx);
+        let platformWallet = await this.walletRepository.findByOwner("PLATFORM", "platform", client);
         if (!platformWallet) {
-          platformWallet = await this.walletRepository.create({ ownerType: "PLATFORM", ownerId: "platform", currency: "NGN" }, tx);
+          platformWallet = await this.walletRepository.create({ ownerType: "PLATFORM", ownerId: "platform", currency: "NGN" }, client);
         }
         const platformWalletId = platformWallet.id;
         const platformBalanceBefore = platformWallet.balance;
 
-        await this.walletRepository.incrementBalance(platformWalletId, fee, tx);
+        await this.walletRepository.incrementBalance(platformWalletId, fee, client);
 
-        const updatedPlatform = await this.walletRepository.findById(platformWalletId, tx);
+        const updatedPlatform = await this.walletRepository.findById(platformWalletId, client);
 
         await this.ledgerEntryRepository.create({
           transactionId: transaction.id,
@@ -277,7 +277,7 @@ export class WalletService {
           balanceBefore: platformBalanceBefore,
           balanceAfter: updatedPlatform!.balance,
           description: `Platform fee (${fee} on ${amount})`,
-        }, tx);
+        }, client);
 
         await this.financialTransactionRepository.create({
           type: "FEE",
@@ -286,9 +286,16 @@ export class WalletService {
           status: "SUCCESSFUL",
           destinationWalletId: platformWalletId,
           metadata: { parentTransaction: transaction.id, sourceAmount: amount },
-        }, tx);
+        }, client);
       }
-    });
+    };
+
+    if (tx) {
+      await execute(tx);
+    } else {
+      const prisma = PrismaDatabase.getInstance().getClient();
+      await prisma.$transaction(execute);
+    }
 
     await this.auditService.log("CONTRIBUTION_PAYMENT_PROCESSED", {
       metadata: { groupWalletId, amount, fee, netAmount },
