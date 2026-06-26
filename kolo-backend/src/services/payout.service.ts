@@ -63,6 +63,19 @@ export class PayoutService {
     });
 
     for (const recipient of dto.recipients) {
+      if (recipient.recipientAccountId) {
+        const account = await this.accountRepository.findById(recipient.recipientAccountId);
+        if (!account) {
+          throw new ValidationError(`Recipient account ${recipient.recipientAccountId} not found`);
+        }
+        if (account.userId !== recipient.userId) {
+          throw new ValidationError("Recipient account does not belong to the selected recipient");
+        }
+        if (!account.verified) {
+          throw new ValidationError("Recipient account is not verified");
+        }
+      }
+
       await this.recipientRepository.create({
         payoutId: payout.id,
         userId: recipient.userId,
