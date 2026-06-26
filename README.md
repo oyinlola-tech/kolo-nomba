@@ -379,8 +379,6 @@ Kolo
 Documentation folder:
 
 ```
-docs/
-```
 
 Backend documentation:
 
@@ -390,7 +388,7 @@ kolo-backend/docs/
 
 ---
 
-# ⚙️ Local Development
+#  Local Development
 
 ## Clone Repository
 
@@ -432,7 +430,7 @@ docs/environment.md
 
 ---
 
-# 🌍 Production Deployment
+#  Production Deployment
 
 Kolo supports deployment using:
 
