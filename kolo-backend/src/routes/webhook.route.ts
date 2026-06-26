@@ -25,13 +25,19 @@ export class WebhookRoute {
         const chunks: Buffer[] = [];
         let size = 0;
         let aborted = false;
+        let doneCalled = false;
+        const safeDone = (err: Error | null, stream?: Readable) => {
+          if (doneCalled) return;
+          doneCalled = true;
+          done(err, stream);
+        };
         payload.on("data", (chunk: Buffer) => {
           if (aborted) return;
           size += chunk.length;
           if (size > WEBHOOK_BODY_LIMIT) {
             aborted = true;
             payload.destroy();
-            done(new WebhookBodyError(), undefined);
+            safeDone(new WebhookBodyError(), undefined);
             return;
           }
           chunks.push(chunk);
@@ -40,10 +46,10 @@ export class WebhookRoute {
           if (aborted) return;
           const raw = Buffer.concat(chunks);
           (request as unknown as Record<string, string>).rawBody = raw.toString();
-          done(null, Readable.from(raw));
+          safeDone(null, Readable.from(raw));
         });
         payload.on("error", (err) => {
-          if (!aborted) done(err, undefined);
+          if (!aborted) safeDone(err, undefined);
         });
       },
       handler: (request, reply: FastifyReply) => this.controller.handleNomba(request, reply),
