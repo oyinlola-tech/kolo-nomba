@@ -1,5 +1,6 @@
 import { UserRepository } from "../repositories/user.repository";
 import { AuditService } from "./audit.service";
+import { PasswordValidationService } from "./password.service";
 import { HashUtil } from "../utils/hash.util";
 import { AuthError } from "../errors/auth.error";
 import { ValidationError } from "../errors/validation.error";
@@ -76,6 +77,11 @@ export class UserService {
     const valid = await HashUtil.verifyPassword(user.passwordHash, currentPassword);
     if (!valid) {
       throw new AuthError("Current password is incorrect");
+    }
+
+    const validation = new PasswordValidationService().validatePassword(newPassword);
+    if (!validation.valid) {
+      throw new ValidationError(validation.message, validation.requirements);
     }
 
     const newHash = await HashUtil.hashPassword(newPassword);
