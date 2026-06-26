@@ -98,6 +98,7 @@ tmp/
 public/.env
 public/node_modules/
 public/dist/
+public/nul
 
 
 kolo-backend/.env
