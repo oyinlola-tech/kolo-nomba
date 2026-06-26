@@ -1,4 +1,4 @@
-# 🟢 Kolo
+#  Kolo
 
 <p align="center">
 
@@ -22,7 +22,7 @@ Digital Infrastructure for African Cooperative Savings and Payments
 
 ---
 
-# 🚀 About Kolo
+# About Kolo
 
 Kolo is a digital cooperative savings and payment management platform built to transform traditional African savings systems such as:
 
@@ -46,11 +46,11 @@ Kolo connects traditional community finance with modern fintech infrastructure.
 
 ---
 
-# 🎯 The Problem
+# The Problem
 
 Traditional cooperative savings groups face challenges:
 
-## 📝 Manual Record Keeping
+##  Manual Record Keeping
 
 Many groups still track:
 
@@ -60,7 +60,7 @@ Many groups still track:
 
 using paper or spreadsheets.
 
-## 🔒 Trust Issues
+##  Trust Issues
 
 Members often lack visibility into:
 
@@ -68,7 +68,7 @@ Members often lack visibility into:
 * Payment history
 * Transaction records
 
-## 💳 Payment Difficulties
+## Payment Difficulties
 
 Members need simple ways to:
 
@@ -76,7 +76,7 @@ Members need simple ways to:
 * Receive payment confirmations
 * Track balances
 
-## 📊 Lack of Financial Insights
+## Lack of Financial Insights
 
 Group administrators cannot easily understand:
 
@@ -86,7 +86,7 @@ Group administrators cannot easily understand:
 
 ---
 
-# 💡 Our Solution
+# Our Solution
 
 Kolo creates a complete digital financial ecosystem for savings communities.
 
@@ -122,14 +122,14 @@ Super administrators can:
 
 ---
 
-# ✨ Core Features
+# Core Features
 
 <table>
 
 <tr>
 <td>
 
-## 👥 Cooperative Management
+## Cooperative Management
 
 Create and manage Ajo groups, members, roles and contribution cycles.
 
@@ -137,7 +137,7 @@ Create and manage Ajo groups, members, roles and contribution cycles.
 
 <td>
 
-## 💰 Automated Contributions
+## Automated Contributions
 
 Collect payments digitally and update contribution records automatically.
 
@@ -149,7 +149,7 @@ Collect payments digitally and update contribution records automatically.
 
 <td>
 
-## 🏦 Payment Infrastructure
+## Payment Infrastructure
 
 Integrated payment collection using Nomba APIs.
 
@@ -157,7 +157,7 @@ Integrated payment collection using Nomba APIs.
 
 <td>
 
-## 🔄 Secure Payouts
+## Secure Payouts
 
 Manage withdrawals and group settlements.
 
@@ -169,7 +169,7 @@ Manage withdrawals and group settlements.
 
 <td>
 
-## 📊 Financial Analytics
+## Financial Analytics
 
 Track savings growth, transactions and reports.
 
@@ -177,7 +177,7 @@ Track savings growth, transactions and reports.
 
 <td>
 
-## 🔔 Smart Notifications
+## Smart Notifications
 
 Email and communication alerts for important events.
 
@@ -189,7 +189,7 @@ Email and communication alerts for important events.
 
 ---
 
-# 🏗️ How Kolo Works
+# How Kolo Works
 
 ```mermaid
 flowchart TD
