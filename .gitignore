@@ -51,6 +51,10 @@ tests/
 */tests/
 __tests__/
 
+**/test-setup.ts
+**/vitest.config.*
+**/test-utils.ts
+
 */*.snap
 
 
