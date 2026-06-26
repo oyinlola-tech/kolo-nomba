@@ -357,8 +357,6 @@ Kolo
 │
 ├── kolo-backend
 │
-├── docs
-│
 ├── README.md
 │
 ├── LICENSE.md
@@ -367,7 +365,7 @@ Kolo
 
 ---
 
-# 📚 Documentation
+# Documentation
 
 | Document          | Description                           |
 | ----------------- | ------------------------------------- |
