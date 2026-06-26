@@ -223,7 +223,7 @@ G --> H
 
 ---
 
-# 🧩 System Architecture
+# System Architecture
 
 ```mermaid
 flowchart LR
@@ -259,7 +259,7 @@ SERVICE --> NOMBA
 
 ---
 
-# 🛠 Technology Stack
+# Technology Stack
 
 ## Frontend
 
