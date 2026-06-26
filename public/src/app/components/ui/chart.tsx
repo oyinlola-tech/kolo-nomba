@@ -17,6 +17,10 @@ export type ChartConfig = {
     | { color?: never; theme: Record<keyof typeof THEMES, string> }
   );
 };
+// WARNING: ChartConfig values are injected into a <style> tag via dangerouslySetInnerHTML.
+// All keys go through cssEscape() and colors through isValidCSSColor() before rendering.
+// Do not pass user-supplied values as config keys or colors. This component must remain
+// the only style injection point — never add another dangerouslySetInnerHTML for CSS.
 
 type ChartContextProps = {
   config: ChartConfig;
