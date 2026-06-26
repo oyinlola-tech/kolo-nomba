@@ -10,7 +10,7 @@ This pass re-scanned both frontend and backend, including auth/session handling,
 
 The current tree has improved since the previous audit. Registration no longer publishes raw OTPs through the event bus, login now has an email OTP challenge for unknown devices, OTP attempt lockout and resend cooldowns exist, the OTP email expiry text matches the backend, the registration page runtime bug is fixed, and both frontend and backend builds now pass.
 
-New confirmed issues remain. The highest-risk finding is that reconciliation endpoints are outside the super-admin route group and allow any active authenticated user to list and resolve reconciliation records. A previous contribution-plan issue is partially fixed: updates now require group admin access, but deletes/completion still only require ordinary group membership. I also found payout recipient-account ID validation gaps, the existing SPA meta CSP limitation, stale localStorage profile/role state, and a backend transaction-list query bug.
+New confirmed issues remain. The highest-risk finding is that reconciliation endpoints are outside the super-admin route group and allow any active authenticated user to list and resolve reconciliation records. A previous contribution-plan issue is partially fixed: updates now require group admin access, but deletes/completion still only require ordinary group membership. I also found payout recipient-account ID validation gaps, notification delivery authorization gaps, a globally triggerable notification retry endpoint, the existing SPA meta CSP limitation, stale localStorage profile/role state, and a backend transaction-list query bug.
 
 Application code was not changed during this audit pass. I updated this report file only.
 
@@ -123,7 +123,64 @@ Mitigation: Log selected recipient account IDs during payout creation and flag m
 
 False positive notes: This requires group-admin privilege or a compromised group-admin account, but payout routing is high-value enough to require strict ownership checks.
 
-### M-02: SPA CSP is still a weak meta policy with `unsafe-inline`
+### M-02: Notification delivery details lack an owner check
+
+Location:
+- `kolo-backend/src/routes/notification.route.ts:45`
+- `kolo-backend/src/controllers/notification.controller.ts:56`
+- `kolo-backend/src/services/notification.service.ts:216`
+- `kolo-backend/src/repositories/notification-delivery.repository.ts:39`
+
+Evidence:
+```ts
+app.get(`${prefix}/notifications/:notificationId/deliveries`, {
+  preHandler: this.authMiddleware.authenticate.bind(this.authMiddleware),
+  handler: this.controller.getDeliveries.bind(this.controller),
+});
+```
+
+```ts
+async getDeliveries(notificationId: string): Promise<NotificationDeliveryResponse[]> {
+  const deliveries = await this.deliveryRepository.findByNotification(notificationId);
+```
+
+Impact: Any active authenticated user who knows or obtains a notification UUID can read delivery metadata for that notification. The response includes channel, status, provider, provider reference, retry count, sent/delivered timestamps, and failure reason. UUID guessing is hard, but notification IDs can leak through logs, browser history, support screenshots, or future API responses.
+
+Fix: Pass `request.userId` from the controller into the service. Load the notification by ID first and require `notification.userId === request.userId`, or require an admin role for operational delivery diagnostics.
+
+Mitigation: Audit notification delivery lookups for unusual cross-user access patterns if request logging includes actor user IDs and notification IDs.
+
+False positive notes: The route requires authentication, and notification IDs are UUIDs, so this is not unauthenticated bulk disclosure. The missing ownership check is still a real tenant-boundary issue.
+
+### M-03: Any authenticated user can retry all failed notification deliveries
+
+Location:
+- `kolo-backend/src/routes/notification.route.ts:50`
+- `kolo-backend/src/controllers/notification.controller.ts:62`
+- `kolo-backend/src/services/notification.service.ts:134`
+
+Evidence:
+```ts
+app.post(`${prefix}/notifications/retry-failed`, {
+  preHandler: this.authMiddleware.authenticate.bind(this.authMiddleware),
+  handler: this.controller.retryFailed.bind(this.controller),
+});
+```
+
+```ts
+async retryFailed(_request: FastifyRequest, reply: FastifyReply): Promise<void> {
+  const retried = await this.notificationService.retryFailedDeliveries();
+```
+
+Impact: Any active logged-in user can trigger retries for failed email, SMS, or WhatsApp notification deliveries across the whole system. This can cause repeated messages, provider cost, rate-limit pressure, and noisy operational state.
+
+Fix: Restrict this endpoint to `SUPER_ADMIN`, or remove it from public API routing and run retries through a background job. Add audit logging and rate limiting if the endpoint remains manually callable.
+
+Mitigation: Review notification retry volume and provider delivery logs for unexpected retry spikes.
+
+False positive notes: The endpoint does not let the caller choose arbitrary content, but it does trigger global side effects.
+
+### M-04: SPA CSP is still a weak meta policy with `unsafe-inline`
 
 Location:
 - `public/index.html:8`
@@ -210,6 +267,7 @@ False positive notes: This is a correctness/security-adjacent issue, not a confi
 - Backend Helmet, CORS allowlists, and global/per-route rate limits are configured.
 - Wallet reads/transfers enforce wallet or group access, and group-wallet transfers require admin/owner.
 - No high-risk frontend DOM XSS sink was confirmed; the chart style sink sanitizes chart IDs, keys, and CSS colors before `dangerouslySetInnerHTML`.
+- No backend raw SQL, command execution, file download/sendFile sink, or committed real secret was confirmed in the focused scan.
 - `npm audit --omit=dev` reports zero vulnerabilities in both frontend and backend.
 
 ## Verification
@@ -223,6 +281,10 @@ False positive notes: This is a correctness/security-adjacent issue, not a confi
 
 Updated this report file: `security aduit.md`.
 
+Second-pass additions:
+- Added notification delivery ownership-check finding.
+- Added global notification retry authorization finding.
+
 No application code was changed during this audit pass.
 
 ## Recommended Fix Order
@@ -230,6 +292,7 @@ No application code was changed during this audit pass.
 1. Restrict reconciliation list/resolve routes to `SUPER_ADMIN` and use `request.userId` as resolver.
 2. Restrict contribution plan delete/complete to group owners/admins.
 3. Validate payout recipient account ownership and verified status before payout creation.
-4. Move frontend security headers to the static host/CDN and remove `unsafe-inline` where feasible.
-5. Stop trusting localStorage profile/role until server rehydration completes.
-6. Fix the user transaction list Prisma query and add an endpoint test.
+4. Add owner checks for notification delivery details and restrict failed-delivery retry to `SUPER_ADMIN` or a background worker.
+5. Move frontend security headers to the static host/CDN and remove `unsafe-inline` where feasible.
+6. Stop trusting localStorage profile/role until server rehydration completes.
+7. Fix the user transaction list Prisma query and add an endpoint test.
