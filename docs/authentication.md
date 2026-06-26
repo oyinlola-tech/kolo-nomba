@@ -8,65 +8,78 @@ This document explains the complete authentication system in Kolo — from regis
 
 Kolo uses a **JWT-based authentication system** with short-lived access tokens and long-lived refresh tokens stored in HttpOnly cookies.
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    Auth Architecture                         │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│  ┌──────────┐           ┌───────────────────┐              │
-│  │  Client  │           │     Server        │              │
-│  │          │           │                   │              │
-│  │ ● Access │  Bearer   │ ● Verify JWT      │              │
-│  │   Token  │──────────▶│ ● Check expiry    │              │
-│  │ (memory) │           │ ● Check user      │              │
-│  │          │           │ ● Check status    │              │
-│  │ ● Refresh│  Cookie   │ ● Check role      │              │
-│  │   Token  │──────────▶│                   │              │
-│  │ (cookie) │           │ ● Issue new tokens │              │
-│  └──────────┘           └───────────────────┘              │
-│                                                             │
-│  Security Properties:                                       │
-│  • Passwords: Argon2 hashed                                 │
-│  • Sessions: SHA-256 hashed refresh tokens                  │
-│  • Access tokens: 15 min expiry                             │
-│  • Refresh tokens: 7 day expiry                             │
-│  • No tokens in localStorage                                │
-│  • Unknown devices: OTP challenge                           │
-└─────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TB
+    subgraph Client["Client Browser"]
+        AccessToken["Access Token\n(In-Memory Memory)"]
+        RefreshCookie["Refresh Token\n(HttpOnly Cookie)"]
+    end
+
+    subgraph Server["Fastify Backend"]
+        JWTVerify["Verify JWT\n(jose library)"]
+        UserCheck["Check User\n(ACTIVE status)"]
+        RoleCheck["Role Authorization"]
+        TokenIssue["Issue New Tokens"]
+    end
+
+    subgraph Security["Security Properties"]
+        P1["Passwords: Argon2 hashed"]
+        P2["Sessions: SHA-256 hashed refresh tokens"]
+        P3["Access tokens: 15 min expiry"]
+        P4["Refresh tokens: 7 day expiry"]
+        P5["No tokens in localStorage"]
+        P6["Unknown devices: OTP challenge"]
+    end
+
+    AccessToken -->|"Bearer header"| JWTVerify
+    RefreshCookie -->|"Cookie header"| TokenIssue
+    JWTVerify --> UserCheck
+    UserCheck --> RoleCheck
+    TokenIssue --> AccessToken
+    TokenIssue --> RefreshCookie
 ```
 
 ---
 
 ## Registration Flow
 
-```
-1. POST /auth/register { firstName, lastName, email, phone, password }
-                  │
-2. Validate input (Zod schema)
-                  │
-3. Check duplicate email/phone → 409 if exists
-                  │
-4. Hash password with Argon2
-                  │
-5. Create User with status = PENDING
-                  │
-6. Generate 6-digit OTP, hash with SHA-256, store in otp_codes
-                  │
-7. Send OTP email via SMTP
-                  │
-8. Return { userId, message: "Verification code sent" }
-                  │
-9. POST /auth/verify-otp { userId, code }
-                  │
-10. Hash code, compare against stored hash
-                  │
-11. Check attempt count (max 3), lockout (15 min)
-                  │
-12. Mark OTP as used, set user status = ACTIVE
-                  │
-13. Generate JWT tokens, create session
-                  │
-14. Return { user, accessToken, refreshToken (cookie) }
+```mermaid
+sequenceDiagram
+    participant Client
+    participant API as Fastify API
+    participant AuthSvc as AuthService
+    participant DB as PostgreSQL
+
+    Client->>API: POST /auth/register
+    Note over Client,API: { firstName, lastName, email, phone, password }
+    API->>API: Validate input (Zod schema)
+    API->>AuthSvc: register()
+    AuthSvc->>DB: Check duplicate email/phone
+    DB-->>AuthSvc: Not found
+    AuthSvc->>AuthSvc: Hash password (Argon2)
+    AuthSvc->>DB: Create User (status: PENDING)
+    AuthSvc->>DB: Generate OTP, hash SHA-256
+    AuthSvc->>AuthSvc: Send OTP email via SMTP
+    AuthSvc-->>API: userId
+    API-->>Client: 201 { userId, message: "Verification code sent" }
+
+    Client->>API: POST /auth/verify-otp
+    Note over Client,API: { userId, code }
+    API->>AuthSvc: verifyOtp()
+    AuthSvc->>DB: Find matching OTP hash
+    DB-->>AuthSvc: OTP record
+    AuthSvc->>AuthSvc: Hash submitted code, compare
+    AuthSvc->>AuthSvc: Check attempt count (max 3), lockout (15 min)
+    alt Success
+        AuthSvc->>DB: Mark OTP used, set user ACTIVE
+        AuthSvc->>AuthSvc: Generate JWT tokens
+        AuthSvc->>DB: Create session
+        AuthSvc-->>API: { user, accessToken, refreshToken }
+        API-->>Client: { user, accessToken } + Set-Cookie
+    else Failure
+        AuthSvc-->>API: Error
+        API-->>Client: Error response
+    end
 ```
 
 ---
@@ -75,50 +88,77 @@ Kolo uses a **JWT-based authentication system** with short-lived access tokens a
 
 ### Known Device Login
 
-```
-1. POST /auth/login { email, password }
-                  │
-2. Find user by email/phone → 404 if not found
-                  │
-3. Verify password (Argon2) → 401 if wrong
-                  │
-4. Check user status = ACTIVE → 401 if PENDING/SUSPENDED
-                  │
-5. Compute deviceHash = SHA-256(userAgent + IP)
-                  │
-6. Check for existing session with same deviceHash
-                  │
-7. (Known device) → Generate JWT tokens
-                  │
-8. Create session (store hashed refreshToken + deviceHash)
-                  │
-9. Set refreshToken cookie (HttpOnly, Secure, SameSite=Strict)
-                  │
-10. Return { user, accessToken, role }
+```mermaid
+sequenceDiagram
+    participant Client
+    participant API as Fastify API
+    participant AuthSvc as AuthService
+    participant DB as PostgreSQL
+
+    Client->>API: POST /auth/login
+    Note over Client,API: { email, password }
+    API->>AuthSvc: login()
+    AuthSvc->>DB: Find user by email/phone
+    DB-->>AuthSvc: User record
+    AuthSvc->>AuthSvc: Verify password (Argon2)
+    AuthSvc->>AuthSvc: Check status = ACTIVE
+    AuthSvc->>AuthSvc: Compute deviceHash = SHA-256(UA + IP)
+    AuthSvc->>DB: Check existing session by deviceHash
+    DB-->>AuthSvc: Session found (known device)
+
+    alt Known Device
+        AuthSvc->>AuthSvc: Generate JWT access + refresh tokens
+        AuthSvc->>DB: Hash refreshToken (SHA-256), create session
+        DB-->>AuthSvc: Session created
+        AuthSvc-->>API: { user, accessToken, refreshToken }
+        API-->>Client: { user, accessToken, role }
+        Note over API,Client: Set-Cookie: refreshToken (HttpOnly, Secure, SameSite=Strict)
+    end
 ```
 
 ### Unknown Device Login (OTP Challenge)
 
-```
-1-5. Same as known device login
-                  │
-6. No existing session with this deviceHash → UNKNOWN DEVICE
-                  │
-7. Generate 6-digit OTP, send to registered email
-                  │
-8. Return { challengeId: userId, email: "c***@example.com" }
-                  │
-9. POST /auth/verify-login-otp { userId, code }
-                  │
-10. Verify OTP (hash, expiry, attempts, lockout)
-                  │
-11. Generate JWT tokens
-                  │
-12. Create session with deviceHash (marks device as known)
-                  │
-13. Set refreshToken cookie
-                  │
-14. Return { user, accessToken, role }
+```mermaid
+sequenceDiagram
+    participant Client
+    participant API as Fastify API
+    participant AuthSvc as AuthService
+    participant DB as PostgreSQL
+
+    Client->>API: POST /auth/login
+    Note over Client,API: { email, password }
+    API->>AuthSvc: login()
+    AuthSvc->>DB: Find user, verify password, check status
+    AuthSvc->>AuthSvc: Compute deviceHash
+    AuthSvc->>DB: Check existing session by deviceHash
+    DB-->>AuthSvc: No matching session
+
+    alt Unknown Device
+        AuthSvc->>DB: Generate 6-digit OTP, hash SHA-256
+        AuthSvc->>AuthSvc: Send OTP email via SMTP
+        AuthSvc-->>API: { challengeId, email: "c***@example.com" }
+        API-->>Client: { challengeId, maskedEmail }
+
+        Client->>API: POST /auth/verify-login-otp
+        Note over Client,API: { userId, code }
+        API->>AuthSvc: verifyLoginOtp()
+        AuthSvc->>DB: Find OTP record
+        DB-->>AuthSvc: OTP codeHash
+        AuthSvc->>AuthSvc: Hash submitted code, compare
+        AuthSvc->>AuthSvc: Check expiry, attempts, lockout
+
+        alt OTP Valid
+            AuthSvc->>AuthSvc: Generate JWT tokens
+            AuthSvc->>DB: Create session with deviceHash
+            DB-->>AuthSvc: Session created
+            AuthSvc-->>API: { user, accessToken, refreshToken }
+            API-->>Client: { user, accessToken, role }
+            Note over API,Client: Set-Cookie: refreshToken
+        else OTP Invalid
+            AuthSvc-->>API: Error
+            API-->>Client: Error response
+        end
+    end
 ```
 
 ---
@@ -195,24 +235,36 @@ Session cleaned up by daily cron job (expired sessions)
 
 ### OTP Flow
 
-```
-User requests OTP
-        │
-Server generates 6-digit random code
-        │
-Server stores SHA-256(code) in otp_codes table
-        │
-Server sends raw code via email
-        │
-        │  10 minute window
-        │
-User submits code → Server SHA-256 hashes → compares with stored hash
-        │
-        ├── Match → Mark used, proceed
-        └── No match → Increment attemptCount
-                        ├── < 3 → "Invalid code, X attempts remaining"
-                        └── ≥ 3 → Set lockedUntil = now + 15min
-                                   "Too many attempts. Try again later."
+```mermaid
+flowchart TB
+    Start(["User requests OTP"])
+    Generate["Server generates 6-digit random code"]
+    Hash["Server SHA-256 hashes the code"]
+    Store["Store codeHash in otp_codes table"]
+    Send["Send raw code via email"]
+    Window["10 minute expiry window"]
+    Submit["User submits code"]
+    Rehash["Server SHA-256 hashes submitted code"]
+    Compare{"Compare with stored hash"}
+    Match["Mark OTP as used\nProceed with action"]
+    NoMatch["Increment attemptCount"]
+    CheckAttempts{"attemptCount < 3?"}
+    Retry["Return: Invalid code\nX attempts remaining"]
+    Lockout["Set lockedUntil (15 min)\nReturn: Too many attempts"]
+
+    Start --> Generate
+    Generate --> Hash
+    Hash --> Store
+    Store --> Send
+    Send --> Window
+    Window --> Submit
+    Submit --> Rehash
+    Rehash --> Compare
+    Compare -->|"Match"| Match
+    Compare -->|"No match"| NoMatch
+    NoMatch --> CheckAttempts
+    CheckAttempts -->|"Yes"| Retry
+    CheckAttempts -->|"No"| Lockout
 ```
 
 ---
