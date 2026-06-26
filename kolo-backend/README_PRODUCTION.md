@@ -23,7 +23,8 @@ SUPER_ADMIN_EMAIL=admin@kolo.com
 SUPER_ADMIN_PASSWORD=<strong-password>
 
 # Optional
-CORS_ORIGIN=*
+# CORS_ORIGIN must be explicit comma-separated origins in production (NOT *)
+CORS_ORIGIN=https://kolo.telente.site,https://admin.kolo.telente.site
 RATE_LIMIT_MAX=100
 LOG_LEVEL=info
 NOMBA_ACCOUNT_ID=
@@ -85,7 +86,7 @@ All admin endpoints are under `GET /api/v1/admin/*` and require `SUPER_ADMIN` ro
 ## Security
 
 - Helmet security headers enabled
-- CORS restricted (configurable via `CORS_ORIGIN`)
+- CORS restricted to explicit origins (set `CORS_ORIGIN` to comma-separated allowed URLs; `*` is rejected in production)
 - Rate limiting applied (configurable via `RATE_LIMIT_MAX`)
 - Request body limited to 1MB
 - Passwords hashed with Argon2
