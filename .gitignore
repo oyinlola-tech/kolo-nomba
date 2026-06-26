@@ -50,6 +50,8 @@ test/
 tests/
 */tests/
 __tests__/
+*/*/test*
+*/test*
 
 **/test-setup.ts
 **/vitest.config.*
