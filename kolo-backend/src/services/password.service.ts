@@ -1,5 +1,4 @@
 import { Logger } from "../logger/core/logger";
-import { EnvConfig } from "../config/env.config";
 
 export interface PasswordValidationResult {
   valid: boolean;
@@ -26,7 +25,6 @@ export class PasswordValidationService {
       };
     }
 
-    const config = EnvConfig.getInstance();
     const minLength = 12;
 
     if (password.length < minLength) {
