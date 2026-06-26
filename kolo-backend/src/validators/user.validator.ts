@@ -6,4 +6,10 @@ export const updateProfileSchema = z.object({
   phone: z.string().min(10).optional(),
 });
 
+export const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1, "Current password is required"),
+  newPassword: z.string().min(1, "New password is required"),
+});
+
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
+export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;

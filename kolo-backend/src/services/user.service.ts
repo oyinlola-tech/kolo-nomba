@@ -4,6 +4,7 @@ import { HashUtil } from "../utils/hash.util";
 import { AuthError } from "../errors/auth.error";
 import { ValidationError } from "../errors/validation.error";
 import type { UpdateProfileDto, UserProfileResponse } from "../dto/user.dto";
+import { PrismaDatabase } from "../database/prisma";
 import { Logger } from "../logger/core/logger";
 
 export class UserService {
@@ -80,8 +81,11 @@ export class UserService {
     const newHash = await HashUtil.hashPassword(newPassword);
     await this.userRepository.updatePassword(userId, newHash);
 
-    await this.auditService.log("PASSWORD_CHANGED", { userId });
+    const db = PrismaDatabase.getInstance().getClient();
+    await db.session.deleteMany({ where: { userId } });
 
-    this.logger.info("Password changed", { userId });
+    await this.auditService.log("PASSWORD_CHANGED", { userId, metadata: { sessionsRevoked: true } });
+
+    this.logger.info("Password changed, sessions revoked", { userId });
   }
 }
