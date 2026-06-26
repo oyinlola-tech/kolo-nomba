@@ -1,40 +1,19 @@
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Lock, Check, CheckCircle, RefreshCw } from "lucide-react";
-import { Input } from "../../../components/shared/Input";
-import { Button } from "../../../components/shared/Button";
+import { Lock, Mail } from "lucide-react";
 import { AuthLayout } from "../../../components/layout/AuthLayout";
 
 export function ResetPasswordPage() {
   const navigate = useNavigate();
-  const [password, setPassword] = useState("");
-  const [confirm, setConfirm] = useState("");
-  const [done, setDone] = useState(false);
-  const [loading, setLoading] = useState(false);
-
-  const handleReset = () => {
-    setLoading(true);
-    setTimeout(() => { setLoading(false); setDone(true); }, 1000);
-  };
-
-  if (done) {
-    return (
-      <AuthLayout title="Password reset!" subtitle="Your password has been successfully reset. Click below to log in."
-        icon={CheckCircle}>
-        <Button full onClick={() => navigate("/login")}>Back to Login</Button>
-      </AuthLayout>
-    );
-  }
 
   return (
-    <AuthLayout title="Set new password" subtitle="Your new password must be different from your previous password."
+    <AuthLayout title="Reset password" subtitle="Password reset is not yet available."
       icon={Lock} showBack onBack={() => navigate("/forgot-password")}>
-      <Input label="New Password" type="password" placeholder="Min 8 characters" value={password} onChange={setPassword} icon={Lock} required />
-      <Input label="Confirm New Password" type="password" placeholder="Confirm password" value={confirm} onChange={setConfirm} icon={Lock} required />
-      <Button full onClick={handleReset} disabled={loading || !password || password !== confirm} className="mt-1">
-        {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-        {loading ? "Updating…" : "Reset Password"}
-      </Button>
+      <p className="text-sm text-gray-500 dark:text-muted-foreground text-center mb-4">
+        Email <strong>support@kolo.app</strong> to request a password reset.
+      </p>
+      <a href="mailto:support@kolo.app" className="block w-full text-center py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold transition-all">
+        <Mail className="w-4 h-4 inline mr-2" />Contact Support
+      </a>
     </AuthLayout>
   );
 }
