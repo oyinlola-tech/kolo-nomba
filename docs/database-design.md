@@ -4,7 +4,57 @@ This document describes the database schema and architecture of Kolo — a Postg
 
 ---
 
-## Entity Relationship Overview
+## Entity Relationship Diagram
+
+```mermaid
+erDiagram
+    User ||--o{ Session : has
+    User ||--o{ GroupMember : belongs_to
+    User ||--o{ GroupInvitation : sends
+    User ||--o{ ContributionPlan : creates
+    User ||--o{ Payment : makes
+    User ||--o{ Transaction : has
+    User ||--o{ Payout : requests
+    User ||--o{ PayoutApproval : approves
+    User ||--o{ PayoutRecipient : receives
+    User ||--o{ PayoutRecipientAccount : owns
+    User ||--o{ WithdrawalRequest : submits
+    User ||--o{ Notification : receives
+    User ||--o| NotificationPreference : configures
+    User ||--o{ OtpCode : verifies
+    User ||--o{ EmailLog : logs
+
+    Group ||--o{ GroupMember : contains
+    Group ||--o{ GroupInvitation : has
+    Group ||--o{ ContributionPlan : has
+    Group ||--o{ Payment : associated_with
+    Group ||--o{ Payout : distributes
+    Group ||--o{ PayoutSchedule : schedules
+
+    GroupMember ||--o{ MemberContribution : makes
+
+    ContributionPlan ||--o{ ContributionCycle : generates
+    ContributionCycle ||--o{ MemberContribution : tracks
+
+    MemberContribution ||--o{ ContributionReminder : has
+    MemberContribution ||--o{ Payment : pays
+
+    Payment ||--o| Transaction : references
+
+    Wallet ||--o{ LedgerAccount : has
+    Wallet ||--o{ LedgerEntry : records
+    FinancialTransaction ||--o{ LedgerEntry : contains
+
+    Payout ||--o{ PayoutRecipient : distributes_to
+    Payout ||--o{ PayoutApproval : requires
+    Payout }o--|| PayoutSchedule : optional
+
+    PayoutRecipient }o--|| PayoutRecipientAccount : uses
+
+    Notification ||--o{ NotificationDelivery : delivers
+```
+
+### Entity Relationships Overview
 
 ```
 User
