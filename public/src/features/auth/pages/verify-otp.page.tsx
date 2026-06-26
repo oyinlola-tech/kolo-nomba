@@ -1,14 +1,22 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { ShieldCheck, Check, RefreshCw } from "lucide-react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { ShieldCheck, Check, RefreshCw, Mail } from "lucide-react";
 import { Button } from "../../../components/shared/Button";
 import { AuthLayout } from "../../../components/layout/AuthLayout";
+import { setAccessToken } from "../../../api/client";
+import { useAppStore } from "../../../app/store";
+import { apiClient } from "../../../api/client";
 
 export function VerifyOTPPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const userId = searchParams.get("userId") ?? "";
+  const email = searchParams.get("email") ?? "";
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [loading, setLoading] = useState(false);
-  const [resent, setResent] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [error, setError] = useState("");
+  const setSession = useAppStore((state) => state.setSession);
 
   const handleChange = (i: number, v: string) => {
     if (!/^\d?$/.test(v)) return;
@@ -17,14 +25,44 @@ export function VerifyOTPPage() {
     if (v && i < 5) (document.getElementById(`otp-${i + 1}`) as HTMLInputElement)?.focus();
   };
 
-  const handleVerify = () => {
+  const handleVerify = async () => {
+    setError("");
     setLoading(true);
-    setTimeout(() => { setLoading(false); navigate("/member/home"); }, 1200);
+    try {
+      const { data } = await apiClient.post("/auth/verify-otp", { userId, code: otp.join("") });
+      const result = data.data ?? data;
+      setAccessToken(result.accessToken);
+      setSession(result.user, result.accessToken);
+      navigate("/member/home", { replace: true });
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Verification failed";
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResend = async () => {
+    setResending(true);
+    setError("");
+    try {
+      await apiClient.post("/auth/resend-otp", { userId });
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Failed to resend code";
+      setError(msg);
+    } finally {
+      setResending(false);
+    }
   };
 
   return (
-    <AuthLayout title="Verify your phone" subtitle={"We sent a 6-digit code to +234 801 234 ••••"}
+    <AuthLayout title="Verify your email" subtitle={`We sent a 6-digit code to ${email ? email.replace(/(.{3}).+(@.+)/, "$1•••$2") : "your email"}`}
       icon={ShieldCheck} showBack onBack={() => navigate("/register")}>
+      {error && (
+        <div className="mb-4 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm">
+          {error}
+        </div>
+      )}
       <div className="flex gap-2.5 justify-center mb-6">
         {otp.map((d, i) => (
           <input key={i} id={`otp-${i}`} type="text" inputMode="numeric" maxLength={1} value={d}
@@ -33,15 +71,15 @@ export function VerifyOTPPage() {
             className="w-11 h-13 text-center text-lg font-bold border-2 border-gray-200 dark:border-border rounded-xl focus:outline-none focus:border-primary dark:bg-input-background dark:text-white transition-all" />
         ))}
       </div>
-      <Button full onClick={handleVerify} disabled={loading || otp.some(d => !d)} className="mb-4">
+      <Button full onClick={handleVerify} disabled={loading || otp.some(d => !d) || !userId} className="mb-4">
         {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-        {loading ? "Verifying…" : "Verify Code"}
+        {loading ? "Verifying\u2026" : "Verify Code"}
       </Button>
       <p className="text-sm text-gray-500 dark:text-muted-foreground text-center">
         Didn&apos;t receive it?{" "}
-        <button disabled={resent} onClick={() => setResent(true)}
-          className={`font-semibold ${resent ? "text-gray-400 cursor-not-allowed" : "text-primary hover:underline"}`}>
-          {resent ? "Code sent!" : "Resend code"}
+        <button disabled={resending} onClick={handleResend}
+          className={`font-semibold ${resending ? "text-gray-400 cursor-not-allowed" : "text-primary hover:underline"}`}>
+          {resending ? "Sending\u2026" : "Resend code"}
         </button>
       </p>
     </AuthLayout>
