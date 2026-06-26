@@ -532,26 +532,6 @@ https://www.oyinlola.site/
 
 ---
 
-# 🔗 Useful Resources
-
-Icons:
-
-* Lucide Icons
-  https://lucide.dev
-
-* Heroicons
-  https://heroicons.com
-
-* Font Awesome
-  https://fontawesome.com
-
-Animations:
-
-* LottieFiles
-  https://lottiefiles.com
-
----
-
 <p align="center">
 
 Built with ❤️ to modernize African cooperative finance.
