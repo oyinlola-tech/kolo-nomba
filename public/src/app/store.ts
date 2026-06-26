@@ -44,13 +44,11 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   setSession: (user, accessToken) => {
     setAccessToken(accessToken);
-    window.localStorage.setItem("kolo.user", JSON.stringify(user));
     set({ user, role: user.role, accessToken, isHydrated: true });
   },
 
   clearSession: () => {
     setAccessToken(null);
-    window.localStorage.removeItem("kolo.user");
     set({ user: null, role: null, accessToken: null, isHydrated: true });
   },
 
@@ -72,7 +70,6 @@ export async function initAuth(): Promise<void> {
     const newToken = refreshRes.data.accessToken ?? refreshRes.data.data?.accessToken;
 
     if (!newToken) {
-      window.localStorage.removeItem("kolo.user");
       useAppStore.setState({ user: null, role: null, accessToken: null, isHydrated: true });
       return;
     }
@@ -84,10 +81,8 @@ export async function initAuth(): Promise<void> {
     });
     const profile = profileRes.data.data ?? profileRes.data;
 
-    window.localStorage.setItem("kolo.user", JSON.stringify(profile));
     useAppStore.setState({ user: profile, role: profile.role, accessToken: newToken, isHydrated: true });
   } catch {
-    window.localStorage.removeItem("kolo.user");
     useAppStore.setState({ user: null, role: null, accessToken: null, isHydrated: true });
   }
 }

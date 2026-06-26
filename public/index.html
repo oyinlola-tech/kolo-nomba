@@ -6,7 +6,10 @@
     <meta name="theme-color" content="#059669" />
     <meta name="color-scheme" content="light dark" />
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://api.nomba.com; frame-ancestors 'none'; base-uri 'self'" />
-    <!-- In production, replace this meta CSP with real HTTP headers at the CDN/host layer. Dev mode (Vite HMR) may need 'unsafe-inline' for scripts and styles. -->
+    <!-- Production note: Replace this meta CSP with HTTP headers at the CDN/host layer.
+         frame-ancestors in meta tags is ignored by browsers — enforce it in HTTP headers.
+         If the API backend is on a different origin than the frontend, add that origin to connect-src.
+         Dev mode (Vite HMR) may need 'unsafe-inline' for scripts and styles. -->
 
     <title>KOLO — Digital Cooperative Savings Platform for Modern Africa</title>
     <meta name="description" content="KOLO digitizes traditional African cooperative savings (Ajo/Esusu). Join a group, contribute via bank transfer/USSD/card, track savings in real-time, and receive payouts securely. Free plan available." />
