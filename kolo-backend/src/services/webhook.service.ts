@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { WebhookRepository } from "../repositories/webhook.repository";
 import { PaymentService } from "./payment.service";
 import { NombaWebhook } from "../integrations/nomba/nomba.webhook";
@@ -66,13 +67,22 @@ export class WebhookService {
       return { received: true };
     }
 
-    const webhookEvent = await this.webhookRepository.create({
-      provider: "nomba",
-      eventId,
-      eventType,
-      payload: body as Record<string, unknown>,
-      signature,
-    });
+    let webhookEvent;
+    try {
+      webhookEvent = await this.webhookRepository.create({
+        provider: "nomba",
+        eventId,
+        eventType,
+        payload: body as Record<string, unknown>,
+        signature,
+      });
+    } catch (err) {
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+        this.webhookLogger.log("Duplicate webhook event ID (race) received", { eventType, eventId });
+        return { received: true };
+      }
+      throw err;
+    }
 
     this.webhookLogger.log("Webhook received", { eventType, webhookId: webhookEvent.id });
 

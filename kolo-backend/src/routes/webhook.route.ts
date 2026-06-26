@@ -4,6 +4,14 @@ import { WebhookController } from "../controllers/webhook.controller";
 
 const WEBHOOK_BODY_LIMIT = 524_288;
 
+class WebhookBodyError extends Error {
+  public statusCode = 413;
+  constructor() {
+    super("Body exceeds the allowed size limit");
+    this.name = "WebhookBodyError";
+  }
+}
+
 export class WebhookRoute {
   private readonly controller: WebhookController;
 
@@ -13,7 +21,7 @@ export class WebhookRoute {
 
   register(app: FastifyInstance, prefix: string): void {
     app.post(`${prefix}/webhooks/nomba`, {
-      preParsing: (request: FastifyRequest, reply: FastifyReply, payload, done) => {
+      preParsing: (request: FastifyRequest, _reply: FastifyReply, payload, done) => {
         const chunks: Buffer[] = [];
         let size = 0;
         let aborted = false;
@@ -23,7 +31,7 @@ export class WebhookRoute {
           if (size > WEBHOOK_BODY_LIMIT) {
             aborted = true;
             payload.destroy();
-            reply.status(413).send({ success: false, message: "Body exceeds the allowed size limit" });
+            done(new WebhookBodyError(), undefined);
             return;
           }
           chunks.push(chunk);
