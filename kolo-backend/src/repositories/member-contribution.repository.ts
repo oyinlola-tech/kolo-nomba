@@ -1,12 +1,17 @@
 import { PrismaDatabase } from "../database/prisma";
+import type { Prisma } from "../generated/prisma/client";
 
 export class MemberContributionRepository {
   private get db() {
     return PrismaDatabase.getInstance().getClient();
   }
 
-  async findById(id: string) {
-    return this.db.memberContribution.findUnique({
+  private getClient(tx?: Prisma.TransactionClient) {
+    return tx ?? this.db;
+  }
+
+  async findById(id: string, tx?: Prisma.TransactionClient) {
+    return this.getClient(tx).memberContribution.findUnique({
       where: { id },
       include: { cycle: true, groupMember: { include: { user: true } } },
     });
@@ -69,7 +74,7 @@ export class MemberContributionRepository {
     return this.db.memberContribution.createMany({ data: data as never });
   }
 
-  async updateStatus(id: string, status: string, paidAmount?: number) {
+  async updateStatus(id: string, status: string, paidAmount?: number, tx?: Prisma.TransactionClient) {
     const data: Record<string, unknown> = { status: status as never };
     if (paidAmount !== undefined) {
       data.paidAmount = paidAmount;
@@ -77,7 +82,7 @@ export class MemberContributionRepository {
         data.paidAt = new Date();
       }
     }
-    return this.db.memberContribution.update({ where: { id }, data: data as never });
+    return this.getClient(tx).memberContribution.update({ where: { id }, data: data as never });
   }
 
   async updateManyStatus(ids: string[], status: "LATE" | "MISSED") {
