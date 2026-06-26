@@ -81,7 +81,7 @@ export class UserService {
 
     const validation = new PasswordValidationService().validatePassword(newPassword);
     if (!validation.valid) {
-      throw new ValidationError(validation.message, validation.requirements);
+      throw new ValidationError(validation.message, { password: validation.requirements ?? [] });
     }
 
     const newHash = await HashUtil.hashPassword(newPassword);
