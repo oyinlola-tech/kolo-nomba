@@ -55,7 +55,7 @@ export class NotificationController {
 
   async getDeliveries(request: FastifyRequest, reply: FastifyReply): Promise<void> {
     const { notificationId } = request.params as { notificationId: string };
-    const result = await this.notificationService.getDeliveries(notificationId);
+    const result = await this.notificationService.getDeliveries(notificationId, request.userId!);
     ResponseUtil.success(reply, result);
   }
 
