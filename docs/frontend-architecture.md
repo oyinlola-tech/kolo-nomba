@@ -54,63 +54,75 @@ public/
 
 ## Application Architecture
 
-```
-┌────────────────────────────────────────────────────────────┐
-│                     Entry Point (main.tsx)                  │
-│   initAuth() → createRoot → <App />                        │
-└────────────────────────────┬───────────────────────────────┘
-                             │
-┌────────────────────────────▼───────────────────────────────┐
-│                        App.tsx                              │
-│   <AppProviders> → <RouterProvider router={router} />       │
-└────────────────────────────┬───────────────────────────────┘
-                             │
-┌────────────────────────────▼───────────────────────────────┐
-│                     AppProviders                            │
-│   QueryClientProvider (TanStack Query)                      │
-└────────────────────────────┬───────────────────────────────┘
-                             │
-┌────────────────────────────▼───────────────────────────────┐
-│                   Router (React Router 6)                   │
-│                                                             │
-│  ┌──────────┐  ┌─────────────┐  ┌──────────────┐          │
-│  │ Public   │  │ Auth Pages  │  │ Protected    │          │
-│  │ Routes   │  │ (/login,    │  │ Routes       │          │
-│  │ (/, /pricing,│ /register, │  │ (/member/*,  │          │
-│  │ /about)  │  │ /verify-otp)│  │ /group/admin/*,          │
-│  └──────────┘  └─────────────┘  │ /ajo/admin/*)│          │
-│                                  └──────┬───────┘          │
-│                                         │                  │
-│                               ┌─────────▼──────────┐      │
-│                               │  ProtectedRoute     │      │
-│                               │  (Auth gate + Role  │      │
-│                               │   gate)             │      │
-│                               └─────────────────────┘      │
-└────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TB
+    Entry["Entry Point (main.tsx)\ninitAuth() → createRoot → <App />"]
+    App["App.tsx\n<AppProviders>\n<RouterProvider router={router}>"]
+    Providers["AppProviders\nQueryClientProvider (TanStack Query)"]
+    Router["Router (React Router 6)"]
+
+    subgraph Public["Public Routes"]
+        Landing["(/, /pricing, /about,\n/contact, /security, /help)"]
+    end
+
+    subgraph Auth["Auth Pages"]
+        Login["/login, /register,\n/verify-otp, /forgot-password"]
+    end
+
+    subgraph Protected["Protected Routes"]
+        SuperAdmin["Super Admin\n/ajo/admin/*"]
+        GroupAdmin["Group Admin\n/group/admin/*"]
+        Member["Member\n/member/*"]
+    end
+
+    subgraph Gate["Auth Gate"]
+        ProtectedRoute["ProtectedRoute Component\nChecks: isHydrated, accessToken, role"]
+    end
+
+    Entry --> App
+    App --> Providers
+    Providers --> Router
+    Router --> Public
+    Router --> Auth
+    Router --> Protected
+    Protected --> ProtectedRoute
+    ProtectedRoute --> SuperAdmin
+    ProtectedRoute --> GroupAdmin
+    ProtectedRoute --> Member
 ```
 
 ---
 
 ## Data Flow
 
-```
-Component (Page)
-    │
-    ▼
-Custom Hook (useUsers, usePayments, etc.)
-    │  Uses TanStack Query (useQuery / useMutation)
-    ▼
-Service Function (user.service.ts, payment.service.ts)
-    │  Calls apiClient methods
-    ▼
-API Client (Axios Instance)
-    │  Request Interceptor: Attaches Bearer token
-    │  Response Interceptor: Handles 401 → refresh → retry
-    ▼
-Backend API (Fastify)
-    │
-    ▼
-Response → TanStack Query cache → Component re-render
+```mermaid
+flowchart TB
+    Component["Component (Page)"]
+    Hook["Custom Hook\nuseQuery / useMutation\n(TanStack Query)"]
+    Service["Service Function\n(user.service.ts, payment.service.ts)"]
+    Client["API Client (Axios)\nwithCredentials: true"]
+    Backend["Backend API (Fastify - /api/v1/*)"]
+    Cache["TanStack Query Cache\nAutomatic caching & invalidation"]
+    ReRender["Component re-render"]
+
+    Component --> Hook
+    Hook --> Service
+    Service -->|"Axios call"| Client
+    Client -->|"HTTP request"| Backend
+    Backend -->|"Response"| Client
+    Client -->|"Response data"| Service
+    Service -->|"Data"| Hook
+    Hook -->|"Cached data"| Cache
+    Cache -->|"Update"| Component
+    Component --> ReRender
+
+    subgraph Interceptors["Axios Interceptors"]
+        ReqInt["Request Interceptor\nAttaches Bearer token"]
+        ResInt["Response Interceptor\n401 → refresh token → retry"]
+    end
+
+    Client --> ReqInt
+    Client --> ResInt
 ```
 
 ### The API Client
@@ -247,41 +259,42 @@ Theme is toggled by adding/removing the `dark` class on `<html>` and persisted i
 ## Layout Components
 
 ### AuthLayout (Login/Register pages)
-```
-┌────────────────────────────────────────────┐
-│  ┌────────────────┐  ┌──────────────────┐  │
-│  │  Brand Panel   │  │  Form Panel      │  │
-│  │  Logo           │  │  Auth form       │  │
-│  │  Value props    │  │  Submit button   │  │
-│  │  Testimonials   │  │  Links           │  │
-│  └────────────────┘  └──────────────────┘  │
-└────────────────────────────────────────────┘
+```mermaid
+flowchart TB
+    subgraph AuthLayout["AuthLayout"]
+        BrandPanel["Brand Panel\nLogo, Value Props, Testimonials"]
+        FormPanel["Form Panel\nAuth Form, Submit Button, Links"]
+    end
+
+    BrandPanel ~~~ FormPanel
 ```
 
 ### AppLayout (Admin Dashboards)
-```
-┌────────────────────────────────────────────┐
-│  ┌──────────┐  ┌─────────────────────────┐ │
-│  │ Sidebar  │  │  Header                 │ │
-│  │ Nav items │  │  Search | Theme | User  │ │
-│  │          │  ├─────────────────────────┤ │
-│  │          │  │  Main Content Area       │ │
-│  │          │  │  (Page content)          │ │
-│  └──────────┘  └─────────────────────────┘ │
-└────────────────────────────────────────────┘
+```mermaid
+flowchart TB
+    subgraph AppLayout["AppLayout"]
+        Sidebar["Sidebar\nNavigation Items"]
+        Right["Right Panel"]
+        Header["Header\nSearch | Theme Toggle | User Menu"]
+        Content["Main Content Area\n(Page content rendered by Outlet)"]
+    end
+
+    Sidebar --> Right
+    Right --> Header
+    Right --> Content
 ```
 
 ### MemberApp (Mobile-first)
-```
-┌────────────────────────────────────────────┐
-│              Header / Title                 │
-├────────────────────────────────────────────┤
-│                                            │
-│           Main Content Area                │
-│                                            │
-├────────────────────────────────────────────┤
-│  Home  │  Groups  │  Pay  │  History  │  Me │
-└────────────────────────────────────────────┘
+```mermaid
+flowchart TB
+    subgraph MemberApp["MemberApp"]
+        Title["Header / Title"]
+        Main["Main Content Area"]
+        BottomNav["Bottom Navigation\nHome | Groups | Pay | History | Profile"]
+    end
+
+    Title --> Main
+    Main --> BottomNav
 ```
 
 ---
@@ -290,25 +303,29 @@ Theme is toggled by adding/removing the `dark` class on `<html>` and persisted i
 
 On page load, `initAuth()` attempts to restore the session:
 
-```
-Page Load (main.tsx)
-    │
-    ▼
-initAuth()
-    │
-    ├── POST /auth/refresh (with HttpOnly cookie)
-    │   │
-    │   ├── Success → extract new access token
-    │   │              → GET /auth/me (profile)
-    │   │              → setSession(profile, token)
-    │   │              → set isHydrated = true
-    │   │
-    │   └── Failed → clearSession()
-    │                → set isHydrated = true
-    │
-    ▼
-App renders
-    │
-    ├── isHydrated = false → Loading spinner
-    └── isHydrated = true  → Normal render
+```mermaid
+flowchart TB
+    Start["Page Load (main.tsx)"]
+    Init["initAuth()"]
+    Refresh["POST /auth/refresh\n(HttpOnly cookie sent automatically)"]
+    Success{"Success?"}
+    Extract["Extract new access token\nfrom response"]
+    Profile["GET /auth/me\n(fetch user profile)"]
+    SetSession["setSession(profile, token)\nset isHydrated = true"]
+    Clear["clearSession()\nset isHydrated = true"]
+    Hydrated{"isHydrated?"}
+    Loading["Loading Spinner"]
+    Render["Normal App Render"]
+
+    Start --> Init
+    Init --> Refresh
+    Refresh --> Success
+    Success -->|"Yes"| Extract
+    Extract --> Profile
+    Profile --> SetSession
+    Success -->|"No"| Clear
+    SetSession --> Hydrated
+    Clear --> Hydrated
+    Hydrated -->|"false"| Loading
+    Hydrated -->|"true"| Render
 ```
