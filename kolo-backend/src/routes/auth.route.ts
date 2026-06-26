@@ -28,6 +28,9 @@ export class AuthRoute {
       preHandler: this.authMiddleware.authenticate.bind(this.authMiddleware),
       handler: this.controller.logout.bind(this.controller),
     });
+    app.post(`${prefix}/auth/logout/session`, {
+      handler: this.controller.logout.bind(this.controller),
+    });
     app.post(`${prefix}/auth/verify-otp`, {
       config: { rateLimit: { max: 5, timeWindow: "5 minutes" } },
       handler: this.controller.verifyOtp.bind(this.controller),
