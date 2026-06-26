@@ -13,6 +13,15 @@ export const loginSchema = z.object({
   password: z.string().min(1, "Password is required"),
 });
 
+export const verifyOtpSchema = z.object({
+  userId: z.string().uuid("Invalid user ID"),
+  code: z.string().length(6, "Verification code must be 6 digits"),
+});
+
+export const resendOtpSchema = z.object({
+  userId: z.string().uuid("Invalid user ID"),
+});
+
 export const refreshTokenSchema = z.object({
   refreshToken: z.string().min(1, "Refresh token is required"),
 });
@@ -20,3 +29,5 @@ export const refreshTokenSchema = z.object({
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type RefreshTokenInput = z.infer<typeof refreshTokenSchema>;
+export type VerifyOtpInput = z.infer<typeof verifyOtpSchema>;
+export type ResendOtpInput = z.infer<typeof resendOtpSchema>;
