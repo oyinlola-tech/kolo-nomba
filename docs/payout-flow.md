@@ -6,45 +6,67 @@ This document explains how withdrawals work in Kolo — from initiation and appr
 
 ## Payout Lifecycle
 
-```
-┌──────────┐    ┌──────────┐    ┌──────────┐    ┌───────────┐
-│ PENDING   │───▶│ APPROVED │───▶│PROCESSING│───▶│ COMPLETED │
-└──────────┘    └──────────┘    └──────────┘    └───────────┘
-     │               │               │
-     ▼               ▼               ▼
- CREATED        Review OK       Transfers
- by admin       Approved        initiated
-                              ┌────┴────┐
-                              ▼         ▼
-                         SUCCESSFUL  FAILED → RETRY (max 3)
-                              │         │
-                              ▼         ▼
-                         Funds sent  Manual review
-                         to member   required
+```mermaid
+stateDiagram-v2
+    [*] --> PENDING: Created by admin
+    PENDING --> APPROVED: Approver approves
+    PENDING --> REJECTED: Approver rejects
+    PENDING --> CANCELLED: Admin cancels
+    APPROVED --> PROCESSING: Admin processes
+    PROCESSING --> SUCCESSFUL: All transfers succeed
+    PROCESSING --> FAILED: All transfers fail
+    PROCESSING --> PARTIAL_FAIL: Some transfers fail
+    SUCCESSFUL --> COMPLETED: Fully reconciled
+    FAILED --> PROCESSING: Retry
+    PARTIAL_FAIL --> PROCESSING: Retry failed ones
+    REJECTED --> [*]
+    CANCELLED --> [*]
+    COMPLETED --> [*]
+
+    note right of PENDING: Awaiting approval
+    note right of APPROVED: Ready to process
+    note right of PROCESSING: Transfers being sent
 ```
 
 ---
 
 ## Payout Approval Workflow
 
-```
-1. Group admin creates payout
-   ├── Selects recipients
-   ├── Sets amounts
-   └── Adds reason
-        │
-2. Payout status: PENDING
-        │
-3. Approver reviews payout
-   ├── Can approve (status → APPROVED)
-   └── Can reject (status → REJECTED)
-        │
-4. Admin processes approved payout
-   ├── Wallet balance checked
-   ├── Transfers initiated
-   └── Status: PROCESSING
-        │
-5. Transfers complete → Status: COMPLETED
+```mermaid
+sequenceDiagram
+    participant Admin as Group Admin
+    participant Kolo as Kolo API
+    participant Approver as Approver
+    participant Queue as BullMQ
+    participant Nomba as Nomba API
+    participant DB as PostgreSQL
+
+    Admin->>Kolo: Create payout (recipients, amounts, reason)
+    Kolo->>DB: Create Payout (status: PENDING)
+    Kolo->>DB: Create PayoutRecipients
+    Kolo-->>Admin: Payout created
+
+    Approver->>Kolo: Review & approve payout
+    Kolo->>DB: Update Payout (status: APPROVED, approvedBy)
+    Kolo-->>Approver: Approved
+
+    Admin->>Kolo: Process payout
+    Kolo->>DB: Check group wallet balance
+    alt Insufficient balance
+        Kolo-->>Admin: Error: insufficient funds
+    else Sufficient balance
+        Kolo->>DB: Atomic debit group wallet
+        Kolo->>DB: Update Payout (status: PROCESSING)
+        Kolo->>Nomba: createTransfer(amount, bank, account)
+        Nomba-->>Kolo: { providerReference }
+        Kolo->>DB: Store reference on PayoutRecipient
+        Kolo->>Queue: Enqueue status check
+
+        Nomba->>Kolo: Webhook: transfer_success
+        Kolo->>DB: Update PayoutRecipient → SUCCESSFUL
+        Kolo->>Kolo: Generate receipt
+        Kolo-->>Admin: Notification
+    end
 ```
 
 ---
@@ -100,39 +122,35 @@ Ledger Entries:
 
 ### Individual Transfer Flow
 
-```
-1. PayoutProcessor picks up job
-        │
-2. Debit group wallet (atomic decrement)
-   UPDATE wallets SET balance = balance - amount
-   WHERE id = 'group-wallet' AND balance >= amount
-        │
-3. If insufficient balance → Mark as failed, notify admin
-        │
-4. Call NombaTransfer.createTransfer()
-   { amount, bankCode, accountNumber, accountName, reference }
-        │
-5. Nomba queues transfer
-        │
-6. Store Nomba reference on PayoutRecipient
-        │
-7. Update recipient status: PROCESSING
-        │
-8. Nomba sends webhook: transfer_success or transfer.failed
-        │
-9. On success:
-   ├── Update recipient status: SUCCESSFUL
-   ├── Generate transfer receipt
-   └── Send notification to member
-        │
-10. On failure:
-    ├── Increment retryCount
-    ├── If retryCount < 3: Re-queue for retry
-    └── If retryCount >= 3: Mark as FAILED, notify admin
-        │
-11. Credit group wallet back on terminal failure
-    UPDATE wallets SET balance = balance + amount
-    WHERE id = 'group-wallet'
+```mermaid
+flowchart TB
+    Start["PayoutProcessor picks up job"]
+    Debit["Atomic debit group wallet\nUPDATE wallets SET balance = balance - amount"]
+    CheckBalance{"balance >= amount?"}
+    Insufficient["Mark payout FAILED\nNotify admin"]
+    NombaCall["NombaTransfer.createTransfer()\n{ amount, bank, account, reference }"]
+    StoreRef["Store Nomba reference\non PayoutRecipient"]
+    UpdateProc["Update recipient: PROCESSING"]
+    Webhook["Nomba webhook"]
+    CheckSuccess{"transfer_success\nor\ntransfer.failed?"}
+    Success["Update recipient: SUCCESSFUL\nGenerate receipt\nSend notification"]
+    Retry{"retryCount < 3?"}
+    IncRetry["Increment retryCount\nRe-queue for retry"]
+    Fail["Credit wallet back (atomic)\nMark FAILED\nNotify admin"]
+
+    Start --> Debit
+    Debit --> CheckBalance
+    CheckBalance -->|"No"| Insufficient
+    CheckBalance -->|"Yes"| NombaCall
+    NombaCall --> StoreRef
+    StoreRef --> UpdateProc
+    UpdateProc --> Webhook
+    Webhook --> CheckSuccess
+    CheckSuccess -->|"success"| Success
+    CheckSuccess -->|"failed"| Retry
+    Retry -->|"Yes"| IncRetry
+    IncRetry --> NombaCall
+    Retry -->|"No"| Fail
 ```
 
 ### Retry Logic
@@ -186,11 +204,21 @@ Transfer Failed
 
 ## Payout States
 
-```
-PENDING → APPROVED → PROCESSING → SUCCESSFUL → COMPLETED
-  │                     │              │
-  │                     ▼              ▼
-  └──→ REJECTED    PARTIAL_FAIL    FAILED
+```mermaid
+stateDiagram-v2
+    [*] --> PENDING
+    PENDING --> APPROVED
+    PENDING --> REJECTED
+    PENDING --> CANCELLED
+    APPROVED --> PROCESSING
+    PROCESSING --> SUCCESSFUL
+    PROCESSING --> PARTIAL_FAIL
+    PROCESSING --> FAILED
+    SUCCESSFUL --> COMPLETED
+    FAILED --> [*]
+    REJECTED --> [*]
+    CANCELLED --> [*]
+    COMPLETED --> [*]
 ```
 
 | State | Description |
