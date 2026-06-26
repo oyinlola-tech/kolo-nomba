@@ -1,273 +1,235 @@
-# KOLO Security Aduit
+# Security Audit
 
-Generated: 2026-06-26
+Date: 2026-06-27
+
+Scope reviewed: React/Vite frontend in `public` and Fastify/Prisma backend in `kolo-backend`.
 
 ## Executive Summary
 
-I reviewed the React/Vite frontend and Fastify/Prisma backend for security loopholes, missing controls, and harmful failure modes. The most serious issues are broken object-level authorization around wallets, ledgers, transactions, and payouts; raw bearer tokens stored in browser `localStorage`; raw refresh tokens stored in the database; broad CORS defaults; and missing targeted brute-force controls on login/refresh/register. Dependency audit also found high-severity frontend React Router advisories.
+This pass re-scanned both frontend and backend, including auth/session handling, role checks, group/payout/contribution authorization, payment/webhook processing, frontend storage, CSP, dependency audit results, and build status.
 
-This audit is source-based. Some deployment controls, such as CDN security headers, WAF rules, TLS, secrets manager policy, and production proxy limits, are not visible in this repository and should be verified separately.
+The current tree has improved since the previous audit. Registration no longer publishes raw OTPs through the event bus, login now has an email OTP challenge for unknown devices, OTP attempt lockout and resend cooldowns exist, the OTP email expiry text matches the backend, the registration page runtime bug is fixed, and both frontend and backend builds now pass.
+
+New confirmed issues remain. The highest-risk finding is that reconciliation endpoints are outside the super-admin route group and allow any active authenticated user to list and resolve reconciliation records. A previous contribution-plan issue is partially fixed: updates now require group admin access, but deletes/completion still only require ordinary group membership. I also found payout recipient-account ID validation gaps, the existing SPA meta CSP limitation, stale localStorage profile/role state, and a backend transaction-list query bug.
+
+Application code was not changed during this audit pass. I updated this report file only.
 
 ## Critical Findings
 
-### SEC-001: Broken object-level authorization on wallet reads, balance reads, and transfers
-
-- Severity: Critical
-- Location: `kolo-backend/src/controllers/wallet.controller.ts:14`, `kolo-backend/src/controllers/wallet.controller.ts:20`, `kolo-backend/src/controllers/wallet.controller.ts:38`, `kolo-backend/src/services/wallet.service.ts:44`, `kolo-backend/src/services/wallet.service.ts:55`, `kolo-backend/src/services/wallet.service.ts:129`
-- Evidence:
-  - Routes authenticate the caller, but `getById()` and `getBalance()` pass only the wallet ID to the service.
-  - `WalletService.getWallet(id, userId?)` and `getBalance(id, userId?)` only check access when `userId` is provided.
-  - `transfer()` accepts `sourceWalletId` and `destinationWalletId` from the request and never verifies the authenticated user can debit the source wallet.
-- Impact: Any authenticated user who can guess or obtain a wallet ID can read another wallet, view balances, and potentially transfer funds out of wallets they do not own or administer.
-- Fix:
-  - Pass `request.userId` into all wallet service calls.
-  - Make `userId` required for public wallet reads/transfers.
-  - Enforce `assertWalletAccess()` before reading a wallet or debiting a source wallet.
-  - Prefer server-derived source wallets instead of accepting `sourceWalletId` directly from the client.
-- Mitigation: Add audit alerts for wallet access attempts where the authenticated user is not linked to the wallet owner.
-
-### SEC-002: Broken object-level authorization on ledger entries
-
-- Severity: Critical
-- Location: `kolo-backend/src/controllers/ledger.controller.ts:12`, `kolo-backend/src/services/ledger.service.ts:11`
-- Evidence:
-  - The route authenticates users, but `LedgerController.getByWallet()` passes only `walletId`.
-  - `LedgerService.getLedgerByWallet(walletId)` returns ledger entries without checking wallet ownership, group membership, or admin role.
-- Impact: Any authenticated user can read another wallet's ledger entries if they know the `walletId`, exposing financial history and balances.
-- Fix: Require `userId` in `getLedgerByWallet()`, load the wallet, and enforce the same wallet/group access policy used for wallet reads.
-
-### SEC-003: Broken object-level authorization on transaction detail endpoint
-
-- Severity: Critical
-- Location: `kolo-backend/src/controllers/financial-transaction.controller.ts:17`, `kolo-backend/src/services/financial-transaction.service.ts:11`
-- Evidence:
-  - `getById()` passes only the transaction ID.
-  - `getTransaction(id)` fetches by ID and maps the transaction without checking that the authenticated user owns either wallet or has group/admin access.
-- Impact: Any authenticated user can read arbitrary financial transaction details by ID.
-- Fix: Change `getTransaction(id, userId)` to verify the transaction's source or destination wallet is visible to that user before returning it.
-
-### SEC-004: Payout reads and retry/receipt actions lack group membership or admin checks
-
-- Severity: Critical
-- Location: `kolo-backend/src/controllers/payout.controller.ts:35`, `kolo-backend/src/controllers/payout.controller.ts:41`, `kolo-backend/src/controllers/payout.controller.ts:80`, `kolo-backend/src/controllers/payout.controller.ts:86`, `kolo-backend/src/services/payout.service.ts:84`, `kolo-backend/src/services/payout.service.ts:89`, `kolo-backend/src/services/payout.service.ts:193`, `kolo-backend/src/services/payout.service.ts:312`
-- Evidence:
-  - `listByGroup()` calls `getPayouts(groupId)` without user context.
-  - `getById()` calls `getPayout(id)` without user context.
-  - `retryFailedTransfer(recipientId)` and `generateTransferReceipt(recipientId)` operate on recipient IDs without checking group access.
-- Impact: Any authenticated user can list payouts for arbitrary groups, read payout details, view recipient transfer references, fetch receipts, or retry failed transfers by ID.
-- Fix:
-  - Pass `request.userId` into all payout read/action methods.
-  - Enforce active group membership for reads.
-  - Enforce group admin/owner for retry and processing operations.
-  - Do not expose `destinationAccount` or provider references unless the caller is authorized.
-
-### SEC-005: Payout processing does not validate admin access
-
-- Severity: Critical
-- Location: `kolo-backend/src/controllers/payout.controller.ts:74`, `kolo-backend/src/services/payout.service.ts:165`
-- Evidence:
-  - `processPayout(id, userId)` receives `userId` but does not call `validateAdminAccess()`.
-  - It queues payout transfer jobs for every recipient once the payout is approved.
-- Impact: Any authenticated user who knows an approved payout ID can trigger processing and potentially cause real fund movement.
-- Fix: Add `await this.validateAdminAccess(payout.groupId, userId)` before balance checks and queueing.
+No confirmed critical findings.
 
 ## High Findings
 
-### SEC-006: Access and refresh tokens are stored in browser localStorage
+### H-01: Any authenticated active user can list and resolve reconciliation records
 
-- Severity: High
-- Location: `public/src/app/store.ts:42`, `public/src/app/store.ts:53`, `public/src/api/client.ts:27`, `public/src/api/client.ts:54`, `public/src/api/client.ts:68`
-- Evidence:
-  - Access token, refresh token, and user profile are read from and written to `window.localStorage`.
-- Impact: Any XSS bug, malicious browser extension, or compromised third-party script can steal long-lived refresh tokens and impersonate users.
-- Fix:
-  - Prefer server-set `HttpOnly`, `Secure`, `SameSite` cookies for refresh/session tokens.
-  - Keep access tokens short-lived and in memory when possible.
-  - If bearer tokens remain in JS storage, add stronger XSS defenses, CSP, token rotation, and refresh-token reuse detection.
+Location:
+- `kolo-backend/src/routes/reconciliation.route.ts:14`
+- `kolo-backend/src/routes/reconciliation.route.ts:16`
+- `kolo-backend/src/routes/reconciliation.route.ts:19`
+- `kolo-backend/src/routes/reconciliation.route.ts:21`
+- `kolo-backend/src/controllers/reconciliation.controller.ts:14`
+- `kolo-backend/src/controllers/reconciliation.controller.ts:38`
+- `kolo-backend/src/services/reconciliation.service.ts:18`
+- `kolo-backend/src/services/reconciliation.service.ts:31`
 
-### SEC-007: Refresh tokens are stored in plaintext in the database
+Evidence:
+```ts
+app.get(`${prefix}/reconciliation`, {
+  preHandler: this.authMiddleware.authenticate.bind(this.authMiddleware),
+  handler: this.controller.list.bind(this.controller),
+});
+```
 
-- Severity: High
-- Location: `kolo-backend/src/services/auth.service.ts:130`, `kolo-backend/src/services/auth.service.ts:211`
-- Evidence:
-  - Refresh lookup uses `where: { refreshToken }`.
-  - `createSession()` stores the full refresh token directly in `session.refreshToken`.
-- Impact: A database leak exposes active refresh tokens that can be used until expiry.
-- Fix:
-  - Store only a keyed hash or strong digest of refresh tokens.
-  - Compare hashes during refresh/logout.
-  - Track token family/version and revoke on reuse.
+```ts
+app.post(`${prefix}/reconciliation/:id/resolve`, {
+  preHandler: this.authMiddleware.authenticate.bind(this.authMiddleware),
+  handler: this.controller.resolve.bind(this.controller),
+});
+```
 
-### SEC-008: CORS defaults can reflect any Origin
+Impact: Any active logged-in member can view provider reconciliation records and mark them resolved. This exposes financial operations data and lets non-admin users alter reconciliation state.
 
-- Severity: High
-- Location: `kolo-backend/src/config/env.config.ts:80`, `kolo-backend/src/config/app.config.ts:54`, `kolo-backend/src/loaders/middleware.loader.ts:25`
-- Evidence:
-  - `CORS_ORIGIN` defaults to `"*"`.
-  - If allowed origins include `"*"`, middleware uses `{ origin: true }`, which reflects request origins.
-- Impact: If tokens are ever sent via cookies or if permissive CORS is combined with sensitive responses, malicious origins can read API responses from a victim browser. Even with bearer auth, this weakens origin isolation and increases blast radius.
-- Fix:
-  - Fail closed in production if no explicit CORS allowlist is configured.
-  - Use exact trusted origins only.
-  - Avoid `origin: true` in production.
+Fix: Move these routes under the admin route group or add `RoleMiddleware(Roles.SUPER_ADMIN)` to both reconciliation routes. Also ignore client-provided `resolvedBy` and use `request.userId`.
 
-### SEC-009: Login/register/refresh endpoints lack targeted brute-force and abuse protections
+Mitigation: Audit recent reconciliation changes and compare `resolvedBy` values against real super-admin users.
 
-- Severity: High
-- Location: `kolo-backend/src/routes/auth.route.ts:15`, `kolo-backend/src/routes/auth.route.ts:16`, `kolo-backend/src/routes/auth.route.ts:17`, `kolo-backend/src/loaders/middleware.loader.ts:31`
-- Evidence:
-  - Auth endpoints rely only on a global rate limit of `RATE_LIMIT_MAX`.
-  - No username+IP failed-attempt throttling, account lock/step-up, device challenge, or refresh endpoint abuse control is visible.
-- Impact: Attackers can attempt credential stuffing, password guessing, account enumeration pressure, refresh-token spraying, and mass fake registration until the broad global limiter triggers.
-- Fix:
-  - Add route-specific limits for `/auth/login`, `/auth/register`, and `/auth/refresh`.
-  - Track failed login attempts by email/phone + IP.
-  - Add progressive delays, alerts, and optional CAPTCHA/step-up after suspicious patterns.
+False positive notes: Admin Nomba reconciliation endpoints are super-admin protected, but these non-admin `/reconciliation` endpoints are still registered separately.
 
-### SEC-010: Nomba webhook signature validation may use reconstructed JSON instead of raw body
+### H-02: Any active group member can complete/delete contribution plans
 
-- Severity: High
-- Location: `kolo-backend/src/controllers/webhook.controller.ts:26`, `kolo-backend/src/app.ts:17`
-- Evidence:
-  - Webhook controller uses `request.rawBody` if present, otherwise `JSON.stringify(request.body)`.
-  - No `rawBody` plugin or custom content type parser is registered in the Fastify app.
-- Impact: If Nomba signs the exact raw request body, valid webhooks may fail when whitespace, key order, or encoding differs after parsing. This can block payment reconciliation or create unreliable webhook processing.
-- Fix:
-  - Register a raw-body capture mechanism before JSON parsing for the webhook route.
-  - Verify HMAC against the exact bytes/string received from Nomba.
-  - Keep timestamp tolerance and timing-safe comparison.
+Location:
+- `kolo-backend/src/routes/contribution.route.ts:48`
+- `kolo-backend/src/routes/contribution.route.ts:49`
+- `kolo-backend/src/services/contribution-plan.service.ts:110`
+- `kolo-backend/src/services/contribution-plan.service.ts:113`
+- `kolo-backend/src/services/contribution-plan.service.ts:116`
 
-### SEC-011: Frontend React Router dependency has high-severity advisories
+Evidence:
+```ts
+app.delete(`${prefix}/contribution-plans/:id`, {
+  preHandler: [
+    this.authMiddleware.authenticate.bind(this.authMiddleware),
+  ],
+  handler: this.controller.deletePlan.bind(this.controller),
+});
+```
 
-- Severity: High
-- Location: `public/package.json`, `public/package-lock.json`
-- Evidence:
-  - `npm audit --omit=dev --json` reported:
-    - `@remix-run/router`: GHSA-2w69-qvjg-hvjx, high, XSS via open redirects.
-    - `react-router`: GHSA-2j2x-hqr9-3h42, moderate open redirect range included in high effective dependency chain.
-    - `react-router-dom`: affected through `react-router` and `@remix-run/router`.
-- Impact: Routing and redirect behavior may be vulnerable to open redirect or XSS patterns depending on app usage.
-- Fix: Upgrade `react-router` and `react-router-dom` to a patched version and rebuild/test route behavior.
+```ts
+if (userId) {
+  await this.validateGroupAccess(groupId, userId);
+}
+await this.planRepository.updateStatus(id, "COMPLETED");
+```
+
+Impact: An ordinary active group member who knows a contribution plan ID can mark the plan completed. This can disrupt contribution schedules and financial workflows.
+
+Fix: Change `deletePlan()` to call `validateGroupAdminAccess(groupId, userId)` just like `updatePlan()` now does.
+
+Mitigation: Review recent `CONTRIBUTION_PLAN_COMPLETED` audit entries for non-admin actors.
+
+False positive notes: The previous update-plan issue is fixed at `contribution-plan.service.ts:96`; this finding is now specifically for delete/complete.
 
 ## Medium Findings
 
-### SEC-012: Group middleware checks the wrong route parameter for `:groupId` routes
+### M-01: Payout creation accepts recipient account IDs without ownership or verification checks
 
-- Severity: Medium
-- Location: `kolo-backend/src/middleware/group.middleware.ts:8`, `kolo-backend/src/routes/contribution.route.ts:19`, `kolo-backend/src/routes/contribution.route.ts:27`, `kolo-backend/src/routes/contribution.route.ts:77`
-- Evidence:
-  - `GroupMiddleware` reads `(request.params as { id?: string }).id`.
-  - Several routes use `:groupId`, not `:id`.
-- Impact: Intended access checks can fail closed and deny legitimate contribution-plan and contribution requests. If future code assumes the middleware works on `groupId`, this pattern can also create accidental authorization bypasses.
-- Fix: Make middleware read `id ?? groupId`, or provide separate middleware for group-scoped route params.
+Location:
+- `kolo-backend/src/validators/payout.validator.ts:11`
+- `kolo-backend/src/services/payout.service.ts:41`
+- `kolo-backend/src/services/payout.service.ts:66`
+- `kolo-backend/src/services/payout.service.ts:71`
+- `kolo-backend/src/jobs/processors/payout.processor.ts:47`
 
-### SEC-013: Contribution plan global endpoints have no group access/admin middleware
+Evidence:
+```ts
+recipientAccountId: z.string().uuid().optional(),
+```
 
-- Severity: Medium
-- Location: `kolo-backend/src/routes/contribution.route.ts:35`, `kolo-backend/src/routes/contribution.route.ts:41`, `kolo-backend/src/routes/contribution.route.ts:48`, `kolo-backend/src/routes/contribution.route.ts:56`, `kolo-backend/src/routes/contribution.route.ts:61`, `kolo-backend/src/routes/contribution.route.ts:66`, `kolo-backend/src/routes/contribution.route.ts:85`
-- Evidence:
-  - Global plan, cycle, dashboard, and contribution detail endpoints only use authentication.
-  - No route-level group membership/admin check is visible for these object IDs.
-- Impact: If the service layer does not resolve the object back to a group and enforce membership, authenticated users can read or modify another group's contribution plans/cycles/contribution details.
-- Fix: Enforce object-level authorization in service methods, not only route middleware. Every plan/cycle/contribution ID should be resolved to its group before returning or mutating data.
+```ts
+await this.recipientRepository.create({
+  payoutId: payout.id,
+  userId: recipient.userId,
+  amount: recipient.amount,
+  destinationAccount: recipient.destinationAccount,
+  recipientAccountId: recipient.recipientAccountId,
+});
+```
 
-### SEC-014: Security headers exist on the API but not visibly on the SPA shell
+Impact: A group admin can attach any known `PayoutRecipientAccount` UUID to a payout recipient. If IDs leak through logs, UI, or another endpoint, payouts can be routed to an account that does not belong to the selected recipient. The code also does not require the account to be verified.
 
-- Severity: Medium
-- Location: `kolo-backend/src/loaders/middleware.loader.ts:30`, `public/index.html:1`
-- Evidence:
-  - Backend registers `@fastify/helmet`.
-  - The SPA `public/index.html` has no CSP meta and no repository-visible static hosting config that sets CSP, frame ancestors, referrer policy, permissions policy, or nosniff for the frontend shell.
-- Impact: The browser app lacks visible defense-in-depth against XSS, clickjacking, MIME sniffing, and excessive referrer leakage unless these are set at the deployment edge.
-- Fix:
-  - Set frontend security headers at the CDN/static host.
-  - Add a realistic CSP, `X-Content-Type-Options: nosniff`, `Referrer-Policy`, `Permissions-Policy`, and `frame-ancestors`/`X-Frame-Options`.
-  - Verify headers at runtime after deployment.
+Fix: Before creating each payout recipient, load `recipientAccountId` and require `account.userId === recipient.userId` and `account.verified === true`. Prefer requiring `recipientAccountId` over free-form `destinationAccount`.
 
-### SEC-015: Inline styles and JSON-LD require CSP planning
+Mitigation: Log selected recipient account IDs during payout creation and flag mismatches between recipient user and account owner.
 
-- Severity: Medium
-- Location: `public/index.html:37`, `public/index.html:55`, `public/src/app/components/ui/chart.tsx:82`
-- Evidence:
-  - `index.html` contains inline JSON-LD and inline `<style>`.
-  - Chart component uses `dangerouslySetInnerHTML` to inject generated CSS custom properties.
-- Impact: These are not confirmed XSS bugs because the current data appears developer-controlled, but they will complicate a strict CSP and become dangerous if untrusted values ever reach chart IDs, chart keys, or colors.
-- Fix:
-  - Keep chart config developer-controlled or validate CSS colors/identifiers.
-  - Use CSP nonces/hashes for required inline blocks, or move static inline CSS to files.
-  - Avoid broad `unsafe-inline` in production CSP.
+False positive notes: This requires group-admin privilege or a compromised group-admin account, but payout routing is high-value enough to require strict ownership checks.
 
-### SEC-016: Refresh endpoint body is not schema-validated
+### M-02: SPA CSP is still a weak meta policy with `unsafe-inline`
 
-- Severity: Medium
-- Location: `kolo-backend/src/controllers/auth.controller.ts:52`
-- Evidence:
-  - Refresh handler casts `request.body as { refreshToken: string }` and only checks truthiness.
-- Impact: Unexpected body shapes can cause inconsistent behavior, noisy logs, and weaker request validation. This is lower risk than the token storage issue but should be fixed.
-- Fix: Add a Zod schema for refresh/logout payloads with `refreshToken: z.string().min(...)`.
+Location:
+- `public/index.html:8`
+- `kolo-backend/src/loaders/middleware.loader.ts:39`
+- `kolo-backend/src/loaders/middleware.loader.ts:40`
 
-### SEC-017: Backend dependency audit reports moderate Prisma transitive vulnerability
+Evidence:
+```html
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; ... frame-ancestors 'none'; ...">
+```
 
-- Severity: Medium
-- Location: `kolo-backend/package.json`, `kolo-backend/package-lock.json`
-- Evidence:
-  - `npm audit --omit=dev --json` reported moderate advisories through `prisma -> @prisma/dev -> @hono/node-server`.
-  - Advisory: GHSA-92pp-h63x-v22m, middleware bypass via repeated slashes in `serveStatic`.
-- Impact: Current exploitability depends on whether the affected static serving path is reachable in this app. It is still a supply-chain risk and should be patched or pinned to a non-affected Prisma release.
-- Fix: Upgrade/downgrade Prisma to a patched stable version recommended by the advisory, then run build/tests and regenerate Prisma client.
+Impact: If the frontend is served statically, this meta CSP may be the only visible policy. `unsafe-inline` weakens XSS defense-in-depth, and `frame-ancestors` is ignored in meta-delivered CSP.
+
+Fix: Set CSP, `frame-ancestors`, `X-Content-Type-Options`, `Referrer-Policy`, and `Permissions-Policy` as HTTP headers at the CDN/static host. Remove `unsafe-inline` once inline JSON-LD/style needs are handled through hashes, nonces, or external files.
+
+Mitigation: Verify deployed frontend response headers at runtime.
+
+False positive notes: Backend Helmet production CSP is stricter, but it only helps responses served by the backend. Static SPA hosting still needs real headers.
 
 ## Low Findings
 
-### SEC-018: Swagger is disabled outside development, but depends on correct `NODE_ENV`
+### L-01: Frontend persists user profile and role in localStorage
 
-- Severity: Low
-- Location: `kolo-backend/src/loaders/swagger.loader.ts:17`, `kolo-backend/src/config/env.config.ts:79`
-- Evidence:
-  - Swagger is skipped when `!isDevelopment`.
-  - `NODE_ENV` defaults to `"development"`.
-- Impact: If production deploys forget to set `NODE_ENV=production`, Swagger UI may be exposed and reveal API structure.
-- Fix: Deployment should explicitly set `NODE_ENV=production`. Consider a separate `ENABLE_SWAGGER` flag defaulting false.
+Location:
+- `public/src/app/store.ts:36`
+- `public/src/app/store.ts:57`
+- `public/src/app/store.ts:102`
+- `public/src/components/shared/ProtectedRoute.tsx:34`
 
-### SEC-019: Production runtime binds to `0.0.0.0` with no in-repo proxy hardening
+Evidence:
+```ts
+const raw = window.localStorage.getItem("kolo.user");
+window.localStorage.setItem("kolo.user", JSON.stringify(user));
+```
 
-- Severity: Low
-- Location: `kolo-backend/src/app.ts:26`
-- Evidence:
-  - Server listens on all interfaces.
-  - No repository-visible reverse proxy, timeout, connection limit, WAF, or edge rate-limit config.
-- Impact: Public Node exposure without proxy controls can increase DoS risk and reduce observability.
-- Fix: Run behind a hardened reverse proxy or managed platform with request/connection timeouts, body limits, TLS, logging, and edge throttling.
+Impact: Tokens are not stored in localStorage, which is good. However, localStorage profile/role data can be stale or tampered with and is used for route gating. This is mostly a UX/defense-in-depth issue because backend routes enforce real authorization.
 
-### SEC-020: No committed CI/security scanning workflow is visible
+Fix: Treat stored user data as a cache only. Keep protected routes blocked until `initAuth()` refreshes and `/auth/me` returns. Consider storing less profile data, or only a boolean hint that a previous session existed.
 
-- Severity: Low
-- Location: repository root
-- Evidence:
-  - No CI workflow files are visible in the scanned file list.
-  - Dependency audit had to be run manually.
-- Impact: Vulnerable dependency versions and security regressions can ship unnoticed.
-- Fix: Add CI steps for `npm ci`, `npm audit --omit=dev` or a dedicated SCA tool, TypeScript build, lint, and targeted security tests for authorization.
+Mitigation: Ensure every sensitive backend route continues to enforce server-side authorization.
 
-## Positive Security Controls Found
+False positive notes: I did not find access or refresh tokens persisted in localStorage/sessionStorage.
 
-- Password hashing uses `argon2` through `HashUtil` dependency path.
-- JWT access tokens expire in 15 minutes and refresh tokens in 7 days.
-- Webhook verification uses HMAC-SHA256 and `timingSafeEqual`.
-- Webhook replay defenses exist through timestamp validation, duplicate event ID checks, signature replay checks, and payload duplicate checks.
-- Backend uses Fastify `bodyLimit: 1048576`.
-- Backend registers Helmet and a global rate limiter.
-- Swagger is disabled when `NODE_ENV` is not development.
-- Many controllers use Zod validators for request bodies.
-- Admin routes are protected by authentication plus `SUPER_ADMIN` role middleware.
+### L-02: User transaction list query passes unresolved promises into Prisma filters
+
+Location:
+- `kolo-backend/src/repositories/financial-transaction.repository.ts:22`
+- `kolo-backend/src/repositories/financial-transaction.repository.ts:26`
+- `kolo-backend/src/repositories/financial-transaction.repository.ts:27`
+- `kolo-backend/src/controllers/financial-transaction.controller.ts:11`
+
+Evidence:
+```ts
+{ sourceWalletId: { in: this.db.wallet.findMany(...).then(w => w.map(w => w.id)) } as never },
+```
+
+Impact: `/transactions` can fail or behave unpredictably because Prisma expects an array for `in`, not a Promise. This is not a direct authorization bypass because single-transaction access checks wallets separately, but it weakens reliability of a financial history endpoint.
+
+Fix: Resolve wallet IDs first, then pass the array into `findMany`.
+
+Mitigation: Add a focused test for `/transactions` returning only the current user's wallet transactions.
+
+False positive notes: This is a correctness/security-adjacent issue, not a confirmed data leak.
+
+## Resolved Since Previous Audit
+
+- Raw OTP is no longer published in `UserEvent("verification_required")`; registration only publishes `userId`.
+- Unknown-device login challenge now exists and sends an email OTP before issuing tokens.
+- OTP verification now tracks `attemptCount`, `lockedUntil`, and resend cooldown.
+- OTP email copy now says 10 minutes, matching `OTP_EXPIRY_MINUTES = 10`.
+- Registration page now uses `loading` instead of removed `register.isPending`.
+- Backend `npm run build` now passes.
+- Contribution plan update now requires `validateGroupAdminAccess()`.
+- Email templates now escape most variables and validate button URLs.
+
+## Positive Findings
+
+- Refresh tokens are delivered through an `HttpOnly` cookie and are not returned in controller JSON responses.
+- Access tokens are kept in memory in the frontend API client.
+- Refresh token sessions store SHA-256 token hashes.
+- Refresh/logout endpoints enforce exact Origin/Referer checks outside development.
+- Auth middleware checks that the bearer-token user still exists and is `ACTIVE`.
+- Login, register, OTP, payment, payout, wallet, and admin inputs mostly use Zod validation.
+- Backend Helmet, CORS allowlists, and global/per-route rate limits are configured.
+- Wallet reads/transfers enforce wallet or group access, and group-wallet transfers require admin/owner.
+- No high-risk frontend DOM XSS sink was confirmed; the chart style sink sanitizes chart IDs, keys, and CSS colors before `dangerouslySetInnerHTML`.
+- `npm audit --omit=dev` reports zero vulnerabilities in both frontend and backend.
+
+## Verification
+
+- `npm audit --omit=dev` in `public`: passed, 0 vulnerabilities.
+- `npm audit --omit=dev` in `kolo-backend`: passed, 0 vulnerabilities.
+- `npm run build` in `public`: passed, with a large chunk warning.
+- `npm run build` in `kolo-backend`: passed.
+
+## Changes Made
+
+Updated this report file: `security aduit.md`.
+
+No application code was changed during this audit pass.
 
 ## Recommended Fix Order
 
-1. Fix wallet, ledger, transaction, and payout object-level authorization before production use.
-2. Add targeted auth rate limits and failed-login throttling.
-3. Move refresh/session tokens out of `localStorage` or add a hardened transition plan.
-4. Hash refresh tokens in the session table and add reuse detection.
-5. Lock production CORS to exact allowed origins.
-6. Capture raw request bodies for Nomba webhook verification.
-7. Patch frontend React Router dependencies and backend Prisma advisory.
-8. Add frontend security headers at the hosting edge.
-9. Add authorization regression tests for every route that accepts an object ID.
+1. Restrict reconciliation list/resolve routes to `SUPER_ADMIN` and use `request.userId` as resolver.
+2. Restrict contribution plan delete/complete to group owners/admins.
+3. Validate payout recipient account ownership and verified status before payout creation.
+4. Move frontend security headers to the static host/CDN and remove `unsafe-inline` where feasible.
+5. Stop trusting localStorage profile/role until server rehydration completes.
+6. Fix the user transaction list Prisma query and add an endpoint test.
