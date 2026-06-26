@@ -644,19 +644,17 @@ export class NotificationEventHandler {
     // ===== LEGACY / BACKWARD COMPATIBILITY =====
 
     bus.subscribe("user.verification_required", async (event) => {
-      const { userId, verificationCode } = event.payload;
+      const { userId } = event.payload;
       if (userId) {
         const user = await this.userRepository.findById(String(userId));
         await this.notificationService.create({
           userId: String(userId),
           type: "SYSTEM",
           title: "Verify Your Account",
-          message: "Please verify your email address to activate your account.",
+          message: "Please check your email for the verification code to activate your account.",
           channel: "EMAIL",
           metadata: {
-            ...event.payload,
             firstName: user?.firstName ?? "",
-            verificationCode: String(verificationCode ?? ""),
           },
         });
       }
