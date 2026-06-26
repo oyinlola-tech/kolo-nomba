@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { MAX_KOBO } from "../constants/financial.constant";
 
 export const createWalletSchema = z.object({
   ownerType: z.enum(["USER", "GROUP", "PLATFORM"]),
@@ -9,7 +10,7 @@ export const createWalletSchema = z.object({
 export const transferSchema = z.object({
   sourceWalletId: z.string().uuid("Invalid source wallet"),
   destinationWalletId: z.string().uuid("Invalid destination wallet"),
-  amount: z.number().int("Amount must be a whole number").positive("Amount must be positive").max(100_000_000, "Amount exceeds maximum allowed"),
+  amount: z.number().int("Amount must be a whole number").positive("Amount must be positive").max(MAX_KOBO, "Amount exceeds maximum allowed"),
   description: z.string().max(500).optional(),
 });
 
