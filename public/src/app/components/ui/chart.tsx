@@ -77,8 +77,41 @@ function cssEscape(str: string): string {
   return str.replace(/[^\w-]/g, "");
 }
 
+const CSS_NAMED_COLORS = new Set([
+  "aliceblue","antiquewhite","aqua","aquamarine","azure","beige","bisque","black",
+  "blanchedalmond","blue","blueviolet","brown","burlywood","cadetblue","chartreuse",
+  "chocolate","coral","cornflowerblue","cornsilk","crimson","cyan","darkblue",
+  "darkcyan","darkgoldenrod","darkgray","darkgreen","darkgrey","darkkhaki",
+  "darkmagenta","darkolivegreen","darkorange","darkorchid","darkred","darksalmon",
+  "darkseagreen","darkslateblue","darkslategray","darkslategrey","darkturquoise",
+  "darkviolet","deeppink","deepskyblue","dimgray","dimgrey","dodgerblue","firebrick",
+  "floralwhite","forestgreen","fuchsia","gainsboro","ghostwhite","gold","goldenrod",
+  "gray","green","greenyellow","grey","honeydew","hotpink","indianred","indigo",
+  "ivory","khaki","lavender","lavenderblush","lawngreen","lemonchiffon","lightblue",
+  "lightcoral","lightcyan","lightgoldenrodyellow","lightgray","lightgreen","lightgrey",
+  "lightpink","lightsalmon","lightseagreen","lightskyblue","lightslategray",
+  "lightslategrey","lightsteelblue","lightyellow","lime","limegreen","linen",
+  "magenta","maroon","mediumaquamarine","mediumblue","mediumorchid","mediumpurple",
+  "mediumseagreen","mediumslateblue","mediumspringgreen","mediumturquoise",
+  "mediumvioletred","midnightblue","mintcream","mistyrose","moccasin","navajowhite",
+  "navy","oldlace","olive","olivedrab","orange","orangered","orchid","palegoldenrod",
+  "palegreen","paleturquoise","palevioletred","papayawhip","peachpuff","peru","pink",
+  "plum","powderblue","purple","rebeccapurple","red","rosybrown","royalblue",
+  "saddlebrown","salmon","sandybrown","seagreen","seashell","sienna","silver",
+  "skyblue","slateblue","slategray","slategrey","snow","springgreen","steelblue",
+  "tan","teal","thistle","tomato","transparent","turquoise","violet","wheat","white",
+  "whitesmoke","yellow","yellowgreen",
+]);
+
 function isValidCSSColor(value: string): boolean {
-  return /^(#[0-9a-fA-F]{3,8}|rgb(a)?\s*\(|hsl(a)?\s*\(|[a-zA-Z]+)$/.test(value.trim());
+  const trimmed = value.trim();
+  if (/^#[0-9a-fA-F]{3,8}$/.test(trimmed)) return true;
+  if (CSS_NAMED_COLORS.has(trimmed.toLowerCase())) return true;
+  if (/^rgb\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}\s*\)$/.test(trimmed)) return true;
+  if (/^rgba\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*(0|0?\.\d+|1(\.0+)?)\s*\)$/.test(trimmed)) return true;
+  if (/^hsl\(\s*\d{1,3}\s*,\s*\d{1,3}%\s*,\s*\d{1,3}%\s*\)$/.test(trimmed)) return true;
+  if (/^hsla\(\s*\d{1,3}\s*,\s*\d{1,3}%\s*,\s*\d{1,3}%\s*,\s*(0|0?\.\d+|1(\.0+)?)\s*\)$/.test(trimmed)) return true;
+  return false;
 }
 
 const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
