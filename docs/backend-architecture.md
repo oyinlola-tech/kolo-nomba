@@ -49,22 +49,24 @@ kolo-backend/
 
 ## Architecture Layers (Request Flow)
 
-```
-Route
-  │
-  ▼
-Middleware (Auth → Role → Group Access)
-  │
-  ▼
-Controller (Extract → Validate → Response)
-  │
-  ▼
-Service (Business Logic → Orchestration)
-  │
-  ├──▶ Repository (Database Access)
-  ├──▶ Integration (External APIs)
-  ├──▶ Job Queue (Async Processing)
-  └──▶ Audit Logger
+```mermaid
+flowchart TB
+    Route["Route\n(HTTP endpoint definition)"]
+    Middleware["Middleware Pipeline\nAuth → Role → Group Access → Rate Limit"]
+    Controller["Controller\n(Extract → Validate → Response)"]
+    Service["Service\n(Business Logic → Orchestration)"]
+    Repository["Repository\n(Prisma Database Access)"]
+    Integration["Integration\n(External APIs - Nomba, Email)"]
+    JobQueue["Job Queue\n(BullMQ Async Processing)"]
+    Audit["Audit Logger\n(AuditLog table + Pino)"]
+
+    Route --> Middleware
+    Middleware --> Controller
+    Controller --> Service
+    Service --> Repository
+    Service --> Integration
+    Service --> JobQueue
+    Service --> Audit
 ```
 
 ### Route Layer (`routes/*.route.ts`)
@@ -178,17 +180,16 @@ External service integrations:
 
 Kolo uses BullMQ with Redis for async processing:
 
-```
-┌──────────┐    ┌──────────┐    ┌──────────┐
-│ Service  │───▶│  Queue   │───▶│  Worker  │
-│ (produce)│    │ (Redis)  │    │(consumer)│
-└──────────┘    └──────────┘    └────┬─────┘
-                                     │
-                              ┌──────▼──────┐
-                              │  Database    │
-                              │  (status,    │
-                              │   progress)  │
-                              └─────────────┘
+```mermaid
+flowchart LR
+    Service["Service Layer\n(Job Producer)"]
+    Queue["BullMQ Queue\n(Redis)"]
+    Worker["Worker\n(Job Consumer)"]
+    DB["PostgreSQL\n(BackgroundJob status table)"]
+
+    Service -->|"addJob()"| Queue
+    Queue -->|"Worker picks up"| Worker
+    Worker -->|"upsert status"| DB
 ```
 
 **Processors (10 total):**
@@ -209,15 +210,20 @@ Kolo uses BullMQ with Redis for async processing:
 
 ## Error Handling
 
-```
-Error Hierarchy:
+```mermaid
+flowchart TB
+    Error["Error"]
+    AppError["AppError\n(statusCode, errorCode, isOperational)"]
+    AuthError["AuthError\n401, AUTH_ERROR"]
+    Forbidden["ForbiddenError\n403, FORBIDDEN"]
+    PaymentError["PaymentError\n402, PAYMENT_ERROR"]
+    ValidationError["ValidationError\n400, VALIDATION_ERROR\ndetails"]
 
-Error
- └── AppError (statusCode, errorCode, isOperational)
-      ├── AuthError (401, "AUTH_ERROR")
-      ├── ForbiddenError (403, "FORBIDDEN")
-      ├── PaymentError (402, "PAYMENT_ERROR")
-      └── ValidationError (400, "VALIDATION_ERROR", details)
+    Error --> AppError
+    AppError --> AuthError
+    AppError --> Forbidden
+    AppError --> PaymentError
+    AppError --> ValidationError
 ```
 
 The `ErrorMiddleware` catches all errors and returns structured JSON:
@@ -267,51 +273,53 @@ Frontend                Backend                  Nomba               Database
 
 ### Auth Flow
 
-```
-Client                  Server                  Database
-  │                       │                       │
-  │── POST /auth/login ──▶│                       │
-  │    {email, password}   │                       │
-  │                       │── find user ──────────▶│
-  │                       │◀── user data ──────────┤
-  │                       │                       │
-  │                       │── verify password      │
-  │                       │   (Argon2)             │
-  │                       │                       │
-  │                       │── check device hash ──▶│
-  │                       │◀── existing sessions   │
-  │                       │                       │
-  │  (known device)       │── generate JWT         │
-  │                       │── create session ─────▶│
-  │◀── {tokens, user} ────┤                       │
-  │                       │                       │
-  │  - or -               │                       │
-  │                       │                       │
-  │  (unknown device)     │── create OTP ─────────▶│
-  │                       │── send email OTP       │
-  │◀── {challengeId} ─────┤                       │
-  │                       │                       │
-  │── POST /verify-login  │                       │
-  │    {code}            ─▶│                       │
-  │                       │── verify OTP ─────────▶│
-  │                       │── generate JWT         │
-  │                       │── create session ─────▶│
-  │◀── {tokens, user} ────┤                       │
+```mermaid
+sequenceDiagram
+    participant Client
+    participant Server as Fastify API
+    participant DB as PostgreSQL
+
+    Client->>Server: POST /auth/login { email, password }
+    Server->>DB: Find user by email/phone
+    DB-->>Server: User record
+    Server->>Server: Verify password (Argon2)
+    Server->>DB: Check existing session by deviceHash
+    DB-->>Server: Session record
+
+    alt Known Device
+        Server->>Server: Generate JWT access + refresh tokens
+        Server->>DB: Create session (hashed refreshToken)
+        Server-->>Client: { user, accessToken } + Set-Cookie
+    else Unknown Device
+        Server->>DB: Create OTP (SHA-256 hashed)
+        Server->>Server: Send OTP email
+        Server-->>Client: { challengeId, maskedEmail }
+
+        Client->>Server: POST /auth/verify-login-otp { code }
+        Server->>DB: Verify OTP
+        DB-->>Server: Valid
+        Server->>Server: Generate JWT tokens
+        Server->>DB: Create session with deviceHash
+        Server-->>Client: { user, accessToken, role }
+    end
 ```
 
 ### Error Flow
 
-```
-Controller
-  │
-  ├── Success → ResponseUtil.success(reply, data)
-  │             { success: true, message, data }
-  │
-  └── Error → thrown to ErrorMiddleware
-               │
-               ├── AppError → { success: false, message, errorCode }
-               │    (statusCode from error)
-               │
-               └── Unknown → 500 Internal Server Error
-                    { success: false, message: "Internal error" }
+```mermaid
+flowchart TB
+    Controller["Controller execution"]
+    Success["ResponseUtil.success()\n{ success: true, message, data }"]
+    Error["Error thrown\n(any error type)"]
+    ErrorMiddleware["ErrorMiddleware\n(global error handler)"]
+    AppError["AppError instance?\n(statusCode, errorCode)"]
+    KnownError["{ success: false, message, errorCode }\n(statusCode from error type)"]
+    UnknownError["{ success: false, message: 'Internal error' }\n(500)"]
+
+    Controller --> Success
+    Controller --> Error
+    Error --> ErrorMiddleware
+    ErrorMiddleware --> AppError
+    AppError -->|"Yes"| KnownError
+    AppError -->|"No"| UnknownError
 ```
