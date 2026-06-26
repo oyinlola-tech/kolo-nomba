@@ -250,8 +250,6 @@ export class PaymentService {
 
       const providerRef = verification.providerReference || reference;
 
-      await this.processSuccessfulPayment(paymentId, providerRef);
-
       if (payment.groupId) {
         const groupWallet = await this.walletService.getOrCreateWallet("GROUP", payment.groupId);
         await this.walletService.processContributionPayment(groupWallet.id, payment.amount, `Contribution payment ${paymentId}`);
@@ -264,6 +262,8 @@ export class PaymentService {
           metadata: { paymentId, reference: providerRef },
         });
       }
+
+      await this.processSuccessfulPayment(paymentId, providerRef);
     } catch (error) {
       this.logger.error("Payment verification failed with error", {
         paymentId,
