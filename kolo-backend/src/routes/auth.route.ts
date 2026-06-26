@@ -28,6 +28,18 @@ export class AuthRoute {
       preHandler: this.authMiddleware.authenticate.bind(this.authMiddleware),
       handler: this.controller.logout.bind(this.controller),
     });
+    app.post(`${prefix}/auth/verify-otp`, {
+      config: { rateLimit: { max: 5, timeWindow: "5 minutes" } },
+      handler: this.controller.verifyOtp.bind(this.controller),
+    });
+    app.post(`${prefix}/auth/resend-otp`, {
+      config: { rateLimit: { max: 3, timeWindow: "5 minutes" } },
+      handler: this.controller.resendOtp.bind(this.controller),
+    });
+    app.post(`${prefix}/auth/verify-login-otp`, {
+      config: { rateLimit: { max: 5, timeWindow: "5 minutes" } },
+      handler: this.controller.verifyLoginOtp.bind(this.controller),
+    });
     app.get(`${prefix}/auth/me`, {
       preHandler: this.authMiddleware.authenticate.bind(this.authMiddleware),
       handler: this.controller.me.bind(this.controller),
