@@ -1,6 +1,6 @@
 import { create } from "zustand";
-import { apiClient, setAccessToken } from "../api/client";
-import { getProfile } from "../services/auth.service";
+import { setAccessToken } from "../api/client";
+import { getProfile, refreshToken } from "../services/auth.service";
 import type { AuthUser, UserRole } from "../types/auth.types";
 
 type ThemeMode = "light" | "dark";
@@ -59,8 +59,7 @@ export const useAppStore = create<AppState>((set, get) => ({
 
 export async function initAuth(): Promise<void> {
   try {
-    const { data: refreshData } = await apiClient.post("/auth/refresh", {});
-    const newToken = refreshData.accessToken ?? refreshData.data?.accessToken;
+    const newToken = await refreshToken();
 
     if (!newToken) {
       useAppStore.setState({ user: null, role: null, accessToken: null, isHydrated: true });
