@@ -12,7 +12,6 @@ import { NombaPaymentLogger } from "../logger/implementations/nomba-payment.logg
 import { AuthError } from "../errors/auth.error";
 import { PaymentError } from "../errors/payment.error";
 import { ValidationError } from "../errors/validation.error";
-import { AppError } from "../errors/app.error";
 import type { InitiatePaymentDto, PaymentResponse, InitiatePaymentResult } from "../dto/payment.dto";
 import { Logger } from "../logger/core/logger";
 
@@ -65,7 +64,7 @@ export class PaymentService {
       throw new ValidationError(`Amount must equal the outstanding balance of ${outstanding}`);
     }
 
-    const paymentRef = `PAY-${dto.contributionId.slice(0, 8).toUpperCase()}-${Date.now()}`;
+    const paymentRef = `PAY-${contribution.id.slice(0, 8).toUpperCase()}-${Date.now()}`;
 
     const prisma = PrismaDatabase.getInstance().getClient();
     const payment = await prisma.$transaction(async (tx) => {
@@ -83,7 +82,6 @@ export class PaymentService {
         currency: "NGN",
         provider: "nomba",
         status: "INITIALIZED",
-        reference: paymentRef,
         paymentMethod: dto.paymentMethod,
       }, tx);
     });
@@ -120,14 +118,13 @@ export class PaymentService {
     this.paymentLogger.log("Payment initialized", {
       paymentId: payment.id,
       amount,
-      reference: payment.reference,
+      reference: payment.providerReference ?? paymentRef,
     });
 
     return {
       paymentId: payment.id,
       reference: nombaResult.reference,
       paymentUrl: nombaResult.paymentUrl,
-      paymentReference: paymentRef,
     };
   }
 
@@ -270,8 +267,8 @@ export class PaymentService {
       return;
     }
 
-    if (payment.reference && payment.reference !== reference) {
-      this.logger.error("Reference mismatch", { paymentId, paymentReference: payment.reference, webhookReference: reference });
+    if (payment.providerReference && payment.providerReference !== reference) {
+      this.logger.error("Reference mismatch", { paymentId, paymentReference: payment.providerReference, webhookReference: reference });
     }
 
     try {

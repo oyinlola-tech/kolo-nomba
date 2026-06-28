@@ -41,7 +41,7 @@ export class VerifyPaymentProcessor implements JobProcessor {
         paymentId: String(paymentId), 
         paymentStatus: payment.status,
         providerReference: payment.providerReference,
-        paymentReference: payment.reference,
+        paymentReference: payment.providerReference,
       });
       return;
     }
@@ -84,7 +84,7 @@ export class RetryFailedPaymentProcessor implements JobProcessor {
       return;
     }
 
-    if (!payment.reference) {
+    if (!payment.providerReference) {
       this.logger.warn("Payment missing reference, using fallback", { paymentId: String(paymentId) });
     }
 

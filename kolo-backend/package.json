@@ -1,7 +1,7 @@
 {
   "scripts": {
     "dev": "tsx watch src/server.ts",
-    "build": "tsc --noEmit",
+    "build": "tsc",
     "start": "node --loader tsx src/server.ts",
     "start:prod": "NODE_ENV=production node --loader tsx src/server.ts",
     "test": "vitest run",
