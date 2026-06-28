@@ -33,8 +33,18 @@ export class WebhookController {
       const result = await this.webhookService.processNombaWebhook(signature, rawBody, request.body as Record<string, unknown>, timestamp);
       ResponseUtil.success(reply, result);
     } catch (error) {
-      this.logger.log("Webhook processing error", { error: String(error) });
-      reply.status(400).send({ success: false, message: "Webhook processing failed" });
+      const errorMessage = String(error);
+      const isSignatureError = errorMessage === "Invalid webhook signature" || 
+                              errorMessage.includes("signature") || 
+                              errorMessage.includes("Signature");
+      
+      if (isSignatureError) {
+        this.logger.log("Webhook signature verification failed", { error: errorMessage });
+        reply.status(401).send({ success: false, message: "Invalid webhook signature" });
+      } else {
+        this.logger.log("Webhook processing error", { error: errorMessage });
+        reply.status(400).send({ success: false, message: "Webhook processing failed" });
+      }
     }
   }
 }
