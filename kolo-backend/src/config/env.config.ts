@@ -152,9 +152,12 @@ export class EnvConfig {
     this.PRIMARY_COLOR = EnvConfig.getEnvOrDefault("PRIMARY_COLOR", "#00A86B");
     this.SECONDARY_COLOR = EnvConfig.getEnvOrDefault("SECONDARY_COLOR", "#1F2937");
 
-    this.COOKIE_SECRET = EnvConfig.getEnvOrDefault("COOKIE_SECRET", this.JWT_SECRET);
-    if (this.isProduction && !process.env.COOKIE_SECRET) {
-      throw new Error("Missing required environment variable: COOKIE_SECRET must be explicitly set in production");
+    this.COOKIE_SECRET = EnvConfig.getEnvOrDefault("COOKIE_SECRET", "");
+    if (!this.COOKIE_SECRET) {
+      if (this.isProduction) {
+        throw new Error("Missing required environment variable: COOKIE_SECRET must be set in production");
+      }
+      this.COOKIE_SECRET = this.JWT_SECRET;
     }
     this.COOKIE_SECURE = EnvConfig.getEnvOrDefault("COOKIE_SECURE", String(!this.isDevelopment)) === "true";
     this.COOKIE_SAME_SITE = this.parseSameSite();
