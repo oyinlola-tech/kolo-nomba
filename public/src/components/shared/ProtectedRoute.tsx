@@ -1,4 +1,4 @@
-import { type ReactNode } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { useAppStore } from "../../app/store";
 import type { UserRole } from "../../types/auth.types";
@@ -9,6 +9,8 @@ interface ProtectedRouteProps {
   fallbackPath?: string;
 }
 
+const AUTH_TIMEOUT_MS = 5000;
+
 function AuthLoading() {
   return (
     <div className="flex items-center justify-center h-screen">
@@ -18,12 +20,19 @@ function AuthLoading() {
 }
 
 export function ProtectedRoute({ children, allowedRoles, fallbackPath = "/login" }: ProtectedRouteProps) {
+  const [timedOut, setTimedOut] = useState(false);
   const accessToken = useAppStore((state) => state.accessToken);
   const isHydrated = useAppStore((state) => state.isHydrated);
   const role = useAppStore((state) => state.role);
-  const user = useAppStore((state) => state.user);
+
+  useEffect(() => {
+    if (isHydrated) return;
+    const id = setTimeout(() => setTimedOut(true), AUTH_TIMEOUT_MS);
+    return () => clearTimeout(id);
+  }, [isHydrated]);
 
   if (!isHydrated) {
+    if (timedOut) return <Navigate to={fallbackPath} replace />;
     return <AuthLoading />;
   }
 
