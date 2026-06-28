@@ -3,6 +3,7 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { WebhookController } from "../controllers/webhook.controller";
 
 const WEBHOOK_BODY_LIMIT = 524_288;
+const WEBHOOK_RATE_LIMIT_MAX = 200;
 
 class WebhookBodyError extends Error {
   public statusCode = 413;
@@ -21,6 +22,7 @@ export class WebhookRoute {
 
   register(app: FastifyInstance, prefix: string): void {
     app.post(`${prefix}/webhooks/nomba`, {
+      config: { rateLimit: { max: WEBHOOK_RATE_LIMIT_MAX, timeWindow: "1 minute" } },
       preParsing: (request: FastifyRequest, _reply: FastifyReply, payload, done) => {
         const chunks: Buffer[] = [];
         let size = 0;
