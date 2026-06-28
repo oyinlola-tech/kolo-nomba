@@ -29,6 +29,7 @@ export class AuthRoute {
       handler: this.controller.logout.bind(this.controller),
     });
     app.post(`${prefix}/auth/logout/session`, {
+      preHandler: this.authMiddleware.authenticate.bind(this.authMiddleware),
       handler: this.controller.logout.bind(this.controller),
     });
     app.post(`${prefix}/auth/verify-otp`, {
