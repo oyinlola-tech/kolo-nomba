@@ -49,29 +49,21 @@ export class ProcessPayoutTransferProcessor implements JobProcessor {
         throw new Error("No destination account for recipient");
       }
 
+      const transferRef = `PO-${String(payoutId).slice(0, 8)}-${recipient.id.slice(0, 8)}`;
+
+      const result = await this.transferService.initiateTransfer({
+        amount: recipient.amount,
+        currency: "NGN",
+        reference: transferRef,
+        destinationAccount: account?.accountNumber ?? recipient.destinationAccount ?? "",
+        destinationBank: account?.bankName ?? "",
+        accountName: account?.accountName ?? `${recipient.user.firstName} ${recipient.user.lastName}`,
+        narration: `Payout to ${recipient.user.firstName} ${recipient.user.lastName}`,
+      });
+
       const wallet = groupId ? await this.walletService.getOrCreateWallet("GROUP", String(groupId)) : null;
       if (wallet) {
         await this.walletService.debit(wallet.id, recipient.amount, `Payout recipient: ${recipient.userId}`);
-      }
-
-      const transferRef = `PO-${String(payoutId).slice(0, 8)}-${recipient.id.slice(0, 8)}`;
-
-      let result;
-      try {
-        result = await this.transferService.initiateTransfer({
-          amount: recipient.amount,
-          currency: "NGN",
-          reference: transferRef,
-          destinationAccount: account?.accountNumber ?? recipient.destinationAccount ?? "",
-          destinationBank: account?.bankName ?? "",
-          accountName: account?.accountName ?? `${recipient.user.firstName} ${recipient.user.lastName}`,
-          narration: `Payout to ${recipient.user.firstName} ${recipient.user.lastName}`,
-        });
-      } catch {
-        if (wallet) {
-          await this.walletService.credit(wallet.id, recipient.amount, `Payout reversal: ${recipient.userId}`);
-        }
-        throw new Error("Transfer initiation failed");
       }
 
       await this.recipientRepo.updateTransferDetails(recipient.id, {
