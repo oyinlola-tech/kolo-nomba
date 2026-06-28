@@ -10,6 +10,7 @@ import { NotificationService } from "./notification.service";
 import { NombaPayment } from "../integrations/nomba/nomba.payment";
 import { NombaPaymentLogger } from "../logger/implementations/nomba-payment.logger";
 import { AuthError } from "../errors/auth.error";
+import { PaymentError } from "../errors/payment.error";
 import { ValidationError } from "../errors/validation.error";
 import type { InitiatePaymentDto, PaymentResponse, InitiatePaymentResult } from "../dto/payment.dto";
 import { Logger } from "../logger/core/logger";
@@ -60,6 +61,13 @@ export class PaymentService {
     }
     if (dto.amount !== outstanding) {
       throw new ValidationError(`Amount must equal the outstanding balance of ${outstanding}`);
+    }
+
+    // Atomic check: ensure no duplicate payment is being created for this contribution
+    const existingPayments = await this.paymentRepository.findByContribution(dto.contributionId);
+    const hasPendingPayment = existingPayments.some(p => p.status === "PENDING" || p.status === "INITIALIZED");
+    if (hasPendingPayment) {
+      throw new PaymentError("A payment for this contribution is already being processed");
     }
 
     const payment = await this.paymentRepository.create({
