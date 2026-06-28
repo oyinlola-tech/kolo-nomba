@@ -50,6 +50,7 @@ export class EnvConfig {
   public readonly EMAIL_MAX_RETRIES: number;
   public readonly EMAIL_RETRY_DELAY: number;
 
+  public readonly REDIS_URL: string;
   public readonly REDIS_HOST: string;
   public readonly REDIS_PORT: number;
   public readonly REDIS_PASSWORD: string;
@@ -131,6 +132,7 @@ export class EnvConfig {
     this.EMAIL_MAX_RETRIES = parseInt(EnvConfig.getEnvOrDefault("EMAIL_MAX_RETRIES", "3"), 10);
     this.EMAIL_RETRY_DELAY = parseInt(EnvConfig.getEnvOrDefault("EMAIL_RETRY_DELAY", "60000"), 10);
 
+    this.REDIS_URL = EnvConfig.getEnvOrDefault("REDIS_URL", "");
     this.REDIS_HOST = EnvConfig.getEnvOrDefault("REDIS_HOST", "localhost");
     this.REDIS_PORT = parseInt(EnvConfig.getEnvOrDefault("REDIS_PORT", "6379"), 10);
     this.REDIS_PASSWORD = EnvConfig.getEnvOrDefault("REDIS_PASSWORD", "");
