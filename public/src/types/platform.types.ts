@@ -21,6 +21,8 @@ export interface Cooperative {
   status: EntityStatus;
   createdBy: string;
   createdAt: string;
+  adminName?: string;
+  savingsBalance?: number;
 }
 
 export interface Transaction {
@@ -32,6 +34,9 @@ export interface Transaction {
   status: EntityStatus;
   userId: string;
   createdAt: string;
+  userName?: string;
+  cooperativeName?: string;
+  provider?: string;
 }
 
 export interface Payment {
@@ -53,6 +58,8 @@ export interface Contribution {
   paidAmount: number;
   status: EntityStatus;
   paidAt: string | null;
+  memberName?: string;
+  amount?: number;
 }
 
 export interface Notification {
@@ -66,6 +73,8 @@ export interface Notification {
   readAt: string | null;
   metadata?: Record<string, unknown>;
   createdAt: string;
+  body?: string;
+  read?: boolean;
 }
 
 export interface AuditLog {
@@ -76,6 +85,8 @@ export interface AuditLog {
   userAgent?: string;
   metadata?: Record<string, unknown>;
   createdAt: string;
+  target?: string;
+  actorName?: string;
 }
 
 export interface Withdrawal {
@@ -86,6 +97,9 @@ export interface Withdrawal {
   destination?: string;
   status: EntityStatus;
   createdAt: string;
+  requesterName?: string;
+  cooperativeName?: string;
+  bankName?: string;
 }
 
 export interface Dispute {
@@ -118,6 +132,8 @@ export interface Payout {
   status: EntityStatus;
   reason?: string;
   createdAt: string;
+  recipientName?: string;
+  bankName?: string;
 }
 
 export interface DashboardAnalytics {
@@ -149,6 +165,14 @@ export interface DashboardAnalytics {
     target?: string;
     createdAt: string;
   }[];
+  totalProcessed?: number;
+  platformRevenue?: number;
+  totalTransactions?: number;
+  activeUsers?: number;
+  activeGroups?: number;
+  totalMembers?: number;
+  savingsTrend?: { month: string; amount: number }[];
+  revenueTrend?: { month: string; amount: number }[];
 }
 
 export interface NotificationSettings {
