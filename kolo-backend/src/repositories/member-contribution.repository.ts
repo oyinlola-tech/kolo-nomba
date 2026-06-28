@@ -85,6 +85,21 @@ export class MemberContributionRepository {
     return this.getClient(tx).memberContribution.update({ where: { id }, data: data as never });
   }
 
+  async lockForPayment(id: string, tx?: Prisma.TransactionClient): Promise<boolean> {
+    const result = await this.getClient(tx).memberContribution.updateMany({
+      where: { id, status: { notIn: ["PAID"] } },
+      data: { status: "PROCESSING" as never },
+    });
+    return result.count > 0;
+  }
+
+  async unlockFromPayment(id: string, tx?: Prisma.TransactionClient): Promise<void> {
+    await this.getClient(tx).memberContribution.updateMany({
+      where: { id, status: "PROCESSING" as never },
+      data: { status: "PENDING" as never },
+    });
+  }
+
   async updateManyStatus(ids: string[], status: "LATE" | "MISSED") {
     return this.db.memberContribution.updateMany({
       where: { id: { in: ids } },
