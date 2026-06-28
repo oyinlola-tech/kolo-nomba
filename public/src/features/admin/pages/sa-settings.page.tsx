@@ -5,7 +5,7 @@ import { Button } from "../../../components/shared/Button";
 import { PageHeader } from "../../../components/shared/PageHeader";
 import { LoadingState } from "../../../components/shared/LoadingState";
 import { ErrorState } from "../../../components/shared/ErrorState";
-import { apiClient } from "../../../api/client";
+import * as notificationService from "../../../services/notification.service";
 import type { NotificationSettings } from "../../../types/platform.types";
 
 export function SASettings() {
@@ -23,8 +23,8 @@ export function SASettings() {
     setLoading(true);
     setError(null);
     try {
-      const { data } = await apiClient.get<{ data: NotificationSettings }>("/admin/settings/notifications");
-      setSettings(data.data);
+      const data = await notificationService.getNotificationSettings();
+      setSettings(data);
     } catch {
       setError("Failed to load settings");
     } finally {
@@ -43,7 +43,7 @@ export function SASettings() {
     setError(null);
     setSuccess(false);
     try {
-      await apiClient.patch("/admin/settings/notifications", settings);
+      await notificationService.updateNotificationSettings(settings);
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
     } catch {
