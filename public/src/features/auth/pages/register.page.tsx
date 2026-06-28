@@ -4,7 +4,7 @@ import { User, Mail, Phone, Lock, Building2, Users, RefreshCw, ArrowRight } from
 import { AuthLayout } from "../../../components/layout/AuthLayout";
 import { Input } from "../../../components/shared/Input";
 import { Button } from "../../../components/shared/Button";
-import { apiClient } from "../../../api/client";
+import * as authService from "../../../services/auth.service";
 
 type RegisterMode = "member" | "cooperative";
 
@@ -26,13 +26,11 @@ export function RegisterPage() {
     setError("");
     setLoading(true);
     try {
-      if (mode === "member") {
-        const { data } = await apiClient.post("/auth/register", { firstName, lastName, email, phone, password });
-        const userId = data.data?.userId ?? data.userId;
-        navigate(`/verify-otp?userId=${userId}&email=${encodeURIComponent(email)}`);
-      } else {
-        setTimeout(() => { navigate("/verify-otp"); }, 1000);
-      }
+      const payload = mode === "member"
+        ? { firstName, lastName, email, phone, password }
+        : { firstName, lastName: lastName || firstName, email, phone, password };
+      const result = await authService.register(payload);
+      navigate(`/verify-otp?userId=${result.userId}&email=${encodeURIComponent(email)}`);
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Registration failed";
       setError(msg);
