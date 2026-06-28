@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ShieldCheck, Check, RefreshCw, Mail } from "lucide-react";
+import { ShieldCheck, Check, RefreshCw } from "lucide-react";
 import { Button } from "../../../components/shared/Button";
 import { AuthLayout } from "../../../components/layout/AuthLayout";
 import { setAccessToken } from "../../../api/client";
 import { useAppStore } from "../../../app/store";
-import { apiClient } from "../../../api/client";
+import * as authService from "../../../services/auth.service";
+import type { UserRole } from "../../../types/auth.types";
 
 export function VerifyOTPPage() {
   const navigate = useNavigate();
@@ -29,11 +30,12 @@ export function VerifyOTPPage() {
     setError("");
     setLoading(true);
     try {
-      const { data } = await apiClient.post("/auth/verify-otp", { userId, code: otp.join("") });
-      const result = data.data ?? data;
+      const result = await authService.verifyOtp({ userId, code: otp.join("") });
       setAccessToken(result.accessToken);
       setSession(result.user, result.accessToken);
-      navigate("/member/home", { replace: true });
+      const role = result.role as UserRole;
+      const target = role === "SUPER_ADMIN" ? "/ajo/admin/dashboard" : role === "GROUP_ADMIN" ? "/group/admin/dashboard" : "/member/home";
+      navigate(target, { replace: true });
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Verification failed";
       setError(msg);
@@ -46,7 +48,7 @@ export function VerifyOTPPage() {
     setResending(true);
     setError("");
     try {
-      await apiClient.post("/auth/resend-otp", { userId });
+      await authService.resendOtp(userId);
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Failed to resend code";
       setError(msg);
