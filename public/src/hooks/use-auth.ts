@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAppStore } from "../app/store";
 import { getAccessToken } from "../api/client";
 import * as authService from "../services/auth.service";
@@ -6,6 +6,7 @@ import type { LoginPayload, RegisterPayload } from "../services/auth.service";
 import type { AuthUser, UserRole } from "../types/auth.types";
 
 export function useAuth() {
+  const queryClient = useQueryClient();
   const user = useAppStore((state) => state.user);
   const role = useAppStore((state) => state.role);
   const accessToken = useAppStore((state) => state.accessToken);
@@ -16,6 +17,7 @@ export function useAuth() {
     mutationFn: (payload: LoginPayload) => authService.login(payload),
     onSuccess: (result) => {
       setSession(result.user as AuthUser, result.accessToken);
+      queryClient.invalidateQueries({ queryKey: ["auth"] });
     },
   });
 
@@ -23,12 +25,16 @@ export function useAuth() {
     mutationFn: (payload: RegisterPayload) => authService.register(payload),
     onSuccess: (result) => {
       setSession(result.user as AuthUser, result.accessToken);
+      queryClient.invalidateQueries({ queryKey: ["auth"] });
     },
   });
 
   const logoutMutation = useMutation({
     mutationFn: authService.logout,
-    onSettled: () => clearSession(),
+    onSettled: () => {
+      clearSession();
+      queryClient.clear();
+    },
   });
 
   const profileQuery = useQuery({
@@ -36,11 +42,7 @@ export function useAuth() {
     queryFn: authService.getProfile,
     enabled: !!accessToken,
     retry: false,
-    onSuccess: (userData: AuthUser) => {
-      const token = getAccessToken() ?? "";
-      setSession(userData, token);
-    },
-  } as never);
+  });
 
   const isAuthenticated = Boolean(accessToken);
   const isSuperAdmin = role === "SUPER_ADMIN";
