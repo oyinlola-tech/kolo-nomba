@@ -28,8 +28,8 @@ export class PaymentRepository {
     });
   }
 
-  async findByProviderReference(reference: string) {
-    return this.db.payment.findFirst({
+  async findByProviderReference(reference: string, tx?: Prisma.TransactionClient) {
+    return this.getClient(tx).payment.findFirst({
       where: { providerReference: reference },
     });
   }
