@@ -4,7 +4,7 @@ import {
   LandingPage, AboutPage, ContactPage, PricingPage,
   SecurityPage, HelpPage, TermsPage, PrivacyPage, HowItWorksPage,
 } from "../features/landing";
-import { LoginPage, RegisterPage, VerifyOTPPage } from "../features/auth";
+import { LoginPage, RegisterPage, RegisterCoopPage, VerifyOTPPage } from "../features/auth";
 import { SuperAdminApp } from "../features/admin";
 import {
   SADashboard, SAUsers, SAGroups, SATransactions, SAPayments,
@@ -33,7 +33,7 @@ export const router = createBrowserRouter([
 
   { path: "/login", element: <LoginPage /> },
   { path: "/register", element: <RegisterPage /> },
-  { path: "/register/cooperative", element: <RegisterPage /> },
+  { path: "/register/cooperative", element: <RegisterCoopPage /> },
   { path: "/verify-otp", element: <VerifyOTPPage /> },
   {
     path: "/ajo/admin",
