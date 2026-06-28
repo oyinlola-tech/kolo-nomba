@@ -44,11 +44,6 @@ export class ProcessPayoutTransferProcessor implements JobProcessor {
     });
 
       try {
-        const wallet = groupId ? await this.walletService.getOrCreateWallet("GROUP", String(groupId)) : null;
-        if (wallet) {
-          await this.walletService.debit(wallet.id, recipient.amount, `Payout recipient: ${recipient.userId}`);
-        }
-
         const account = recipient.recipientAccount;
         if (!account && !recipient.destinationAccount) {
           throw new Error("No destination account for recipient");
@@ -65,6 +60,11 @@ export class ProcessPayoutTransferProcessor implements JobProcessor {
           accountName: account?.accountName ?? `${recipient.user.firstName} ${recipient.user.lastName}`,
           narration: `Payout to ${recipient.user.firstName} ${recipient.user.lastName}`,
         });
+
+        const wallet = groupId ? await this.walletService.getOrCreateWallet("GROUP", String(groupId)) : null;
+        if (wallet) {
+          await this.walletService.debit(wallet.id, recipient.amount, `Payout recipient: ${recipient.userId}`);
+        }
 
         await this.recipientRepo.updateTransferDetails(recipient.id, {
           transferReference: result.reference,

@@ -64,10 +64,10 @@ export class PaymentService {
       throw new ValidationError(`Amount must equal the outstanding balance of ${outstanding}`);
     }
 
-    const paymentRef = `PAY-${contribution.id.slice(0, 8).toUpperCase()}-${Date.now()}`;
-
     const prisma = PrismaDatabase.getInstance().getClient();
     const payment = await prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM "MemberContribution" WHERE id = ${dto.contributionId} FOR UPDATE`;
+
       const existingPayments = await this.paymentRepository.findByContribution(dto.contributionId, tx);
       const hasPendingPayment = existingPayments.some(p => p.status === "PENDING" || p.status === "INITIALIZED");
       if (hasPendingPayment) {
@@ -118,7 +118,7 @@ export class PaymentService {
     this.paymentLogger.log("Payment initialized", {
       paymentId: payment.id,
       amount,
-      reference: payment.providerReference ?? paymentRef,
+      nombaReference: nombaResult.reference,
     });
 
     return {

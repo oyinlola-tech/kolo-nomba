@@ -16,40 +16,35 @@ export class VerifyPaymentProcessor implements JobProcessor {
   }
 
   async process(job: Job<JobPayload>): Promise<void> {
-    const { paymentId } = job.data;
+    const paymentId = String(job.data.paymentId ?? "");
 
     if (!paymentId) {
-      throw new Error("Missing paymentId");
+      this.logger.warn("VerifyPayment: missing paymentId in job", { jobId: job.id });
+      return;
     }
 
-    this.logger.info("Verifying payment", { jobId: job.id, paymentId: String(paymentId) });
+    this.logger.info("Verifying payment", { jobId: job.id, paymentId });
 
-    const payment = await this.paymentRepository.findById(String(paymentId));
+    const payment = await this.paymentRepository.findById(paymentId);
     if (!payment) {
-      this.logger.error("Payment not found for verification", { paymentId: String(paymentId) });
+      this.logger.error("Payment not found for verification", { paymentId });
       return;
     }
 
     if (payment.status === "SUCCESSFUL") {
-      this.logger.info("Payment already successful, skipping verification", { paymentId: String(paymentId) });
+      this.logger.info("Payment already successful, skipping", { paymentId });
       return;
     }
 
-    const validStatusForVerification = ["PENDING", "INITIALIZED", "FAILED", "EXPIRED"];
-    if (!validStatusForVerification.includes(payment.status)) {
-      this.logger.warn("Payment status not suitable for verification, skipping", { 
-        paymentId: String(paymentId), 
-        paymentStatus: payment.status,
-        providerReference: payment.providerReference,
-        paymentReference: payment.providerReference,
-      });
+    if (payment.status === "CANCELLED") {
+      this.logger.info("Payment cancelled, skipping verification", { paymentId });
       return;
     }
 
     const reference = payment.providerReference ?? payment.id;
-    await this.paymentService.verifyAndCompletePayment(String(paymentId), reference);
+    await this.paymentService.verifyAndCompletePayment(paymentId, reference);
 
-    this.logger.info("Payment verification completed", { paymentId: String(paymentId) });
+    this.logger.info("Payment verification completed", { paymentId });
   }
 }
 
@@ -65,32 +60,34 @@ export class RetryFailedPaymentProcessor implements JobProcessor {
   }
 
   async process(job: Job<JobPayload>): Promise<void> {
-    const { paymentId } = job.data;
+    const paymentId = String(job.data.paymentId ?? "");
 
     if (!paymentId) {
-      throw new Error("Missing paymentId");
+      this.logger.warn("RetryPayment: missing paymentId in job", { jobId: job.id });
+      return;
     }
 
-    this.logger.info("Retrying failed payment", { jobId: job.id, paymentId: String(paymentId) });
+    this.logger.info("Retrying failed payment", { jobId: job.id, paymentId });
 
-    const payment = await this.paymentRepository.findById(String(paymentId));
+    const payment = await this.paymentRepository.findById(paymentId);
     if (!payment) {
-      this.logger.error("Payment not found for retry", { paymentId: String(paymentId) });
+      this.logger.error("Payment not found for retry", { paymentId });
       return;
     }
 
     if (payment.status === "SUCCESSFUL") {
-      this.logger.info("Payment already successful, no retry needed", { paymentId: String(paymentId) });
+      this.logger.info("Payment already successful, no retry needed", { paymentId });
       return;
     }
 
-    if (!payment.providerReference) {
-      this.logger.warn("Payment missing reference, using fallback", { paymentId: String(paymentId) });
+    if (payment.status === "CANCELLED") {
+      this.logger.info("Payment cancelled, skipping retry", { paymentId });
+      return;
     }
 
     const reference = payment.providerReference ?? payment.id;
-    await this.paymentService.verifyAndCompletePayment(String(paymentId), reference);
+    await this.paymentService.verifyAndCompletePayment(paymentId, reference);
 
-    this.logger.info("Payment retry verification completed", { paymentId: String(paymentId) });
+    this.logger.info("Payment retry completed", { paymentId });
   }
 }
