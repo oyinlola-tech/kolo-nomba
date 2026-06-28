@@ -20,8 +20,9 @@ export class ErrorMiddleware {
         path: request.url,
       });
 
+      const isDev = EnvConfig.getInstance().isDevelopment;
       const errors: string[] = [];
-      if (error instanceof ValidationError && error.details) {
+      if (isDev && error instanceof ValidationError && error.details) {
         for (const key of Object.keys(error.details)) {
           for (const msg of error.details[key]) {
             errors.push(`${key}: ${msg}`);
