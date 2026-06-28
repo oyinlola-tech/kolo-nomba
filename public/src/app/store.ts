@@ -11,7 +11,6 @@ interface AppState {
   accessToken: string | null;
   isHydrated: boolean;
   theme: ThemeMode;
-  initSession: () => void;
   setSession: (user: AuthUser, accessToken: string) => void;
   clearSession: () => void;
   setTheme: (theme: ThemeMode) => void;
@@ -35,10 +34,6 @@ export const useAppStore = create<AppState>((set, get) => ({
   accessToken: null,
   isHydrated: false,
   theme: getStoredTheme(),
-
-  initSession: () => {
-    set({ isHydrated: true });
-  },
 
   setSession: (user, accessToken) => {
     setAccessToken(accessToken);
