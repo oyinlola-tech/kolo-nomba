@@ -1,23 +1,45 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   X, Wallet, Landmark, CreditCard, ShieldCheck, Lock, RefreshCw,
 } from "lucide-react";
+import { useCreatePayment } from "../../../hooks/use-payments";
 
 export function MPay() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const contributionId = searchParams.get("contributionId");
+  const createPayment = useCreatePayment();
   const [method, setMethod] = useState<"wallet" | "bank" | "card">("wallet");
-  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const methods = [
-    { id: "wallet" as const, icon: Wallet, title: "Nomba Wallet", sub: "Balance: ₦120,500", color: "bg-emerald-600" },
+    { id: "wallet" as const, icon: Wallet, title: "Nomba Wallet", sub: "Pay with wallet balance", color: "bg-emerald-600" },
     { id: "bank" as const, icon: Landmark, title: "Bank Transfer", sub: "Send to virtual account", color: "bg-gray-500" },
     { id: "card" as const, icon: CreditCard, title: "Debit / Credit Card", sub: "Visa, Mastercard, Verve", color: "bg-gray-500" },
   ];
 
-  const handlePay = () => {
-    setLoading(true);
-    setTimeout(() => { setLoading(false); navigate("pay-success"); }, 1500);
+  const handlePay = async () => {
+    setError("");
+    if (!contributionId) {
+      setError("No contribution selected");
+      return;
+    }
+    try {
+      const result = await createPayment.mutateAsync({
+        contributionId,
+        amount: 50000,
+        paymentMethod: method,
+      });
+      if (result.paymentUrl) {
+        window.location.href = result.paymentUrl;
+      } else {
+        navigate(`pay-success?reference=${result.reference}&paymentId=${result.paymentId}`);
+      }
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Payment failed. Please try again.";
+      setError(msg);
+    }
   };
 
   return (
@@ -53,10 +75,13 @@ export function MPay() {
           </button>
         ))}
       </div>
-      <button onClick={handlePay} disabled={loading}
+      {error && (
+        <div className="mb-4 p-3 rounded-xl bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm">{error}</div>
+      )}
+      <button onClick={handlePay} disabled={createPayment.isPending}
         className="w-full py-4 bg-primary hover:opacity-90 disabled:opacity-60 text-white font-bold text-base rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-500/20">
-        {loading ? <RefreshCw className="w-5 h-5 animate-spin" /> : <Lock className="w-4 h-4" />}
-        {loading ? "Processing…" : "Pay ₦50,000 Now"}
+        {createPayment.isPending ? <RefreshCw className="w-5 h-5 animate-spin" /> : <Lock className="w-4 h-4" />}
+        {createPayment.isPending ? "Processing…" : "Pay ₦50,000 Now"}
       </button>
       <p className="text-center text-xs text-gray-400 mt-3 flex items-center justify-center gap-1">
         <ShieldCheck className="w-3 h-3" />Secured by Nomba Checkout
