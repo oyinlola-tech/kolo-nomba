@@ -198,6 +198,16 @@ export class PaymentService {
       return;
     }
 
+    const existingPaymentByProviderRef = await this.paymentRepository.findByProviderReference(providerReference, tx);
+    if (existingPaymentByProviderRef && existingPaymentByProviderRef.status === "SUCCESSFUL") {
+      this.logger.warn("Duplicate webhook: payment with same provider reference already processed", {
+        paymentId,
+        providerReference,
+        existingPaymentId: existingPaymentByProviderRef.id
+      });
+      return;
+    }
+
     const transaction = await this.transactionRepository.create({
       userId: payment.userId,
       amount: payment.amount,
