@@ -30,18 +30,26 @@ export class QueueManager {
     this.jobRepo = new BackgroundJobRepository();
     this.logger = new Logger("queue-manager");
 
-    const redisOpts: Record<string, unknown> = {
-      host: env.REDIS_HOST,
-      port: env.REDIS_PORT,
-      db: env.REDIS_DB,
-      maxRetriesPerRequest: null,
-      enableReadyCheck: false,
-    };
-    if (env.REDIS_PASSWORD) {
-      redisOpts.password = env.REDIS_PASSWORD;
+    let redisConnection: IORedis;
+    if (env.REDIS_URL) {
+      redisConnection = new IORedis(env.REDIS_URL, {
+        maxRetriesPerRequest: null,
+        enableReadyCheck: false,
+      });
+    } else {
+      const redisOpts: Record<string, unknown> = {
+        host: env.REDIS_HOST,
+        port: env.REDIS_PORT,
+        db: env.REDIS_DB,
+        maxRetriesPerRequest: null,
+        enableReadyCheck: false,
+      };
+      if (env.REDIS_PASSWORD) {
+        redisOpts.password = env.REDIS_PASSWORD;
+      }
+      redisConnection = new IORedis(redisOpts);
     }
-
-    this.connection = new IORedis(redisOpts);
+    this.connection = redisConnection;
   }
 
   static getInstance(): QueueManager {
