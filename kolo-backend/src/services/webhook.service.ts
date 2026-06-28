@@ -1,4 +1,4 @@
-import { Prisma } from "@prisma/client";
+import { Prisma } from "../generated/prisma/client";
 import { WebhookRepository } from "../repositories/webhook.repository";
 import { PaymentService } from "./payment.service";
 import { NombaWebhook } from "../integrations/nomba/nomba.webhook";
@@ -6,6 +6,7 @@ import { WebhookLogger } from "../logger/implementations/webhook.logger";
 import { Logger } from "../logger/core/logger";
 import { QueueManager } from "../jobs/queue-manager";
 import { VirtualAccountService } from "./virtual-account.service";
+import { nombaWebhookPayloadSchema } from "../validators/webhook.validator";
 
 export class WebhookService {
   private readonly webhookRepository: WebhookRepository;
@@ -32,10 +33,18 @@ export class WebhookService {
     body: Record<string, unknown>,
     timestamp: string | undefined,
   ): Promise<{ received: boolean }> {
-    const isValid = this.nombaWebhook.verifySignature(signature, rawBody, timestamp);
+    const isValid = this.nombaWebhook.verifySignature(signature, rawBody, timestamp ?? "");
     if (!isValid) {
       this.webhookLogger.log("Webhook signature verification failed");
       throw new Error("Invalid webhook signature");
+    }
+
+    const parsed = nombaWebhookPayloadSchema.safeParse(body);
+    if (!parsed.success) {
+      this.webhookLogger.log("Webhook payload validation failed", {
+        errors: parsed.error.issues.map(i => `${i.path.join(".")}: ${i.message}`),
+      });
+      throw new Error("Invalid webhook payload");
     }
 
     const eventType = this.extractEventType(body);
