@@ -166,7 +166,7 @@ export class NombaService {
   }
 
   verifyWebhookSignature(signature: string | undefined, body: string, timestamp?: string): boolean {
-    return this.webhook.verifySignature(signature, body, timestamp);
+    return this.webhook.verifySignature(signature, body, timestamp ?? "");
   }
 
   getSafeStatus() {
