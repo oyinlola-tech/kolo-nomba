@@ -66,8 +66,11 @@ export const useAppStore = create<AppState>((set, get) => ({
 
 export async function initAuth(): Promise<void> {
   try {
-    const refreshRes = await axios.post(`${BASE_URL}/auth/refresh`, {}, { headers: { "X-Requested-With": "XMLHttpRequest" }, withCredentials: true });
-    const newToken = refreshRes.data.accessToken ?? refreshRes.data.data?.accessToken;
+    const { data: refreshData } = await axios.post(`${BASE_URL}/auth/refresh`, {}, {
+      headers: { "X-Requested-With": "XMLHttpRequest" },
+      withCredentials: true,
+    });
+    const newToken = refreshData.accessToken ?? refreshData.data?.accessToken;
 
     if (!newToken) {
       useAppStore.setState({ user: null, role: null, accessToken: null, isHydrated: true });
@@ -76,10 +79,10 @@ export async function initAuth(): Promise<void> {
 
     setAccessToken(newToken);
 
-    const profileRes = await axios.get(`${BASE_URL}/auth/me`, {
+    const { data: profileData } = await axios.get(`${BASE_URL}/auth/me`, {
       headers: { Authorization: `Bearer ${newToken}` },
     });
-    const profile = profileRes.data.data ?? profileRes.data;
+    const profile = profileData.data ?? profileData;
 
     useAppStore.setState({ user: profile, role: profile.role, accessToken: newToken, isHydrated: true });
   } catch {
