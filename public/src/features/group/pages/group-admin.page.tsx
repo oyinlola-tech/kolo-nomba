@@ -1,4 +1,4 @@
-import { useNavigate, useLocation, Outlet } from "react-router-dom";
+import { useNavigate, useLocation, Outlet } from "react-router";
 import {
   LayoutDashboard, Users, PiggyBank, CreditCard, ArrowDownToLine,
   BarChart2, Bell, Settings, Plus, Building2,

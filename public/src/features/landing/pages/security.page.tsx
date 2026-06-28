@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 import { Lock, ShieldCheck, Eye, Database, Key, Server, UserCheck, FileCheck, ArrowRight } from "lucide-react";
 import { Button } from "../../../components/shared/Button";
 import { Card } from "../../../components/shared/Card";

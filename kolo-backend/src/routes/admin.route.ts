@@ -67,6 +67,7 @@ export class AdminRoute {
     // Settings
     app.get(`${prefix}/admin/settings/notifications`, readConfig, this.controller.getNotificationSettings.bind(this.controller));
     app.patch(`${prefix}/admin/settings/notifications`, mutationConfig, this.controller.updateNotificationSettings.bind(this.controller));
+    app.get(`${prefix}/admin/payment-config`, readConfig, this.controller.getPaymentConfig.bind(this.controller));
 
     // Audit
     app.get(`${prefix}/admin/audit-logs`, readConfig, this.controller.listAuditLogs.bind(this.controller));

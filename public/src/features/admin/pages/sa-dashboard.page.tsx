@@ -31,12 +31,12 @@ export function SADashboard() {
     <div>
       <PageHeader title="Platform Overview" subtitle="Real-time insights across the Kolo ecosystem." />
       <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-6">
-        <MetricCard title="Total Processed" value={analytics ? formatNaira(analytics.totalProcessed) : "—"} change="—" icon={Banknote} />
-        <MetricCard title="Platform Revenue" value={analytics ? formatNaira(analytics.platformRevenue) : "—"} change="—" icon={TrendingUp} />
-        <MetricCard title="Transactions" value={analytics ? analytics.totalTransactions.toLocaleString() : "—"} change="—" icon={CreditCard} />
-        <MetricCard title="Active Users" value={analytics ? analytics.activeUsers.toLocaleString() : "—"} change="—" icon={Users} />
-        <MetricCard title="Active Groups" value={analytics ? analytics.activeGroups.toLocaleString() : "—"} change="—" icon={Building2} />
-        <MetricCard title="Total Members" value={analytics ? analytics.totalMembers.toLocaleString() : "—"} change="—" icon={UserCheck} />
+        <MetricCard title="Total Processed" value={analytics ? formatNaira(analytics.totalProcessed ?? 0) : "—"} change="—" icon={Banknote} />
+        <MetricCard title="Platform Revenue" value={analytics ? formatNaira(analytics.platformRevenue ?? 0) : "—"} change="—" icon={TrendingUp} />
+        <MetricCard title="Transactions" value={analytics ? (analytics.totalTransactions ?? 0).toLocaleString() : "—"} change="—" icon={CreditCard} />
+        <MetricCard title="Active Users" value={analytics ? (analytics.activeUsers ?? 0).toLocaleString() : "—"} change="—" icon={Users} />
+        <MetricCard title="Active Groups" value={analytics ? (analytics.activeGroups ?? 0).toLocaleString() : "—"} change="—" icon={Building2} />
+        <MetricCard title="Total Members" value={analytics ? (analytics.totalMembers ?? 0).toLocaleString() : "—"} change="—" icon={UserCheck} />
       </div>
       <div className="grid lg:grid-cols-2 gap-5">
         <Card className="p-5">
@@ -54,7 +54,7 @@ export function SADashboard() {
             <div className="space-y-3">
               {transactions.slice(0, 5).map(t => (
                 <div key={t.id} className="flex items-center gap-3">
-                  <Avatar name={t.userName} size="sm" />
+                  <Avatar name={t.userName ?? ""} size="sm" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{t.userName}</p>
                     <p className="text-xs text-gray-500 dark:text-muted-foreground truncate">{t.cooperativeName}</p>

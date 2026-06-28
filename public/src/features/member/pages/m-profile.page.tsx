@@ -5,7 +5,7 @@ import { Card } from "../../../components/shared/Card";
 import { Badge } from "../../../components/shared/Badge";
 import { useAuth } from "../../../hooks/use-auth";
 
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 
 export function MProfile() {
   const navigate = useNavigate();

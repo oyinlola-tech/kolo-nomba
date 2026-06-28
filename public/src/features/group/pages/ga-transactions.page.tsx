@@ -42,7 +42,7 @@ export function GATransactions() {
                     <td className="px-4 py-3 font-mono text-xs text-gray-500">{t.id}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
-                        <Avatar name={t.userName} size="sm" />
+                        <Avatar name={t.userName ?? ""} size="sm" />
                         <span className="font-medium text-gray-900 dark:text-white">{t.userName}</span>
                       </div>
                     </td>

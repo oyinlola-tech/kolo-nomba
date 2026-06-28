@@ -1,4 +1,4 @@
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate } from "react-router";
 import {
   Building2, ArrowLeft, Users, Calendar, Wallet, PiggyBank,
   Loader2, Clock,
@@ -26,7 +26,7 @@ export function MGroupDetail() {
 
   if (isLoading) {
     return (
-      <div className="px-5 py-20 flex flex-col items-center justify-center">
+      <div className="px-4 md:px-6 py-20 flex flex-col items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
         <p className="text-sm text-gray-500 mt-3">Loading group details...</p>
       </div>
@@ -35,7 +35,7 @@ export function MGroupDetail() {
 
   if (!group) {
     return (
-      <div className="px-5 py-20 flex flex-col items-center justify-center text-gray-500 dark:text-muted-foreground">
+      <div className="px-4 md:px-6 py-20 flex flex-col items-center justify-center text-gray-500 dark:text-muted-foreground">
         <Building2 className="w-10 h-10 mb-3 text-gray-300 dark:text-gray-600" />
         <p className="text-sm font-semibold">Group not found</p>
         <button onClick={() => navigate("/member/groups")} className="mt-4 text-sm text-primary font-medium hover:underline">
@@ -46,7 +46,7 @@ export function MGroupDetail() {
   }
 
   return (
-    <div className="px-5 py-5 max-w-3xl mx-auto">
+    <div className="px-4 md:px-6 py-5">
       <button onClick={() => navigate("/member/groups")} className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 mb-4 transition-colors">
         <ArrowLeft className="w-4 h-4" /> Back to Groups
       </button>
@@ -65,7 +65,7 @@ export function MGroupDetail() {
         <div className="grid grid-cols-3 gap-3 mt-4">
           <div className="bg-white/10 backdrop-blur rounded-xl p-3 text-center">
             <p className="text-emerald-200 text-[10px]">Savings</p>
-            <p className="font-extrabold text-sm">{formatNaira(group.savingsBalance)}</p>
+            <p className="font-extrabold text-sm">{formatNaira(group.savingsBalance ?? 0)}</p>
           </div>
           <div className="bg-white/10 backdrop-blur rounded-xl p-3 text-center">
             <p className="text-emerald-200 text-[10px]">Members</p>
@@ -78,7 +78,7 @@ export function MGroupDetail() {
         </div>
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-4 mb-5">
+      <div className="grid md:grid-cols-2 gap-4 mb-5">
         <Card className="p-4">
           <div className="flex items-center gap-2 mb-3">
             <Calendar className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
@@ -94,10 +94,10 @@ export function MGroupDetail() {
               {groupPayouts.map(p => (
                 <div key={p.id} className="flex items-center justify-between py-1.5 border-b border-gray-50 dark:border-border last:border-0">
                   <div className="flex items-center gap-2">
-                    <Avatar name={p.recipientName} size="sm" />
+                    <Avatar name={p.recipientName ?? ""} size="sm" />
                     <div>
                       <p className="text-xs font-medium text-gray-900 dark:text-white">{p.recipientName}</p>
-                      <p className="text-[10px] text-gray-400">{p.bankName}</p>
+                      <p className="text-[10px] text-gray-400">{p.bankName ?? ""}</p>
                     </div>
                   </div>
                   <div className="text-right">
@@ -137,11 +137,11 @@ export function MGroupDetail() {
             {groupContributions.map(c => (
               <div key={c.id} className="flex items-center justify-between py-1.5 border-b border-gray-50 dark:border-border last:border-0">
                 <div className="flex items-center gap-2">
-                  <Avatar name={c.memberName} size="sm" />
-                  <p className="text-xs font-medium text-gray-900 dark:text-white">{c.memberName}</p>
+                   <Avatar name={c.memberName ?? ""} size="sm" />
+                   <p className="text-xs font-medium text-gray-900 dark:text-white">{c.memberName ?? ""}</p>
                 </div>
                 <div className="text-right flex items-center gap-2">
-                  <p className="text-xs font-bold text-gray-900 dark:text-white">{formatNaira(c.amount)}</p>
+                   <p className="text-xs font-bold text-gray-900 dark:text-white">{formatNaira(c.amount ?? 0)}</p>
                   <Badge status={c.status} />
                 </div>
               </div>

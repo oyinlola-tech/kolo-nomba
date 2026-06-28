@@ -1,4 +1,4 @@
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router";
 import { CheckCircle, Download, Home } from "lucide-react";
 import { apiClient } from "../../../api/client";
 

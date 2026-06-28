@@ -94,6 +94,10 @@ model Group {
   description String?
   category    String?
   location    String?
+  contributionAmount Int?
+  currency    String        @default("NGN")
+  frequency   PlanFrequency @default(MONTHLY)
+  collectionDay Int?
   status      GroupStatus   @default(ACTIVE)
   createdBy   String
   creator     User          @relation(fields: [createdBy], references: [id])

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router";
 import { User, Mail, Phone, Lock, Building2, Users, RefreshCw, ArrowRight } from "lucide-react";
 import { AuthLayout } from "../../../components/layout/AuthLayout";
 import { Input } from "../../../components/shared/Input";

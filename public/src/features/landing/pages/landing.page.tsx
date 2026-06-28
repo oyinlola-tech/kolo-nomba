@@ -1,11 +1,11 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 import {
   Star, Building2, ArrowRight, ShieldCheck, Zap, Globe,
   CreditCard, Users, BarChart2, Bell, ArrowDownToLine, Shield, Menu, X,
   UserPlus, Banknote, Check, BookOpen, HelpCircle, Phone, FileText,
   ScrollText, Lock, Eye, Database, RefreshCw, Smartphone,
-  TrendingUp, CheckCircle, AlertTriangle,
+  TrendingUp, CheckCircle, AlertTriangle, Award,
 } from "lucide-react";
 import { Button } from "../../../components/shared/Button";
 import { Card } from "../../../components/shared/Card";
@@ -419,36 +419,57 @@ export function LandingPage() {
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-extrabold text-gray-900 dark:text-white mb-4">Simple, transparent pricing</h2>
-            <p className="text-gray-600 dark:text-gray-400">Only pay when your members pay. No hidden fees.</p>
+            <p className="text-gray-600 dark:text-gray-400">Start free, upgrade as you grow. Only pay transaction fees when your members contribute.</p>
           </div>
-          <div className="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto">
-            <Card className="p-7">
-              <h3 className="font-bold text-gray-900 dark:text-white mb-1">Standard</h3>
-              <div className="flex items-end gap-1 my-4">
-                <span className="text-4xl font-extrabold text-gray-900 dark:text-white">1.5%</span>
-                <span className="text-gray-500 dark:text-muted-foreground mb-1.5 text-sm">per transaction</span>
+          <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+            <Card className="p-6">
+              <Award className="w-7 h-7 text-emerald-600 dark:text-emerald-400 mb-2" />
+              <h3 className="font-bold text-gray-900 dark:text-white mb-1">Free</h3>
+              <p className="text-xs text-gray-500 dark:text-muted-foreground mb-3">For small community groups</p>
+              <div className="flex items-end gap-1 my-3">
+                <span className="text-3xl font-extrabold text-gray-900 dark:text-white">₦0</span>
+                <span className="text-gray-500 dark:text-muted-foreground mb-1 text-sm">forever</span>
               </div>
-              <ul className="space-y-3 mb-6 text-sm text-gray-600 dark:text-gray-400">
-                {["Unlimited members", "Virtual accounts via Nomba", "Automated payment tracking", "Email & SMS notifications", "Basic analytics"].map(f => (
-                  <li key={f} className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-500 flex-shrink-0" />{f}</li>
+              <ul className="space-y-2 mb-5 text-sm text-gray-600 dark:text-gray-400">
+                {["Up to 15 members", "1 group", "Basic contribution tracking", "Manual payment recording"].map(f => (
+                  <li key={f} className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />{f}</li>
                 ))}
               </ul>
-              <Button full onClick={() => navigate("/register/cooperative")}>Get Started</Button>
+              <Button full variant="secondary" onClick={() => navigate("/register")}>Get Started Free</Button>
             </Card>
-            <Card className="p-7 border-primary/30 bg-emerald-50/30 dark:bg-emerald-900/5 relative overflow-hidden">
-              <div className="absolute top-4 right-4 bg-primary text-white text-xs font-bold px-2.5 py-1 rounded-full">POPULAR</div>
-              <h3 className="font-bold text-gray-900 dark:text-white mb-1">Enterprise</h3>
-              <div className="flex items-end gap-1 my-4">
-                <span className="text-4xl font-extrabold text-gray-900 dark:text-white">0.8%</span>
-                <span className="text-gray-500 dark:text-muted-foreground mb-1.5 text-sm">per transaction</span>
+            <Card className="p-6 border-primary/40 bg-emerald-50/30 dark:bg-emerald-900/5 ring-1 ring-primary/20 relative">
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-primary text-white text-xs font-bold px-3 py-1 rounded-full">POPULAR</div>
+              <TrendingUp className="w-7 h-7 text-emerald-600 dark:text-emerald-400 mb-2" />
+              <h3 className="font-bold text-gray-900 dark:text-white mb-1">Growth</h3>
+              <p className="text-xs text-gray-500 dark:text-muted-foreground mb-3">For serious cooperative groups</p>
+              <div className="flex items-end gap-1 my-3">
+                <span className="text-3xl font-extrabold text-gray-900 dark:text-white">₦9,500</span>
+                <span className="text-gray-500 dark:text-muted-foreground mb-1 text-sm">/month</span>
               </div>
-              <ul className="space-y-3 mb-6 text-sm text-gray-600 dark:text-gray-400">
-                {["Everything in Standard", "Priority support (24/7)", "Custom webhook integrations", "Advanced analytics & export", "Dedicated account manager", "Custom branding"].map(f => (
-                  <li key={f} className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-500 flex-shrink-0" />{f}</li>
+              <ul className="space-y-2 mb-5 text-sm text-gray-600 dark:text-gray-400">
+                {["Up to 100 members", "3 groups", "Virtual accounts via Nomba", "Automated payment tracking", "SMS & email notifications"].map(f => (
+                  <li key={f} className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />{f}</li>
                 ))}
               </ul>
-              <Button full onClick={() => navigate("/register/cooperative")}>Contact Sales</Button>
+              <Button full onClick={() => navigate("/register/cooperative")}>Start Free Trial</Button>
             </Card>
+            <Card className="p-6">
+              <Building2 className="w-7 h-7 text-emerald-600 dark:text-emerald-400 mb-2" />
+              <h3 className="font-bold text-gray-900 dark:text-white mb-1">Business</h3>
+              <p className="text-xs text-gray-500 dark:text-muted-foreground mb-3">For organizations &amp; associations</p>
+              <div className="flex items-end gap-1 my-3">
+                <span className="text-3xl font-extrabold text-gray-900 dark:text-white">Custom</span>
+              </div>
+              <ul className="space-y-2 mb-5 text-sm text-gray-600 dark:text-gray-400">
+                {["Unlimited members & groups", "API access", "Custom branding", "Dedicated account manager", "24/7 priority support"].map(f => (
+                  <li key={f} className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />{f}</li>
+                ))}
+              </ul>
+              <Button full variant="secondary" onClick={() => navigate("/contact")}>Contact Sales</Button>
+            </Card>
+          </div>
+          <div className="text-center mt-8">
+            <button onClick={() => navigate("/pricing")} className="text-sm font-medium text-primary hover:underline">See full feature comparison →</button>
           </div>
         </div>
       </section>

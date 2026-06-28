@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router";
 import { ShieldCheck, Check, RefreshCw } from "lucide-react";
 import { Button } from "../../../components/shared/Button";
 import { AuthLayout } from "../../../components/layout/AuthLayout";

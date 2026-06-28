@@ -1,5 +1,5 @@
 import { type ReactNode, useEffect, useState } from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate } from "react-router";
 import { useAppStore } from "../../app/store";
 import type { UserRole } from "../../types/auth.types";
 

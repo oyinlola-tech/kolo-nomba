@@ -73,13 +73,13 @@ export function GAContributions() {
             <div className="divide-y divide-gray-50 dark:divide-border">
               {contribs.map(c => (
                 <div key={c.id} className="flex items-center gap-4 px-4 py-3">
-                  <Avatar name={c.memberName} size="sm" />
+                  <Avatar name={c.memberName ?? ""} size="sm" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-900 dark:text-white">{c.memberName}</p>
                     <p className="text-xs text-gray-500">Last: {c.paidAt || "—"}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-semibold text-gray-900 dark:text-white">₦{c.amount.toLocaleString()}</p>
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white">₦{(c.amount ?? 0).toLocaleString()}</p>
                     <Badge status={c.status} />
                   </div>
                   {c.status !== "paid" && <Button size="sm" variant="secondary"><Send className="w-3 h-3" /></Button>}

@@ -2,7 +2,7 @@ import { GroupRepository } from "../repositories/group.repository";
 import { GroupMemberRepository } from "../repositories/group-member.repository";
 import { AuditService } from "./audit.service";
 import { AuthError, ForbiddenError } from "../errors/auth.error";
-import type { CreateGroupDto, UpdateGroupDto, GroupResponse, GroupDetailResponse, GroupMemberResponse } from "../dto/group.dto";
+import type { CreateGroupDto, UpdateGroupDto, GroupResponse, GroupDetailResponse, GroupMemberResponse, GroupSettingsResponse, UpdateGroupSettingsDto } from "../dto/group.dto";
 import { Logger } from "../logger/core/logger";
 
 export class GroupService {
@@ -129,6 +129,69 @@ export class GroupService {
     this.logger.info("Group soft-deleted", { groupId, userId });
   }
 
+  async getGroupAnalytics(groupId: string, userId: string) {
+    const membership = await this.memberRepository.findByGroupAndUser(groupId, userId);
+    if (!membership || membership.status !== "ACTIVE") {
+      throw new ForbiddenError("You are not a member of this group");
+    }
+
+    const analytics = await this.groupRepository.getAnalytics(groupId);
+    if (!analytics) {
+      throw new AuthError("Group not found");
+    }
+
+    return analytics;
+  }
+
+  async getGroupSettings(groupId: string, userId: string): Promise<GroupSettingsResponse> {
+    const membership = await this.memberRepository.findByGroupAndUser(groupId, userId);
+    if (!membership || membership.status !== "ACTIVE") {
+      throw new ForbiddenError("You are not a member of this group");
+    }
+
+    const settings = await this.groupRepository.getSettings(groupId);
+    if (!settings) {
+      throw new AuthError("Group not found");
+    }
+
+    return {
+      name: settings.name,
+      description: settings.description,
+      category: settings.category,
+      location: settings.location,
+      contributionAmount: settings.contributionAmount,
+      currency: settings.currency,
+      frequency: settings.frequency,
+      collectionDay: settings.collectionDay,
+    };
+  }
+
+  async updateGroupSettings(groupId: string, dto: UpdateGroupSettingsDto, userId: string): Promise<GroupSettingsResponse> {
+    const membership = await this.memberRepository.findByGroupAndUser(groupId, userId);
+    if (!membership || membership.status !== "ACTIVE") {
+      throw new ForbiddenError("You are not a member of this group");
+    }
+    if (membership.role !== "GROUP_OWNER" && membership.role !== "GROUP_ADMIN") {
+      throw new ForbiddenError("Insufficient group permissions");
+    }
+
+    const updated = await this.groupRepository.updateSettings(groupId, dto);
+
+    await this.auditService.log("GROUP_SETTINGS_UPDATED", { userId, metadata: { groupId } });
+    this.logger.info("Group settings updated", { groupId, userId });
+
+    return {
+      name: updated.name,
+      description: updated.description,
+      category: updated.category,
+      location: updated.location,
+      contributionAmount: updated.contributionAmount,
+      currency: updated.currency,
+      frequency: updated.frequency,
+      collectionDay: updated.collectionDay,
+    };
+  }
+
   private async verifyAdminAccess(groupId: string, userId: string): Promise<void> {
     const membership = await this.memberRepository.findByGroupAndUser(groupId, userId);
     if (!membership || membership.status !== "ACTIVE") {
@@ -139,13 +202,17 @@ export class GroupService {
     }
   }
 
-  private mapGroup(group: { id: string; name: string; description: string | null; category: string | null; location: string | null; status: string; createdBy: string; createdAt: Date }, memberCount: number): GroupResponse {
+  private mapGroup(group: { id: string; name: string; description: string | null; category: string | null; location: string | null; contributionAmount: number | null; currency: string; frequency: string; collectionDay: number | null; status: string; createdBy: string; createdAt: Date }, memberCount: number): GroupResponse {
     return {
       id: group.id,
       name: group.name,
       description: group.description,
       category: group.category,
       location: group.location,
+      contributionAmount: group.contributionAmount,
+      currency: group.currency,
+      frequency: group.frequency,
+      collectionDay: group.collectionDay,
       status: group.status,
       createdBy: group.createdBy,
       memberCount,

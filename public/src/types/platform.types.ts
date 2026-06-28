@@ -4,6 +4,7 @@ export interface User {
   id: string;
   firstName: string;
   lastName: string;
+  name: string;
   email: string;
   phone: string;
   role: string;
@@ -17,6 +18,10 @@ export interface Cooperative {
   description?: string;
   category?: string;
   location?: string;
+  contributionAmount?: number;
+  currency?: string;
+  frequency?: string;
+  collectionDay?: number;
   memberCount: number;
   status: EntityStatus;
   createdBy: string;
@@ -171,8 +176,14 @@ export interface DashboardAnalytics {
   activeUsers?: number;
   activeGroups?: number;
   totalMembers?: number;
-  savingsTrend?: { month: string; amount: number }[];
+  savingsTrend?: { month: string; amount: number; savings?: number; contributions?: number }[];
   revenueTrend?: { month: string; amount: number }[];
+  latestCycle?: {
+    id: string;
+    expectedAmount: number;
+    receivedAmount: number;
+    status: string;
+  } | null;
 }
 
 export interface NotificationSettings {

@@ -1,5 +1,5 @@
-import { useNavigate } from "react-router-dom";
-import { Check, ArrowRight, HelpCircle, Zap, TrendingUp, Award } from "lucide-react";
+import { useNavigate } from "react-router";
+import { Check, X, ArrowRight, Zap, TrendingUp, Award, Building2 } from "lucide-react";
 import { Button } from "../../../components/shared/Button";
 import { Card } from "../../../components/shared/Card";
 import { ThemeToggle } from "../../../components/shared/ThemeToggle";
@@ -13,17 +13,9 @@ const plans = [
     price: "₦0",
     period: "forever",
     icon: Award,
-    features: [
-      "Up to 15 members per group",
-      "Basic contribution tracking",
-      "Manual payment recording",
-      "Email notifications",
-      "Basic reports",
-      "1 group",
-    ],
+    highlight: false,
     cta: "Get Started Free",
     href: "/register",
-    popular: false,
   },
   {
     name: "Growth",
@@ -31,40 +23,87 @@ const plans = [
     price: "₦9,500",
     period: "/month",
     icon: TrendingUp,
-    features: [
-      "Up to 100 members per group",
-      "Automated contribution tracking",
-      "Virtual accounts via Nomba",
-      "Email & SMS notifications",
-      "Advanced analytics & reports",
-      "Automated payment reminders",
-      "Priority support",
-      "Up to 3 groups",
-    ],
+    highlight: true,
     cta: "Start Free Trial",
     href: "/register/cooperative",
-    popular: true,
   },
   {
     name: "Business",
     tagline: "For organizations and associations",
     price: "Custom",
     period: "",
-    icon: Zap,
-    features: [
-      "Unlimited members per group",
-      "Unlimited groups",
-      "API access for custom integrations",
-      "Dedicated account manager",
-      "Custom branding / white label",
-      "Advanced compliance tools",
-      "Custom webhook integrations",
-      "24/7 priority support",
-      "SLA guarantee",
-    ],
+    icon: Building2,
+    highlight: false,
     cta: "Contact Sales",
     href: "/contact",
-    popular: false,
+  },
+];
+
+type FeatureRow = {
+  label: string;
+  free: boolean | string;
+  growth: boolean | string;
+  business: boolean | string;
+};
+
+const featureGroups: { category: string; features: FeatureRow[] }[] = [
+  {
+    category: "Group Management",
+    features: [
+      { label: "Members per group", free: "15", growth: "100", business: "Unlimited" },
+      { label: "Groups", free: "1", growth: "3", business: "Unlimited" },
+      { label: "Contribution tracking", free: true, growth: true, business: true },
+      { label: "Payout scheduling", free: true, growth: true, business: true },
+      { label: "Member roles & permissions", free: false, growth: true, business: true },
+      { label: "Custom contribution rules", free: false, growth: true, business: true },
+    ],
+  },
+  {
+    category: "Payments",
+    features: [
+      { label: "Manual payment recording", free: true, growth: true, business: true },
+      { label: "Virtual accounts (Nomba)", free: false, growth: true, business: true },
+      { label: "Automated payment matching", free: false, growth: true, business: true },
+      { label: "Multiple payment channels", free: false, growth: true, business: true },
+      { label: "Direct bank payouts", free: true, growth: true, business: true },
+    ],
+  },
+  {
+    category: "Notifications",
+    features: [
+      { label: "Email notifications", free: true, growth: true, business: true },
+      { label: "SMS reminders", free: false, growth: true, business: true },
+      { label: "Automated payment reminders", free: false, growth: true, business: true },
+      { label: "Custom notification templates", free: false, growth: false, business: true },
+    ],
+  },
+  {
+    category: "Analytics & Reports",
+    features: [
+      { label: "Basic reports", free: true, growth: true, business: true },
+      { label: "Advanced analytics dashboard", free: false, growth: true, business: true },
+      { label: "Exportable financial reports", free: false, growth: true, business: true },
+      { label: "Custom report builder", free: false, growth: false, business: true },
+    ],
+  },
+  {
+    category: "Support & Compliance",
+    features: [
+      { label: "Community support", free: true, growth: false, business: false },
+      { label: "Priority email support", free: false, growth: true, business: true },
+      { label: "24/7 phone support", free: false, growth: false, business: true },
+      { label: "Dedicated account manager", free: false, growth: false, business: true },
+      { label: "SLA guarantee", free: false, growth: false, business: true },
+    ],
+  },
+  {
+    category: "Integrations",
+    features: [
+      { label: "API access", free: false, growth: false, business: true },
+      { label: "Custom webhook integrations", free: false, growth: false, business: true },
+      { label: "White-label / custom branding", free: false, growth: false, business: true },
+      { label: "Advanced compliance tools", free: false, growth: false, business: true },
+    ],
   },
 ];
 
@@ -84,6 +123,12 @@ const faqs = [
   { q: "How do payouts work?", a: "Group admins request a payout. Funds are disbursed to member bank accounts within 24 hours. A flat ₦100 fee applies per payout." },
 ];
 
+function FeatureValue({ value }: { value: boolean | string }) {
+  if (value === true) return <Check className="w-4 h-4 text-emerald-500 mx-auto" />;
+  if (value === false) return <X className="w-4 h-4 text-gray-300 dark:text-gray-600 mx-auto" />;
+  return <span className="text-sm font-medium text-gray-900 dark:text-white">{value}</span>;
+}
+
 export function PricingPage() {
   const navigate = useNavigate();
 
@@ -92,8 +137,8 @@ export function PricingPage() {
       <nav className="sticky top-0 z-50 bg-white/90 dark:bg-background/90 backdrop-blur-md border-b border-gray-100 dark:border-border">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <button onClick={() => navigate("/")}>
-              <Logo />
-            </button>
+            <Logo />
+          </button>
           <div className="flex items-center gap-3">
             <ThemeToggle />
             <Button variant="ghost" size="sm" onClick={() => navigate("/login")}>Sign In</Button>
@@ -108,11 +153,11 @@ export function PricingPage() {
         <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">Start free. Upgrade as you grow. Only pay transaction fees when your members contribute.</p>
       </section>
 
-      <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
+      <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
         <div className="grid md:grid-cols-3 gap-6">
           {plans.map(p => (
-            <Card key={p.name} className={`p-6 relative flex flex-col ${p.popular ? "border-primary/40 bg-emerald-50/30 dark:bg-emerald-900/5 ring-1 ring-primary/20" : ""}`}>
-              {p.popular && <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-primary text-white text-xs font-bold px-3 py-1 rounded-full">MOST POPULAR</div>}
+            <Card key={p.name} className={`p-6 relative flex flex-col ${p.highlight ? "border-primary/40 bg-emerald-50/30 dark:bg-emerald-900/5 ring-1 ring-primary/20" : ""}`}>
+              {p.highlight && <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-primary text-white text-xs font-bold px-3 py-1 rounded-full">MOST POPULAR</div>}
               <p.icon className="w-8 h-8 text-emerald-600 dark:text-emerald-400 mb-3" />
               <h3 className="text-lg font-bold text-gray-900 dark:text-white">{p.name}</h3>
               <p className="text-sm text-gray-500 dark:text-muted-foreground mb-4">{p.tagline}</p>
@@ -120,20 +165,84 @@ export function PricingPage() {
                 <span className="text-3xl font-extrabold text-gray-900 dark:text-white">{p.price}</span>
                 <span className="text-sm text-gray-500 dark:text-muted-foreground ml-1">{p.period}</span>
               </div>
-              <ul className="space-y-2.5 mb-6 flex-1">
-                {p.features.map(f => (
-                  <li key={f} className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-400">
-                    <Check className="w-4 h-4 text-emerald-500 mt-0.5 flex-shrink-0" />{f}
-                  </li>
-                ))}
-              </ul>
-              <Button full onClick={() => navigate(p.href)} variant={p.popular ? "primary" : "secondary"}>{p.cta}</Button>
+              <p className="text-xs text-gray-500 dark:text-muted-foreground mb-4">+ 1% transaction fee per contribution</p>
+              <Button full onClick={() => navigate(p.href)} variant={p.highlight ? "primary" : "secondary"}>{p.cta}</Button>
             </Card>
           ))}
         </div>
       </section>
 
       <section className="bg-gray-50 dark:bg-card/50 py-16">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 className="text-2xl font-extrabold text-gray-900 dark:text-white text-center mb-3">Compare plans</h2>
+          <p className="text-sm text-gray-500 dark:text-muted-foreground text-center mb-10">See exactly what you get with each tier.</p>
+
+          <div className="hidden md:block overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-200 dark:border-border">
+                  <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 dark:text-muted-foreground uppercase w-1/2">Feature</th>
+                  {plans.map(p => (
+                    <th key={p.name} className={`text-center py-3 px-4 text-xs font-semibold uppercase ${p.highlight ? "text-primary" : "text-gray-500 dark:text-muted-foreground"}`}>
+                      {p.name}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {featureGroups.map(group => (
+                  <>
+                    <tr key={group.category}>
+                      <td colSpan={4} className="py-3 px-4 text-xs font-bold text-gray-900 dark:text-white bg-gray-100/50 dark:bg-muted/50 uppercase tracking-wider">
+                        {group.category}
+                      </td>
+                    </tr>
+                    {group.features.map(f => (
+                      <tr key={f.label} className="border-b border-gray-100 dark:border-border hover:bg-gray-50/50 dark:hover:bg-muted/30 transition-colors">
+                        <td className="py-3 px-4 text-gray-600 dark:text-gray-400">{f.label}</td>
+                        <td className="py-3 px-4 text-center"><FeatureValue value={f.free} /></td>
+                        <td className="py-3 px-4 text-center"><FeatureValue value={f.growth} /></td>
+                        <td className="py-3 px-4 text-center"><FeatureValue value={f.business} /></td>
+                      </tr>
+                    ))}
+                  </>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="md:hidden space-y-6">
+            {featureGroups.map(group => (
+              <div key={group.category}>
+                <p className="text-xs font-bold text-gray-900 dark:text-white uppercase tracking-wider mb-3">{group.category}</p>
+                <div className="space-y-2">
+                  {group.features.map(f => (
+                    <div key={f.label} className="bg-white dark:bg-card border border-gray-100 dark:border-border rounded-xl p-3">
+                      <p className="text-sm font-medium text-gray-900 dark:text-white mb-2">{f.label}</p>
+                      <div className="grid grid-cols-3 gap-2 text-center">
+                        <div>
+                          <p className="text-[10px] text-gray-400 mb-1">Free</p>
+                          <FeatureValue value={f.free} />
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-primary mb-1">Growth</p>
+                          <FeatureValue value={f.growth} />
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-gray-400 mb-1">Business</p>
+                          <FeatureValue value={f.business} />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-white dark:bg-background py-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-2xl font-extrabold text-gray-900 dark:text-white text-center mb-3">Fee breakdown</h2>
           <p className="text-sm text-gray-500 dark:text-muted-foreground text-center mb-10">You only pay when your group is active. No hidden charges.</p>
@@ -151,13 +260,13 @@ export function PricingPage() {
         </div>
       </section>
 
-      <section className="bg-white dark:bg-background py-16">
+      <section className="bg-gray-50 dark:bg-card/50 py-16">
         <div className="max-w-3xl mx-auto px-4 sm:px-6">
           <h2 className="text-2xl font-extrabold text-gray-900 dark:text-white text-center mb-10">Frequently asked questions</h2>
           <div className="space-y-3">
             {faqs.map(({ q, a }) => (
-              <details key={q} className="bg-gray-50 dark:bg-card border border-gray-100 dark:border-border rounded-xl overflow-hidden">
-                <summary className="px-5 py-4 text-sm font-semibold text-gray-900 dark:text-white cursor-pointer hover:bg-white dark:hover:bg-white/5">{q}</summary>
+              <details key={q} className="bg-white dark:bg-card border border-gray-100 dark:border-border rounded-xl overflow-hidden">
+                <summary className="px-5 py-4 text-sm font-semibold text-gray-900 dark:text-white cursor-pointer hover:bg-gray-50 dark:hover:bg-white/5">{q}</summary>
                 <div className="px-5 pb-4 text-sm text-gray-500 dark:text-muted-foreground">{a}</div>
               </details>
             ))}

@@ -1,11 +1,12 @@
 import { lazy, Suspense } from "react";
-import { createBrowserRouter, Navigate } from "react-router-dom";
+import { createBrowserRouter, Navigate } from "react-router";
 import { ProtectedRoute } from "../components/shared/ProtectedRoute";
 import { LandingPage, HowItWorksPage } from "../features/landing";
 import { LoginPage } from "../features/auth";
 import type { UserRole } from "../types/auth.types";
 
-function LazyLoad(importFn: () => Promise<{ default: React.ComponentType<unknown> }>) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function LazyLoad(importFn: () => Promise<{ default: React.ComponentType<any> }>) {
   const Component = lazy(importFn);
   return (
     <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>}>

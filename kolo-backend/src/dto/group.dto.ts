@@ -18,6 +18,10 @@ export interface GroupResponse {
   description: string | null;
   category: string | null;
   location: string | null;
+  contributionAmount: number | null;
+  currency: string;
+  frequency: string;
+  collectionDay: number | null;
   status: string;
   createdBy: string;
   memberCount: number;
@@ -46,6 +50,28 @@ export interface InviteMemberDto {
 
 export interface AcceptInvitationDto {
   invitationId: string;
+}
+
+export interface GroupSettingsResponse {
+  name: string;
+  description: string | null;
+  category: string | null;
+  location: string | null;
+  contributionAmount: number | null;
+  currency: string;
+  frequency: string;
+  collectionDay: number | null;
+}
+
+export interface UpdateGroupSettingsDto {
+  name?: string;
+  description?: string | null;
+  category?: string | null;
+  location?: string | null;
+  contributionAmount?: number | null;
+  currency?: string;
+  frequency?: string;
+  collectionDay?: number | null;
 }
 
 export interface InvitationResponse {

@@ -2,7 +2,7 @@ import type { FastifyReply, FastifyRequest } from "fastify";
 import { GroupService } from "../services/group.service";
 import { GroupInvitationService } from "../services/group-invitation.service";
 import { ResponseUtil } from "../utils/response.util";
-import { createGroupSchema, updateGroupSchema, inviteMemberSchema, acceptInvitationSchema } from "../validators/group.validator";
+import { createGroupSchema, updateGroupSchema, inviteMemberSchema, acceptInvitationSchema, updateGroupSettingsSchema } from "../validators/group.validator";
 import { ValidationError } from "../errors/validation.error";
 
 export class GroupController {
@@ -118,5 +118,34 @@ export class GroupController {
     const { id, memberId } = request.params as { id: string; memberId: string };
     await this.invitationService.removeMember(id, memberId, request.userId!);
     ResponseUtil.success(reply, { message: "Member removed successfully" });
+  }
+
+  async getAnalytics(request: FastifyRequest, reply: FastifyReply): Promise<void> {
+    const { id } = request.params as { id: string };
+    const result = await this.groupService.getGroupAnalytics(id, request.userId!);
+    ResponseUtil.success(reply, result);
+  }
+
+  async getSettings(request: FastifyRequest, reply: FastifyReply): Promise<void> {
+    const { id } = request.params as { id: string };
+    const result = await this.groupService.getGroupSettings(id, request.userId!);
+    ResponseUtil.success(reply, result);
+  }
+
+  async updateSettings(request: FastifyRequest, reply: FastifyReply): Promise<void> {
+    const { id } = request.params as { id: string };
+    const parsed = updateGroupSettingsSchema.safeParse(request.body);
+    if (!parsed.success) {
+      const details: Record<string, string[]> = {};
+      for (const issue of parsed.error.issues) {
+        const key = issue.path.join(".");
+        if (!details[key]) details[key] = [];
+        details[key].push(issue.message);
+      }
+      throw new ValidationError("Validation failed", details);
+    }
+
+    const result = await this.groupService.updateGroupSettings(id, parsed.data, request.userId!);
+    ResponseUtil.success(reply, { success: true, group: result });
   }
 }

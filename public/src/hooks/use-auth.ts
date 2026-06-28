@@ -23,8 +23,7 @@ export function useAuth() {
 
   const registerMutation = useMutation({
     mutationFn: (payload: RegisterPayload) => authService.register(payload),
-    onSuccess: (result) => {
-      setSession(result.user as AuthUser, result.accessToken);
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["auth"] });
     },
   });

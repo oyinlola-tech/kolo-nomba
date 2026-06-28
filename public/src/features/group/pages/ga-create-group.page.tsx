@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 import {
   ArrowLeft, ArrowRight, Check, CheckCircle, ChevronLeft,
   Building2, FileText, Archive, MapPin, Banknote, Calendar, BarChart2, Plus,

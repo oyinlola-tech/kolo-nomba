@@ -90,5 +90,29 @@ export class GroupRoute {
       ],
       handler: this.controller.removeMember.bind(this.controller),
     });
+
+    app.get(`${prefix}/groups/:id/analytics`, {
+      preHandler: [
+        this.authMiddleware.authenticate.bind(this.authMiddleware),
+        this.groupMiddleware.requireGroupAccess.bind(this.groupMiddleware),
+      ],
+      handler: this.controller.getAnalytics.bind(this.controller),
+    });
+
+    app.get(`${prefix}/groups/:id/settings`, {
+      preHandler: [
+        this.authMiddleware.authenticate.bind(this.authMiddleware),
+        this.groupMiddleware.requireGroupAccess.bind(this.groupMiddleware),
+      ],
+      handler: this.controller.getSettings.bind(this.controller),
+    });
+
+    app.put(`${prefix}/groups/:id/settings`, {
+      preHandler: [
+        this.authMiddleware.authenticate.bind(this.authMiddleware),
+        this.groupMiddleware.requireGroupAdmin.bind(this.groupMiddleware),
+      ],
+      handler: this.controller.updateSettings.bind(this.controller),
+    });
   }
 }

@@ -12,10 +12,13 @@ import { formatNaira } from "../../../utils/format";
 import { useChartTheme } from "../../../hooks/use-chart-theme";
 import { useGroupAnalytics } from "../../../hooks/use-analytics";
 import { useUsers } from "../../../hooks/use-users";
+import { useCooperatives } from "../../../hooks/use-cooperatives";
 
 export function GAReports() {
   const ct = useChartTheme();
-  const { data: analytics, isLoading } = useGroupAnalytics("current");
+  const { data: groups } = useCooperatives();
+  const groupId = (groups && groups.length > 0) ? groups[0].id : "";
+  const { data: analytics, isLoading } = useGroupAnalytics(groupId);
   const { data: members } = useUsers();
 
   if (isLoading) {
@@ -93,19 +96,22 @@ export function GAReports() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50 dark:divide-border">
-                {memberList.map(m => (
-                  <tr key={m.id} className="hover:bg-gray-50 dark:hover:bg-white/3">
-                    <td className="px-3 py-2.5">
-                      <div className="flex items-center gap-2">
-                        <Avatar name={m.name} size="sm" />
-                        <span className="font-medium text-gray-900 dark:text-white text-sm">{m.name}</span>
-                      </div>
-                    </td>
-                    <td className="px-3 py-2.5 text-gray-500 dark:text-muted-foreground text-sm">{m.email}</td>
-                    <td className="px-3 py-2.5"><Badge status={m.status} /></td>
-                    <td className="px-3 py-2.5 text-gray-500 dark:text-muted-foreground text-sm">{m.createdAt}</td>
-                  </tr>
-                ))}
+                {memberList.map(m => {
+                  const memberName = `${m.firstName} ${m.lastName}`;
+                  return (
+                    <tr key={m.id} className="hover:bg-gray-50 dark:hover:bg-white/3">
+                      <td className="px-3 py-2.5">
+                        <div className="flex items-center gap-2">
+                          <Avatar name={memberName} size="sm" />
+                          <span className="font-medium text-gray-900 dark:text-white text-sm">{memberName}</span>
+                        </div>
+                      </td>
+                      <td className="px-3 py-2.5 text-gray-500 dark:text-muted-foreground text-sm">{m.email}</td>
+                      <td className="px-3 py-2.5"><Badge status={m.status} /></td>
+                      <td className="px-3 py-2.5 text-gray-500 dark:text-muted-foreground text-sm">{m.createdAt}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

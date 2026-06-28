@@ -31,10 +31,10 @@ export function SARevenue() {
     <div>
       <PageHeader title="Revenue Analytics" subtitle="Platform earnings and fee breakdown." />
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <MetricCard title="Total Revenue" value={analytics ? formatNaira(analytics.platformRevenue) : "—"} change="—" icon={TrendingUp} />
-        <MetricCard title="Total Processed" value={analytics ? formatNaira(analytics.totalProcessed) : "—"} change="—" icon={Banknote} />
-        <MetricCard title="Transactions" value={analytics ? analytics.totalTransactions.toLocaleString() : "—"} change="—" icon={Percent} />
-        <MetricCard title="Active Groups" value={analytics ? analytics.activeGroups.toLocaleString() : "—"} change="—" icon={ArrowDownToLine} />
+        <MetricCard title="Total Revenue" value={analytics ? formatNaira(analytics.platformRevenue ?? 0) : "—"} change="—" icon={TrendingUp} />
+        <MetricCard title="Total Processed" value={analytics ? formatNaira(analytics.totalProcessed ?? 0) : "—"} change="—" icon={Banknote} />
+        <MetricCard title="Transactions" value={analytics ? (analytics.totalTransactions ?? 0).toLocaleString() : "—"} change="—" icon={Percent} />
+        <MetricCard title="Active Groups" value={analytics ? (analytics.activeGroups ?? 0).toLocaleString() : "—"} change="—" icon={ArrowDownToLine} />
       </div>
       <Card className="p-5 mb-5">
         <p className="font-semibold text-gray-900 dark:text-white mb-4">Monthly Revenue Trend</p>

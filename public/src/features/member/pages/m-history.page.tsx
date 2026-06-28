@@ -2,13 +2,13 @@ import { Check, Download, Loader2 } from "lucide-react";
 import { Badge } from "../../../components/shared/Badge";
 import { useContributions } from "../../../hooks/use-contributions";
 import { formatNaira } from "../../../utils/format";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 
 export function MHistory() {
   const navigate = useNavigate();
   const { data: contributions, isLoading } = useContributions();
   const contribs = contributions || [];
-  const totalContributed = contribs.reduce((s, c) => s + c.amount, 0);
+  const totalContributed = contribs.reduce((s, c) => s + (c.amount ?? 0), 0);
 
   if (isLoading) {
     return (
@@ -40,7 +40,7 @@ export function MHistory() {
                   <div className="bg-white dark:bg-card border border-gray-100 dark:border-border rounded-xl p-4 shadow-sm">
                     <div className="flex justify-between items-start mb-1">
                       <p className="font-bold text-gray-900 dark:text-white text-sm">{c.memberName}</p>
-                      <p className="font-bold text-gray-900 dark:text-white">{formatNaira(c.amount)}</p>
+                       <p className="font-bold text-gray-900 dark:text-white">{formatNaira(c.amount ?? 0)}</p>
                     </div>
                     <p className="text-xs text-gray-400 mb-3">{c.paidAt || "—"}</p>
                     <div className="flex items-center gap-2">

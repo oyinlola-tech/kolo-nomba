@@ -79,7 +79,7 @@ export function SAGroups() {
                     </td>
                     <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{g.adminName}</td>
                     <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{g.memberCount}</td>
-                    <td className="px-4 py-3 font-semibold text-gray-900 dark:text-white whitespace-nowrap">{formatNaira(g.savingsBalance)}</td>
+                    <td className="px-4 py-3 font-semibold text-gray-900 dark:text-white whitespace-nowrap">{formatNaira(g.savingsBalance ?? 0)}</td>
                     <td className="px-4 py-3"><Badge status={g.status} /></td>
                     <td className="px-4 py-3 text-gray-500 dark:text-muted-foreground whitespace-nowrap">{g.createdAt}</td>
                     <td className="px-4 py-3">

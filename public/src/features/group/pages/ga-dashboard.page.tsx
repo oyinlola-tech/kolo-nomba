@@ -33,43 +33,53 @@ export function GADashboard() {
   }
 
   const savingsTrend = analytics?.savingsTrend || [];
-  const latestSavings = savingsTrend.length > 0 ? savingsTrend[savingsTrend.length - 1].savings : 0;
-  const latestContributions = savingsTrend.length > 0 ? savingsTrend[savingsTrend.length - 1].contributions : 0;
+  const latestSavings = savingsTrend.length > 0 ? (savingsTrend[savingsTrend.length - 1].savings ?? savingsTrend[savingsTrend.length - 1].amount ?? 0) : 0;
+  const latestContributions = savingsTrend.length > 0 ? (savingsTrend[savingsTrend.length - 1].contributions ?? 0) : 0;
   const recentPayments = (contributions || []).slice(0, 5);
+
+  const latestCycle = analytics?.latestCycle;
+  const progressPercent = latestCycle && latestCycle.expectedAmount > 0
+    ? Math.min(100, Math.round((latestCycle.receivedAmount / latestCycle.expectedAmount) * 100))
+    : 0;
+  const pendingAmount = latestCycle
+    ? Math.max(0, latestCycle.expectedAmount - latestCycle.receivedAmount)
+    : 0;
 
   return (
     <div>
       <PageHeader title="Group Dashboard" subtitle="Current cycle overview" />
-      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-5 gap-3 md:gap-4 mb-6">
         <MetricCard title="Total Savings" value={formatNaira(latestSavings)} change="—" icon={Wallet} />
         <MetricCard title="This Month" value={formatNaira(latestContributions)} change="—" icon={Banknote} />
         <MetricCard title="Active Members" value={analytics ? String(analytics.activeUsers) : "—"} change="" positive icon={Users} />
-        <MetricCard title="Pending" value="—" change="" positive={false} icon={Clock} iconBg="bg-amber-50 dark:bg-amber-900/20" />
-        <MetricCard title="Next Payout" value="—" change="" icon={Calendar} />
+        <MetricCard title="Pending" value={formatNaira(pendingAmount)} change="" positive={false} icon={Clock} iconBg="bg-amber-50 dark:bg-amber-900/20" />
+        <MetricCard title="Next Payout" value={latestCycle ? formatNaira(latestCycle.expectedAmount) : "—"} change="" icon={Calendar} />
       </div>
-      <Card className="p-5 mb-5">
+      <Card className="p-4 md:p-5 mb-5">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
           <div>
             <p className="font-semibold text-gray-900 dark:text-white">Current Contribution Cycle</p>
             <p className="text-sm text-gray-500 dark:text-muted-foreground">Collection progress</p>
           </div>
           <div className="flex gap-4 text-right">
-            <div><p className="text-xs text-gray-500">Received</p><p className="text-lg font-bold text-emerald-600 dark:text-emerald-400">{formatNaira(latestContributions)}</p></div>
+            <div><p className="text-xs text-gray-500">Received</p><p className="text-lg font-bold text-emerald-600 dark:text-emerald-400">{formatNaira(latestCycle?.receivedAmount ?? 0)}</p></div>
+            <div><p className="text-xs text-gray-500">Expected</p><p className="text-lg font-bold text-gray-900 dark:text-white">{formatNaira(latestCycle?.expectedAmount ?? 0)}</p></div>
           </div>
         </div>
         <div className="h-3 bg-gray-100 dark:bg-muted rounded-full overflow-hidden">
-          <div className="h-full bg-gradient-to-r from-emerald-600 to-emerald-400 rounded-full transition-all" style={{ width: "50%" }} />
+          <div className="h-full bg-gradient-to-r from-emerald-600 to-emerald-400 rounded-full transition-all" style={{ width: `${progressPercent}%` }} />
         </div>
+        <p className="text-xs text-gray-400 mt-2 text-right">{progressPercent}% collected</p>
       </Card>
-      <div className="grid lg:grid-cols-2 gap-5">
-        <Card className="p-5">
+      <div className="grid md:grid-cols-2 gap-4 md:gap-5">
+        <Card className="p-4 md:p-5">
           <p className="font-semibold text-gray-900 dark:text-white mb-4">Savings Growth</p>
           {savingsTrend.length === 0 ? (
             <div className="flex items-center justify-center py-8 text-gray-500 dark:text-muted-foreground">
               <p className="text-sm">Savings data will appear once contributions start.</p>
             </div>
           ) : (
-            <ResponsiveContainer width="100%" height={200}>
+            <ResponsiveContainer width="100%" height={220}>
               <AreaChart data={savingsTrend}>
                 <defs>
                   <linearGradient id="sg" x1="0" y1="0" x2="0" y2="1">
@@ -86,7 +96,7 @@ export function GADashboard() {
             </ResponsiveContainer>
           )}
         </Card>
-        <Card className="p-5">
+        <Card className="p-4 md:p-5">
           <p className="font-semibold text-gray-900 dark:text-white mb-4">Recent Payments</p>
           {recentPayments.length === 0 ? (
             <div className="flex items-center justify-center py-8 text-gray-500 dark:text-muted-foreground">
@@ -96,13 +106,13 @@ export function GADashboard() {
             <div className="space-y-3">
               {recentPayments.map(p => (
                 <div key={p.id} className="flex items-center gap-3">
-                  <Avatar name={p.memberName} size="sm" />
+                  <Avatar name={p.memberName ?? ""} size="sm" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{p.memberName}</p>
                     <p className="text-xs text-gray-500 dark:text-muted-foreground">{p.paidAt || "—"}</p>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm font-semibold text-gray-900 dark:text-white">{formatNaira(p.amount)}</p>
+                  <div className="text-right flex-shrink-0">
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white">{formatNaira(p.amount ?? 0)}</p>
                     <Badge status={p.status} />
                   </div>
                 </div>

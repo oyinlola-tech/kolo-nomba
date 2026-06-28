@@ -50,6 +50,11 @@ export class AdminController {
     ResponseUtil.success(reply, result);
   }
 
+  async getPaymentConfig(_request: FastifyRequest, reply: FastifyReply): Promise<void> {
+    const config = await this.platformSettingService.getPaymentConfig();
+    ResponseUtil.success(reply, config);
+  }
+
   async getDashboard(_request: FastifyRequest, reply: FastifyReply): Promise<void> {
     const [metrics, revenue, charts, activities] = await Promise.all([
       this.adminService.getDashboardMetrics(),

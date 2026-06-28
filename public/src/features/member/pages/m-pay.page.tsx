@@ -1,17 +1,22 @@
 import { useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router";
 import {
-  X, Wallet, Landmark, CreditCard, ShieldCheck, Lock, RefreshCw,
+  X, Wallet, Landmark, CreditCard, ShieldCheck, Lock, RefreshCw, Loader2,
 } from "lucide-react";
 import { useCreatePayment } from "../../../hooks/use-payments";
+import { useContribution } from "../../../hooks/use-contributions";
+import { formatNaira } from "../../../utils/format";
 
 export function MPay() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const contributionId = searchParams.get("contributionId");
+  const { data: contribution, isLoading: contributionLoading } = useContribution(contributionId);
   const createPayment = useCreatePayment();
   const [method, setMethod] = useState<"wallet" | "bank" | "card">("wallet");
   const [error, setError] = useState("");
+
+  const amount = contribution?.expectedAmount ?? 0;
 
   const methods = [
     { id: "wallet" as const, icon: Wallet, title: "Nomba Wallet", sub: "Pay with wallet balance", color: "bg-emerald-600" },
@@ -41,6 +46,22 @@ export function MPay() {
     }
   };
 
+  if (contributionLoading) {
+    return (
+      <div className="px-5 py-5">
+        <div className="flex items-center gap-3 mb-6">
+          <button onClick={() => navigate("home")} className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-muted text-gray-500 transition-colors">
+            <X className="w-4 h-4" />
+          </button>
+          <p className="font-bold text-gray-900 dark:text-white">Pay Contribution</p>
+        </div>
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="px-5 py-5">
       <div className="flex items-center gap-3 mb-6">
@@ -51,7 +72,7 @@ export function MPay() {
       </div>
       <div className="bg-gray-50 dark:bg-muted border border-gray-100 dark:border-border rounded-2xl p-6 text-center mb-6">
         <p className="text-xs font-semibold text-gray-500 dark:text-muted-foreground tracking-widest mb-2">TOTAL AMOUNT DUE</p>
-        <p className="text-4xl font-extrabold text-gray-900 dark:text-white mb-3">₦50,000</p>
+        <p className="text-4xl font-extrabold text-gray-900 dark:text-white mb-3">{formatNaira(amount)}</p>
         <div className="inline-flex items-center gap-1.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-xs font-semibold px-3 py-1.5 rounded-full">
           <ShieldCheck className="w-3 h-3" />Secure Payment Link
         </div>
@@ -77,10 +98,10 @@ export function MPay() {
       {error && (
         <div className="mb-4 p-3 rounded-xl bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm">{error}</div>
       )}
-      <button onClick={handlePay} disabled={createPayment.isPending}
+      <button onClick={handlePay} disabled={createPayment.isPending || !contributionId}
         className="w-full py-4 bg-primary hover:opacity-90 disabled:opacity-60 text-white font-bold text-base rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-500/20">
         {createPayment.isPending ? <RefreshCw className="w-5 h-5 animate-spin" /> : <Lock className="w-4 h-4" />}
-        {createPayment.isPending ? "Processing…" : "Pay ₦50,000 Now"}
+        {createPayment.isPending ? "Processing…" : `Pay ${formatNaira(amount)} Now`}
       </button>
       <p className="text-center text-xs text-gray-400 mt-3 flex items-center justify-center gap-1">
         <ShieldCheck className="w-3 h-3" />Secured by Nomba Checkout
