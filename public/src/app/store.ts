@@ -1,9 +1,7 @@
 import { create } from "zustand";
-import axios from "axios";
-import { setAccessToken } from "../api/client";
+import { apiClient, setAccessToken } from "../api/client";
+import { getProfile } from "../services/auth.service";
 import type { AuthUser, UserRole } from "../types/auth.types";
-
-const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
 
 type ThemeMode = "light" | "dark";
 
@@ -66,10 +64,7 @@ export const useAppStore = create<AppState>((set, get) => ({
 
 export async function initAuth(): Promise<void> {
   try {
-    const { data: refreshData } = await axios.post(`${BASE_URL}/auth/refresh`, {}, {
-      headers: { "X-Requested-With": "XMLHttpRequest" },
-      withCredentials: true,
-    });
+    const { data: refreshData } = await apiClient.post("/auth/refresh", {});
     const newToken = refreshData.accessToken ?? refreshData.data?.accessToken;
 
     if (!newToken) {
@@ -79,10 +74,7 @@ export async function initAuth(): Promise<void> {
 
     setAccessToken(newToken);
 
-    const { data: profileData } = await axios.get(`${BASE_URL}/auth/me`, {
-      headers: { Authorization: `Bearer ${newToken}` },
-    });
-    const profile = profileData.data ?? profileData;
+    const profile = await getProfile();
 
     useAppStore.setState({ user: profile, role: profile.role, accessToken: newToken, isHydrated: true });
   } catch {
