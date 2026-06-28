@@ -1,34 +1,28 @@
 import { useParams, useNavigate } from "react-router-dom";
 import {
   Building2, ArrowLeft, Users, Calendar, Wallet, PiggyBank,
-  Loader2, Clock, ChevronDown,
+  Loader2, Clock,
 } from "lucide-react";
 import { Badge } from "../../../components/shared/Badge";
 import { Avatar } from "../../../components/shared/Avatar";
 import { formatNaira } from "../../../utils/format";
 import { useCooperatives } from "../../../hooks/use-cooperatives";
-import { useUsers } from "../../../hooks/use-users";
 import { usePayouts } from "../../../hooks/use-payouts";
 import { useContributions } from "../../../hooks/use-contributions";
 import { Card } from "../../../components/shared/Card";
-import { useState } from "react";
 
 export function MGroupDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { data: groups, isLoading: groupsLoading } = useCooperatives();
-  const { data: users, isLoading: usersLoading } = useUsers();
   const { data: payouts, isLoading: payoutsLoading } = usePayouts();
   const { data: contributions, isLoading: contribsLoading } = useContributions();
 
-  const [showAllMembers, setShowAllMembers] = useState(false);
-
   const group = (groups || []).find(g => g.id === id);
-  const memberList = (users || []).slice(0, showAllMembers ? undefined : 5);
-  const groupPayouts = (payouts || []).filter(p => p.recipientName.includes(group?.name || "") || Math.random() > 0.5).slice(0, 6);
+  const groupPayouts = (payouts || []).slice(0, 6);
   const groupContributions = (contributions || []).slice(0, 8);
 
-  const isLoading = groupsLoading || usersLoading || payoutsLoading || contribsLoading;
+  const isLoading = groupsLoading || payoutsLoading || contribsLoading;
 
   if (isLoading) {
     return (
@@ -121,24 +115,10 @@ export function MGroupDetail() {
             <Users className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
             <p className="font-semibold text-sm text-gray-900 dark:text-white">Members ({group.memberCount})</p>
           </div>
-          <div className="space-y-2">
-            {memberList.map(m => (
-              <div key={m.id} className="flex items-center gap-2">
-                <Avatar name={m.name} size="sm" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium text-gray-900 dark:text-white truncate">{m.name}</p>
-                  <p className="text-[10px] text-gray-400">{m.role}</p>
-                </div>
-                <Badge status={m.status} />
-              </div>
-            ))}
+          <div className="py-4 text-center text-xs text-gray-500 dark:text-muted-foreground">
+            <Users className="w-5 h-5 mx-auto mb-1.5 text-gray-300 dark:text-gray-600" />
+            <p>{group.memberCount} member{group.memberCount !== 1 ? "s" : ""} in this group</p>
           </div>
-          {(users || []).length > 5 && (
-            <button onClick={() => setShowAllMembers(v => !v)} className="mt-3 text-xs text-primary font-medium flex items-center gap-1 hover:underline">
-              {showAllMembers ? "Show less" : `View all ${(users || []).length} members`}
-              <ChevronDown className={`w-3 h-3 transition-transform ${showAllMembers ? "rotate-180" : ""}`} />
-            </button>
-          )}
         </Card>
       </div>
 
