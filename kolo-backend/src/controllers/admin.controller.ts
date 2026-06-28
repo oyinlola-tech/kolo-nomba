@@ -13,7 +13,7 @@ import { ValidationError } from "../errors/validation.error";
 import { QueueManager } from "../jobs/queue-manager";
 import { BackgroundJobRepository } from "../jobs/background-job.repository";
 import { PlatformSettingService, type NotificationSettingsDto } from "../services/platform-setting.service";
-import { PrismaDatabase } from "../database/prisma";
+import { NombaRepository } from "../repositories/nomba.repository";
 import { z } from "zod";
 
 export class AdminController {
@@ -22,6 +22,7 @@ export class AdminController {
   private readonly queueManager: QueueManager;
   private readonly jobRepo: BackgroundJobRepository;
   private readonly platformSettingService: PlatformSettingService;
+  private readonly nombaRepository: NombaRepository;
 
   constructor() {
     this.adminService = new AdminService();
@@ -29,6 +30,7 @@ export class AdminController {
     this.queueManager = QueueManager.getInstance();
     this.jobRepo = new BackgroundJobRepository();
     this.platformSettingService = new PlatformSettingService();
+    this.nombaRepository = new NombaRepository();
   }
 
   async getNotificationSettings(_request: FastifyRequest, reply: FastifyReply): Promise<void> {
@@ -221,19 +223,9 @@ export class AdminController {
 
   async getNombaTransactions(request: FastifyRequest, reply: FastifyReply): Promise<void> {
     const { page = "1", limit = "20", status } = request.query as { page?: string; limit?: string; status?: string };
-    const db = PrismaDatabase.getInstance().getClient();
-    const where: Record<string, unknown> = { provider: "nomba" };
-    if (status) where.status = status as never;
-
-    const [data, total] = await Promise.all([
-      db.payment.findMany({
-        where: where as never,
-        skip: (Math.max(1, parseInt(page, 10) || 1) - 1) * Math.min(100, Math.max(1, parseInt(limit, 10) || 20)),
-        take: Math.min(100, Math.max(1, parseInt(limit, 10) || 20)),
-        orderBy: { createdAt: "desc" },
-      }),
-      db.payment.count({ where: where as never }),
-    ]);
+    const pageNum = Math.max(1, parseInt(page, 10) || 1);
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
+    const { data, total } = await this.nombaRepository.findTransactions(pageNum, limitNum, status);
 
     ResponseUtil.success(reply, {
       data: data.map(p => ({
@@ -247,33 +239,15 @@ export class AdminController {
         paymentMethod: p.paymentMethod,
         createdAt: p.createdAt.toISOString(),
       })),
-      meta: {
-        page: Math.max(1, parseInt(page, 10) || 1),
-        limit: Math.min(100, Math.max(1, parseInt(limit, 10) || 20)),
-        total,
-        totalPages: Math.ceil(total / Math.min(100, Math.max(1, parseInt(limit, 10) || 20))),
-      },
+      meta: { page: pageNum, limit: limitNum, total, totalPages: Math.ceil(total / limitNum) },
     });
   }
 
   async getNombaWebhookEvents(request: FastifyRequest, reply: FastifyReply): Promise<void> {
     const { page = "1", limit = "20", eventStatus } = request.query as { page?: string; limit?: string; eventStatus?: string };
-    const db = PrismaDatabase.getInstance().getClient();
-    const where: Record<string, unknown> = { provider: "nomba" };
-    if (eventStatus) where.status = eventStatus as never;
-
     const pageNum = Math.max(1, parseInt(page, 10) || 1);
     const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
-
-    const [data, total] = await Promise.all([
-      db.webhookEvent.findMany({
-        where: where as never,
-        skip: (pageNum - 1) * limitNum,
-        take: limitNum,
-        orderBy: { createdAt: "desc" },
-      }),
-      db.webhookEvent.count({ where: where as never }),
-    ]);
+    const { data, total } = await this.nombaRepository.findWebhookEvents(pageNum, limitNum, eventStatus);
 
     const mapped = data.map(w => {
       const ev = w as unknown as Record<string, unknown>;
@@ -295,19 +269,10 @@ export class AdminController {
   }
 
   async getNombaFailedPayments(request: FastifyRequest, reply: FastifyReply): Promise<void> {
-    const db = PrismaDatabase.getInstance().getClient();
     const { page = "1", limit = "20" } = request.query as { page?: string; limit?: string };
-
-    const where = { provider: "nomba", status: "FAILED" as never };
-    const [data, total] = await Promise.all([
-      db.payment.findMany({
-        where,
-        skip: (Math.max(1, parseInt(page, 10) || 1) - 1) * Math.min(100, Math.max(1, parseInt(limit, 10) || 20)),
-        take: Math.min(100, Math.max(1, parseInt(limit, 10) || 20)),
-        orderBy: { updatedAt: "desc" },
-      }),
-      db.payment.count({ where }),
-    ]);
+    const pageNum = Math.max(1, parseInt(page, 10) || 1);
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
+    const { data, total } = await this.nombaRepository.findFailedPayments(pageNum, limitNum);
 
     ResponseUtil.success(reply, {
       data: data.map(p => ({
@@ -320,30 +285,15 @@ export class AdminController {
         paymentMethod: p.paymentMethod,
         createdAt: p.createdAt.toISOString(),
       })),
-      meta: {
-        page: Math.max(1, parseInt(page, 10) || 1),
-        limit: Math.min(100, Math.max(1, parseInt(limit, 10) || 20)),
-        total,
-        totalPages: Math.ceil(total / Math.min(100, Math.max(1, parseInt(limit, 10) || 20))),
-      },
+      meta: { page: pageNum, limit: limitNum, total, totalPages: Math.ceil(total / limitNum) },
     });
   }
 
   async getNombaReconciliationResults(request: FastifyRequest, reply: FastifyReply): Promise<void> {
     const { page = "1", limit = "20", status } = request.query as { page?: string; limit?: string; status?: string };
-    const db = PrismaDatabase.getInstance().getClient();
-    const where: Record<string, unknown> = { provider: "nomba" };
-    if (status) where.status = status as never;
-
-    const [data, total] = await Promise.all([
-      db.reconciliationRecord.findMany({
-        where: where as never,
-        skip: (Math.max(1, parseInt(page, 10) || 1) - 1) * Math.min(100, Math.max(1, parseInt(limit, 10) || 20)),
-        take: Math.min(100, Math.max(1, parseInt(limit, 10) || 20)),
-        orderBy: { createdAt: "desc" },
-      }),
-      db.reconciliationRecord.count({ where: where as never }),
-    ]);
+    const pageNum = Math.max(1, parseInt(page, 10) || 1);
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
+    const { data, total } = await this.nombaRepository.findReconciliationResults(pageNum, limitNum, status);
 
     ResponseUtil.success(reply, {
       data: data.map(r => ({
@@ -358,12 +308,7 @@ export class AdminController {
         resolvedAt: r.resolvedAt?.toISOString() ?? null,
         createdAt: r.createdAt.toISOString(),
       })),
-      meta: {
-        page: Math.max(1, parseInt(page, 10) || 1),
-        limit: Math.min(100, Math.max(1, parseInt(limit, 10) || 20)),
-        total,
-        totalPages: Math.ceil(total / Math.min(100, Math.max(1, parseInt(limit, 10) || 20))),
-      },
+      meta: { page: pageNum, limit: limitNum, total, totalPages: Math.ceil(total / limitNum) },
     });
   }
 }
