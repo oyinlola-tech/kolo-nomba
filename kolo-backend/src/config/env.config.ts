@@ -70,6 +70,7 @@ export class EnvConfig {
   public readonly PRIMARY_COLOR: string;
   public readonly SECONDARY_COLOR: string;
 
+  public readonly ENCRYPTION_KEY: string;
   public readonly COOKIE_SECRET: string;
   public readonly COOKIE_SECURE: boolean;
   public readonly COOKIE_SAME_SITE: "strict" | "lax" | "none";
@@ -143,6 +144,7 @@ export class EnvConfig {
     this.JOB_BACKOFF_DELAY = parseInt(EnvConfig.getEnvOrDefault("JOB_BACKOFF_DELAY", "5000"), 10);
     this.JOB_TIMEOUT = parseInt(EnvConfig.getEnvOrDefault("JOB_TIMEOUT", "30000"), 10);
 
+    this.ENCRYPTION_KEY = EnvConfig.getEnvOrDefault("ENCRYPTION_KEY", "");
     this.APP_NAME = EnvConfig.getEnvOrDefault("APP_NAME", "Kolo");
     this.APP_LOGO_URL = EnvConfig.getEnvOrDefault("APP_LOGO_URL", "");
     this.APP_FRONTEND_URL = EnvConfig.getEnvOrDefault("APP_FRONTEND_URL", "http://localhost:5173");
