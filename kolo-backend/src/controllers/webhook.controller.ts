@@ -37,10 +37,14 @@ export class WebhookController {
       const isSignatureError = errorMessage === "Invalid webhook signature" || 
                               errorMessage.includes("signature") || 
                               errorMessage.includes("Signature");
+      const isPayloadError = errorMessage === "Invalid webhook payload";
       
       if (isSignatureError) {
         this.logger.log("Webhook signature verification failed", { error: errorMessage });
         reply.status(401).send({ success: false, message: "Invalid webhook signature" });
+      } else if (isPayloadError) {
+        this.logger.log("Webhook payload validation failed", { error: errorMessage });
+        reply.status(422).send({ success: false, message: "Invalid webhook payload" });
       } else {
         this.logger.log("Webhook processing error", { error: errorMessage });
         reply.status(400).send({ success: false, message: "Webhook processing failed" });
