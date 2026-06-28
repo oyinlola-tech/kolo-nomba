@@ -1,15 +1,12 @@
 import { Building2, Plus, Loader2, ChevronRight } from "lucide-react";
 import { Badge } from "../../../components/shared/Badge";
-import { Avatar } from "../../../components/shared/Avatar";
 import { formatNaira } from "../../../utils/format";
 import { useCooperatives } from "../../../hooks/use-cooperatives";
-import { useUsers } from "../../../hooks/use-users";
 import { useNavigate } from "react-router-dom";
 
 export function MGroups() {
   const navigate = useNavigate();
   const { data: cooperatives, isLoading } = useCooperatives();
-  const { data: users } = useUsers();
   const groups = cooperatives || [];
 
   if (isLoading) {
@@ -68,15 +65,8 @@ export function MGroups() {
               <p className="text-[10px] text-gray-400 mt-0.5">Status</p>
             </div>
           </div>
-          <div className="space-y-2">
-            <p className="text-xs font-semibold text-gray-600 dark:text-gray-400">MEMBERS</p>
-            {(users || []).slice(0, 5).map(u => (
-              <div key={u.id} className="flex items-center gap-2">
-                <Avatar name={u.name} size="sm" />
-                <p className="text-sm text-gray-700 dark:text-gray-300 flex-1">{u.name}</p>
-                <Badge status={u.status} />
-              </div>
-            ))}
+          <div className="flex items-center gap-2 text-xs text-gray-400">
+            <span>{g.memberCount} member{g.memberCount !== 1 ? "s" : ""}</span>
           </div>
         </button>
       ))}
