@@ -78,7 +78,7 @@ This document describes all environment variables used by Kolo backend and front
 | Variable | Required | Default | Description |
 |---|---|---|---|
 | `FRONTEND_URL` | No | `http://localhost:5173` | Main frontend URL |
-| `ADMIN_FRONTEND_URL` | No | `http://localhost:5174` | Admin frontend URL |
+| `ADMIN_FRONTEND_URL` | No | `http://localhost:5174` | Admin frontend URL (same domain as FRONTEND_URL if hosted together) |
 
 ### Redis (BullMQ)
 
