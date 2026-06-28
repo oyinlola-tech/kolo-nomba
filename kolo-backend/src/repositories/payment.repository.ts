@@ -21,8 +21,8 @@ export class PaymentRepository {
     });
   }
 
-  async findByContribution(contributionId: string) {
-    return this.db.payment.findMany({
+  async findByContribution(contributionId: string, tx?: Prisma.TransactionClient) {
+    return this.getClient(tx).payment.findMany({
       where: { contributionId },
       orderBy: { createdAt: "desc" },
     });
@@ -50,8 +50,8 @@ export class PaymentRepository {
     provider: string;
     status: string;
     paymentMethod?: string;
-  }) {
-    return this.db.payment.create({ data: data as never });
+  }, tx?: Prisma.TransactionClient) {
+    return this.getClient(tx).payment.create({ data: data as never });
   }
 
   async updateStatus(id: string, status: string, transactionId?: string, providerReference?: string, tx?: Prisma.TransactionClient) {

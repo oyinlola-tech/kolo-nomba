@@ -2,23 +2,28 @@ import type { FastifyInstance } from "fastify";
 import { AdminController } from "../controllers/admin.controller";
 import { AuthMiddleware } from "../middleware/auth.middleware";
 import { RoleMiddleware } from "../middleware/role.middleware";
+import { CsrfMiddleware } from "../middleware/csrf.middleware";
 import { Roles } from "../constants/roles.constant";
 
 export class AdminRoute {
   private readonly controller: AdminController;
   private readonly authMiddleware: AuthMiddleware;
   private readonly superAdminMiddleware: RoleMiddleware;
+  private readonly csrfMiddleware: CsrfMiddleware;
 
   constructor() {
     this.controller = new AdminController();
     this.authMiddleware = new AuthMiddleware();
     this.superAdminMiddleware = new RoleMiddleware(Roles.SUPER_ADMIN);
+    this.csrfMiddleware = new CsrfMiddleware();
   }
 
   register(app: FastifyInstance, prefix: string): void {
+    const csrf = this.csrfMiddleware.enforce.bind(this.csrfMiddleware);
     const preHandler = [
       this.authMiddleware.authenticate.bind(this.authMiddleware),
       this.superAdminMiddleware.authorize.bind(this.superAdminMiddleware),
+      csrf,
     ];
 
     const mutationConfig = {

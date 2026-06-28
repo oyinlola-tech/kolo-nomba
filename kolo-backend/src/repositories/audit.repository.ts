@@ -22,4 +22,15 @@ export class AuditRepository {
       },
     });
   }
+
+  async countRecentByUserAndAction(userId: string, action: string, withinMinutes: number): Promise<number> {
+    const since = new Date(Date.now() - withinMinutes * 60 * 1000);
+    return this.db.auditLog.count({
+      where: {
+        userId,
+        action,
+        createdAt: { gte: since },
+      },
+    });
+  }
 }

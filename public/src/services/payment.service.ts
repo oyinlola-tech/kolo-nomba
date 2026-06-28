@@ -6,7 +6,19 @@ export async function getPayments(): Promise<Payment[]> {
   return data.data;
 }
 
-export async function createPayment(payload: { amount: number; contributionId: string }): Promise<Payment> {
-  const { data } = await apiClient.post<{ data: Payment }>("/payments/initiate", payload);
+export interface CreatePaymentPayload {
+  amount?: number;
+  contributionId: string;
+  paymentMethod?: string;
+}
+
+export interface InitiatePaymentResponse {
+  paymentId: string;
+  reference: string;
+  paymentUrl: string | null;
+}
+
+export async function createPayment(payload: CreatePaymentPayload): Promise<InitiatePaymentResponse> {
+  const { data } = await apiClient.post<{ data: InitiatePaymentResponse }>("/payments/initiate", payload);
   return data.data;
 }

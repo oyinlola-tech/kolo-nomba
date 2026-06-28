@@ -12,10 +12,13 @@ import { formatNaira } from "../../../utils/format";
 import { useChartTheme } from "../../../hooks/use-chart-theme";
 import { useGroupAnalytics } from "../../../hooks/use-analytics";
 import { useContributions } from "../../../hooks/use-contributions";
+import { useCooperatives } from "../../../hooks/use-cooperatives";
 
 export function GADashboard() {
   const ct = useChartTheme();
-  const { data: analytics, isLoading } = useGroupAnalytics("current");
+  const { data: groups } = useCooperatives();
+  const groupId = (groups && groups.length > 0) ? groups[0].id : "";
+  const { data: analytics, isLoading } = useGroupAnalytics(groupId);
   const { data: contributions } = useContributions();
 
   if (isLoading) {

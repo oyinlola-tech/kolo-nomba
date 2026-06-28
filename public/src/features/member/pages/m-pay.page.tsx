@@ -28,7 +28,6 @@ export function MPay() {
     try {
       const result = await createPayment.mutateAsync({
         contributionId,
-        amount: 50000,
         paymentMethod: method,
       });
       if (result.paymentUrl) {

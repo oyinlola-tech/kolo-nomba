@@ -1,4 +1,4 @@
-import { Clock, CheckCircle, ArrowDownToLine, Check, X, Loader2 } from "lucide-react";
+import { Clock, CheckCircle, ArrowDownToLine, Check, X, Loader2, RefreshCw } from "lucide-react";
 import { Card } from "../../../components/shared/Card";
 import { MetricCard } from "../../../components/shared/MetricCard";
 import { Badge } from "../../../components/shared/Badge";
@@ -6,10 +6,12 @@ import { Avatar } from "../../../components/shared/Avatar";
 import { Button } from "../../../components/shared/Button";
 import { PageHeader } from "../../../components/shared/PageHeader";
 import { formatNaira } from "../../../utils/format";
-import { useWithdrawals } from "../../../hooks/use-withdrawals";
+import { useWithdrawals, useApproveWithdrawal, useRejectWithdrawal } from "../../../hooks/use-withdrawals";
 
 export function SAWithdrawals() {
   const { data: withdrawals, isLoading } = useWithdrawals();
+  const approve = useApproveWithdrawal();
+  const reject = useRejectWithdrawal();
 
   if (isLoading) {
     return (
@@ -66,8 +68,12 @@ export function SAWithdrawals() {
                     <td className="px-4 py-3">
                       {w.status === "pending" && (
                         <div className="flex gap-1">
-                          <Button variant="primary" size="sm"><Check className="w-3 h-3" /></Button>
-                          <Button variant="danger" size="sm"><X className="w-3 h-3" /></Button>
+                          <Button variant="primary" size="sm" onClick={() => approve.mutate(w.id)}>
+                            {approve.isPending ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
+                          </Button>
+                          <Button variant="danger" size="sm" onClick={() => reject.mutate(w.id)}>
+                            {reject.isPending ? <RefreshCw className="w-3 h-3 animate-spin" /> : <X className="w-3 h-3" />}
+                          </Button>
                         </div>
                       )}
                     </td>

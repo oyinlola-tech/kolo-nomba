@@ -1,13 +1,15 @@
-import { Check, X, Loader2, AlertTriangle } from "lucide-react";
+import { Check, X, Loader2, AlertTriangle, RefreshCw } from "lucide-react";
 import { Card } from "../../../components/shared/Card";
 import { Badge } from "../../../components/shared/Badge";
 import { Avatar } from "../../../components/shared/Avatar";
 import { Button } from "../../../components/shared/Button";
 import { PageHeader } from "../../../components/shared/PageHeader";
-import { useKycSubmissions } from "../../../hooks/use-kyc";
+import { useKycSubmissions, useApproveKyc, useRejectKyc } from "../../../hooks/use-kyc";
 
 export function SAVerification() {
   const { data: submissions, isLoading } = useKycSubmissions();
+  const approve = useApproveKyc();
+  const reject = useRejectKyc();
 
   if (isLoading) {
     return (
@@ -65,8 +67,12 @@ export function SAVerification() {
                   <td className="px-4 py-3">
                     {k.status === "pending" && (
                       <div className="flex gap-1">
-                        <Button size="sm"><Check className="w-3 h-3" />Approve</Button>
-                        <Button variant="danger" size="sm"><X className="w-3 h-3" /></Button>
+                        <Button size="sm" onClick={() => approve.mutate(k.id)} disabled={approve.isPending}>
+                          {approve.isPending ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}Approve
+                        </Button>
+                        <Button variant="danger" size="sm" onClick={() => reject.mutate(k.id)} disabled={reject.isPending}>
+                          {reject.isPending ? <RefreshCw className="w-3 h-3 animate-spin" /> : <X className="w-3 h-3" />}
+                        </Button>
                       </div>
                     )}
                   </td>

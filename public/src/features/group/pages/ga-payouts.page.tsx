@@ -1,7 +1,7 @@
 import { useState } from "react";
 import {
   ArrowLeft, ArrowRight, ArrowDownToLine, Plus, CheckCircle, Lock,
-  Banknote, Landmark, FileText, Loader2,
+  Banknote, Landmark, FileText, Loader2, RefreshCw,
 } from "lucide-react";
 import { Card } from "../../../components/shared/Card";
 import { Badge } from "../../../components/shared/Badge";
@@ -9,13 +9,18 @@ import { Button } from "../../../components/shared/Button";
 import { Input } from "../../../components/shared/Input";
 import { PageHeader } from "../../../components/shared/PageHeader";
 import { formatNaira } from "../../../utils/format";
-import { usePayouts } from "../../../hooks/use-payouts";
+import { usePayouts, useRequestPayout } from "../../../hooks/use-payouts";
+import { useCooperatives } from "../../../hooks/use-cooperatives";
 
 export function GAPayouts() {
   const [step, setStep] = useState<"list" | "request" | "confirm" | "success">("list");
   const [amount, setAmount] = useState("");
   const [bank, setBank] = useState("");
+  const [error, setError] = useState("");
   const { data: payouts, isLoading } = usePayouts();
+  const { data: groups } = useCooperatives();
+  const groupId = (groups && groups.length > 0) ? groups[0].id : "";
+  const requestPayoutMutation = useRequestPayout();
 
   if (step === "request") return (
     <div>
@@ -50,7 +55,23 @@ export function GAPayouts() {
           </div>
         ))}
       </Card>
-      <Button full onClick={() => setStep("success")}><Lock className="w-4 h-4" />Confirm & Send</Button>
+      {error && <p className="text-xs text-red-500 mb-2">{error}</p>}
+      <Button full onClick={async () => {
+        setError("");
+        try {
+          await requestPayoutMutation.mutateAsync({
+            amount: Number(amount) || 0,
+            groupId,
+          });
+          setStep("success");
+        } catch (err: unknown) {
+          const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Payout request failed";
+          setError(msg);
+        }
+      }} disabled={requestPayoutMutation.isPending}>
+        {requestPayoutMutation.isPending ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Lock className="w-4 h-4" />}
+        {requestPayoutMutation.isPending ? "Processing…" : "Confirm & Send"}
+      </Button>
     </div>
   );
 

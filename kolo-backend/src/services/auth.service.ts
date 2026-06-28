@@ -36,12 +36,12 @@ export class AuthService {
   async register(dto: RegisterDto, ipAddress?: string, userAgent?: string): Promise<{ userId: string }> {
     const existingEmail = await this.userRepository.findByEmail(dto.email);
     if (existingEmail) {
-      throw new ValidationError("Email already registered", { email: ["Email is already in use"] });
+      throw new ValidationError("Registration failed. Please check your information and try again.");
     }
 
     const existingPhone = await this.userRepository.findByPhone(dto.phone);
     if (existingPhone) {
-      throw new ValidationError("Phone already registered", { phone: ["Phone number is already in use"] });
+      throw new ValidationError("Registration failed. Please check your information and try again.");
     }
     // Validate password strength
     const passwordValidation = new PasswordValidationService().validatePassword(dto.password);
@@ -162,12 +162,17 @@ export class AuthService {
 
     const passwordValid = await HashUtil.verifyPassword(user.passwordHash, dto.password);
     if (!passwordValid) {
+      const failCount = await this.auditService.getRecentFailureCount(user.id, 15);
       await this.auditService.log("LOGIN_FAILED", {
         userId: user.id,
         metadata: { reason: "wrong_password" },
         ipAddress,
         userAgent,
       });
+      if (failCount >= 4) {
+        this.logger.warn("Account locked due to failed login attempts", { userId: user.id });
+        throw new AuthError("Account temporarily locked. Please try again later.");
+      }
       throw new AuthError("Invalid email or password");
     }
 

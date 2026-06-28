@@ -1,13 +1,14 @@
-import { AlertCircle, Loader2 } from "lucide-react";
+import { AlertCircle, Loader2, RefreshCw } from "lucide-react";
 import { Card } from "../../../components/shared/Card";
 import { Badge } from "../../../components/shared/Badge";
 import { Button } from "../../../components/shared/Button";
 import { PageHeader } from "../../../components/shared/PageHeader";
 import { formatNaira } from "../../../utils/format";
-import { useDisputes } from "../../../hooks/use-disputes";
+import { useDisputes, useResolveDispute } from "../../../hooks/use-disputes";
 
 export function SADisputes() {
   const { data: disputes, isLoading } = useDisputes();
+  const resolve = useResolveDispute();
 
   if (isLoading) {
     return (
@@ -60,8 +61,9 @@ export function SADisputes() {
                 <p className="text-lg font-bold text-gray-900 dark:text-white">{formatNaira(d.amount)}</p>
                 {d.status !== "resolved" && (
                   <div className="flex gap-1 mt-2 justify-end">
-                    <Button variant="secondary" size="sm">Review</Button>
-                    <Button size="sm">Resolve</Button>
+                    <Button variant="secondary" size="sm" onClick={() => resolve.mutate(d.id)} disabled={resolve.isPending}>
+                      {resolve.isPending ? <RefreshCw className="w-3 h-3 animate-spin" /> : null} Resolve
+                    </Button>
                   </div>
                 )}
               </div>

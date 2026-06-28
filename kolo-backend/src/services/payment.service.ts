@@ -12,6 +12,7 @@ import { NombaPaymentLogger } from "../logger/implementations/nomba-payment.logg
 import { AuthError } from "../errors/auth.error";
 import { PaymentError } from "../errors/payment.error";
 import { ValidationError } from "../errors/validation.error";
+import { AppError } from "../errors/app.error";
 import type { InitiatePaymentDto, PaymentResponse, InitiatePaymentResult } from "../dto/payment.dto";
 import { Logger } from "../logger/core/logger";
 
@@ -59,26 +60,29 @@ export class PaymentService {
     if (outstanding <= 0) {
       throw new ValidationError("Contribution is already fully paid");
     }
-    if (dto.amount !== outstanding) {
+    const amount = dto.amount ?? outstanding;
+    if (amount !== outstanding) {
       throw new ValidationError(`Amount must equal the outstanding balance of ${outstanding}`);
     }
 
-    // Atomic check: ensure no duplicate payment is being created for this contribution
-    const existingPayments = await this.paymentRepository.findByContribution(dto.contributionId);
-    const hasPendingPayment = existingPayments.some(p => p.status === "PENDING" || p.status === "INITIALIZED");
-    if (hasPendingPayment) {
-      throw new PaymentError("A payment for this contribution is already being processed");
-    }
+    const prisma = PrismaDatabase.getInstance().getClient();
+    const payment = await prisma.$transaction(async (tx) => {
+      const existingPayments = await this.paymentRepository.findByContribution(dto.contributionId, tx);
+      const hasPendingPayment = existingPayments.some(p => p.status === "PENDING" || p.status === "INITIALIZED");
+      if (hasPendingPayment) {
+        throw new PaymentError("A payment for this contribution is already being processed");
+      }
 
-    const payment = await this.paymentRepository.create({
-      userId,
-      groupId: groupMember.groupId,
-      contributionId: dto.contributionId,
-      amount: dto.amount,
-      currency: "NGN",
-      provider: "nomba",
-      status: "INITIALIZED",
-      paymentMethod: dto.paymentMethod,
+      return this.paymentRepository.create({
+        userId,
+        groupId: groupMember.groupId,
+        contributionId: dto.contributionId,
+        amount,
+        currency: "NGN",
+        provider: "nomba",
+        status: "INITIALIZED",
+        paymentMethod: dto.paymentMethod,
+      }, tx);
     });
 
     const reference = `PAY-${payment.id.slice(0, 8).toUpperCase()}-${Date.now()}`;
@@ -86,7 +90,7 @@ export class PaymentService {
     let nombaResult: { reference: string; paymentUrl: string | null };
     try {
       nombaResult = await this.nombaPayment.initiatePayment({
-        amount: dto.amount,
+        amount,
         currency: "NGN",
         reference,
         customerEmail: groupMember.user.email,
@@ -107,12 +111,12 @@ export class PaymentService {
 
     await this.auditService.log("PAYMENT_INITIALIZED", {
       userId,
-      metadata: { paymentId: payment.id, amount: dto.amount },
+      metadata: { paymentId: payment.id, amount },
     });
 
     this.paymentLogger.log("Payment initialized", {
       paymentId: payment.id,
-      amount: dto.amount,
+      amount,
     });
 
     return {

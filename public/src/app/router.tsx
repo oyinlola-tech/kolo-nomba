@@ -1,88 +1,82 @@
+import { lazy, Suspense } from "react";
 import { createBrowserRouter, Navigate } from "react-router-dom";
 import { ProtectedRoute } from "../components/shared/ProtectedRoute";
-import {
-  LandingPage, AboutPage, ContactPage, PricingPage,
-  SecurityPage, HelpPage, TermsPage, PrivacyPage, HowItWorksPage,
-} from "../features/landing";
-import { LoginPage, RegisterPage, RegisterCoopPage, VerifyOTPPage } from "../features/auth";
-import { SuperAdminApp } from "../features/admin";
-import {
-  SADashboard, SAUsers, SAGroups, SATransactions, SAPayments,
-  SARevenue, SAWithdrawals, SADisputes, SAVerification,
-  SANotifications, SASecurity, SASettings,
-} from "../features/admin";
-import { GroupAdminApp } from "../features/group";
-import {
-  GADashboard, GAMembers, GAContributions, GATransactions,
-  GAPayouts, GAReports, GANotifications, GASettings, GACreateGroup,
-} from "../features/group";
-import { MemberApp } from "../features/member";
-import { MHome, MGroups, MPay, MPaySuccess, MHistory, MNotifications, MProfile, MGroupDetail } from "../features/member";
+import { LandingPage, HowItWorksPage } from "../features/landing";
+import { LoginPage } from "../features/auth";
 import type { UserRole } from "../types/auth.types";
+
+function LazyLoad(importFn: () => Promise<{ default: React.ComponentType<unknown> }>) {
+  const Component = lazy(importFn);
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>}>
+      <Component />
+    </Suspense>
+  );
+}
 
 export const router = createBrowserRouter([
   { path: "/", element: <LandingPage /> },
-  { path: "/about", element: <AboutPage /> },
-  { path: "/contact", element: <ContactPage /> },
-  { path: "/pricing", element: <PricingPage /> },
-  { path: "/security", element: <SecurityPage /> },
-  { path: "/help", element: <HelpPage /> },
-  { path: "/terms", element: <TermsPage /> },
-  { path: "/privacy", element: <PrivacyPage /> },
+  { path: "/about", element: LazyLoad(() => import("../features/landing/pages/about.page").then(m => ({ default: m.AboutPage }))) },
+  { path: "/contact", element: LazyLoad(() => import("../features/landing/pages/contact.page").then(m => ({ default: m.ContactPage }))) },
+  { path: "/pricing", element: LazyLoad(() => import("../features/landing/pages/pricing.page").then(m => ({ default: m.PricingPage }))) },
+  { path: "/security", element: LazyLoad(() => import("../features/landing/pages/security.page").then(m => ({ default: m.SecurityPage }))) },
+  { path: "/help", element: LazyLoad(() => import("../features/landing/pages/help.page").then(m => ({ default: m.HelpPage }))) },
+  { path: "/terms", element: LazyLoad(() => import("../features/landing/pages/terms.page").then(m => ({ default: m.TermsPage }))) },
+  { path: "/privacy", element: LazyLoad(() => import("../features/landing/pages/privacy.page").then(m => ({ default: m.PrivacyPage }))) },
   { path: "/how-it-works", element: <HowItWorksPage /> },
 
   { path: "/login", element: <LoginPage /> },
-  { path: "/register", element: <RegisterPage /> },
-  { path: "/register/cooperative", element: <RegisterCoopPage /> },
-  { path: "/verify-otp", element: <VerifyOTPPage /> },
+  { path: "/register", element: LazyLoad(() => import("../features/auth/pages/register.page").then(m => ({ default: m.RegisterPage }))) },
+  { path: "/register/cooperative", element: LazyLoad(() => import("../features/auth/pages/register-cooperative.page").then(m => ({ default: m.RegisterCoopPage }))) },
+  { path: "/verify-otp", element: LazyLoad(() => import("../features/auth/pages/verify-otp.page").then(m => ({ default: m.VerifyOTPPage }))) },
   {
     path: "/ajo/admin",
-    element: <ProtectedRoute allowedRoles={["SUPER_ADMIN"] as UserRole[]}><SuperAdminApp /></ProtectedRoute>,
+    element: <ProtectedRoute allowedRoles={["SUPER_ADMIN"] as UserRole[]}>{LazyLoad(() => import("../features/admin/pages/super-admin.page").then(m => ({ default: m.SuperAdminApp })))}</ProtectedRoute>,
     children: [
       { index: true, element: <Navigate to="dashboard" replace /> },
-      { path: "dashboard", element: <SADashboard /> },
-      { path: "users", element: <SAUsers /> },
-      { path: "groups", element: <SAGroups /> },
-      { path: "transactions", element: <SATransactions /> },
-      { path: "payments", element: <SAPayments /> },
-      { path: "revenue", element: <SARevenue /> },
-      { path: "withdrawals", element: <SAWithdrawals /> },
-      { path: "disputes", element: <SADisputes /> },
-      { path: "verification", element: <SAVerification /> },
-      { path: "notifications", element: <SANotifications /> },
-      { path: "security", element: <SASecurity /> },
-      { path: "settings", element: <SASettings /> },
+      { path: "dashboard", element: LazyLoad(() => import("../features/admin/pages/sa-dashboard.page").then(m => ({ default: m.SADashboard }))) },
+      { path: "users", element: LazyLoad(() => import("../features/admin/pages/sa-users.page").then(m => ({ default: m.SAUsers }))) },
+      { path: "groups", element: LazyLoad(() => import("../features/admin/pages/sa-groups.page").then(m => ({ default: m.SAGroups }))) },
+      { path: "transactions", element: LazyLoad(() => import("../features/admin/pages/sa-transactions.page").then(m => ({ default: m.SATransactions }))) },
+      { path: "payments", element: LazyLoad(() => import("../features/admin/pages/sa-payments.page").then(m => ({ default: m.SAPayments }))) },
+      { path: "revenue", element: LazyLoad(() => import("../features/admin/pages/sa-revenue.page").then(m => ({ default: m.SARevenue }))) },
+      { path: "withdrawals", element: LazyLoad(() => import("../features/admin/pages/sa-withdrawals.page").then(m => ({ default: m.SAWithdrawals }))) },
+      { path: "disputes", element: LazyLoad(() => import("../features/admin/pages/sa-disputes.page").then(m => ({ default: m.SADisputes }))) },
+      { path: "verification", element: LazyLoad(() => import("../features/admin/pages/sa-verification.page").then(m => ({ default: m.SAVerification }))) },
+      { path: "notifications", element: LazyLoad(() => import("../features/admin/pages/sa-notifications.page").then(m => ({ default: m.SANotifications }))) },
+      { path: "security", element: LazyLoad(() => import("../features/admin/pages/sa-security.page").then(m => ({ default: m.SASecurity }))) },
+      { path: "settings", element: LazyLoad(() => import("../features/admin/pages/sa-settings.page").then(m => ({ default: m.SASettings }))) },
     ],
   },
   {
     path: "/group/admin",
-    element: <ProtectedRoute allowedRoles={["GROUP_ADMIN", "GROUP_OWNER"] as UserRole[]}><GroupAdminApp /></ProtectedRoute>,
+    element: <ProtectedRoute allowedRoles={["GROUP_ADMIN", "GROUP_OWNER"] as UserRole[]}>{LazyLoad(() => import("../features/group/pages/group-admin.page").then(m => ({ default: m.GroupAdminApp })))}</ProtectedRoute>,
     children: [
       { index: true, element: <Navigate to="dashboard" replace /> },
-      { path: "dashboard", element: <GADashboard /> },
-      { path: "members", element: <GAMembers /> },
-      { path: "contributions", element: <GAContributions /> },
-      { path: "transactions", element: <GATransactions /> },
-      { path: "payouts", element: <GAPayouts /> },
-      { path: "reports", element: <GAReports /> },
-      { path: "notifications", element: <GANotifications /> },
-      { path: "settings", element: <GASettings /> },
-      { path: "create-group", element: <GACreateGroup /> },
+      { path: "dashboard", element: LazyLoad(() => import("../features/group/pages/ga-dashboard.page").then(m => ({ default: m.GADashboard }))) },
+      { path: "members", element: LazyLoad(() => import("../features/group/pages/ga-members.page").then(m => ({ default: m.GAMembers }))) },
+      { path: "contributions", element: LazyLoad(() => import("../features/group/pages/ga-contributions.page").then(m => ({ default: m.GAContributions }))) },
+      { path: "transactions", element: LazyLoad(() => import("../features/group/pages/ga-transactions.page").then(m => ({ default: m.GATransactions }))) },
+      { path: "payouts", element: LazyLoad(() => import("../features/group/pages/ga-payouts.page").then(m => ({ default: m.GAPayouts }))) },
+      { path: "reports", element: LazyLoad(() => import("../features/group/pages/ga-reports.page").then(m => ({ default: m.GAReports }))) },
+      { path: "notifications", element: LazyLoad(() => import("../features/group/pages/ga-notifications.page").then(m => ({ default: m.GANotifications }))) },
+      { path: "settings", element: LazyLoad(() => import("../features/group/pages/ga-settings.page").then(m => ({ default: m.GASettings }))) },
+      { path: "create-group", element: LazyLoad(() => import("../features/group/pages/ga-create-group.page").then(m => ({ default: m.GACreateGroup }))) },
     ],
   },
   {
     path: "/member",
-    element: <ProtectedRoute allowedRoles={["MEMBER", "GROUP_ADMIN", "SUPER_ADMIN"] as UserRole[]}><MemberApp /></ProtectedRoute>,
+    element: <ProtectedRoute allowedRoles={["MEMBER", "GROUP_ADMIN", "SUPER_ADMIN"] as UserRole[]}>{LazyLoad(() => import("../features/member/pages/member.page").then(m => ({ default: m.MemberApp })))}</ProtectedRoute>,
     children: [
       { index: true, element: <Navigate to="home" replace /> },
-      { path: "home", element: <MHome /> },
-      { path: "groups", element: <MGroups /> },
-      { path: "group/:id", element: <MGroupDetail /> },
-      { path: "pay", element: <MPay /> },
-      { path: "pay-success", element: <MPaySuccess /> },
-      { path: "history", element: <MHistory /> },
-      { path: "notifications", element: <MNotifications /> },
-      { path: "profile", element: <MProfile /> },
+      { path: "home", element: LazyLoad(() => import("../features/member/pages/m-home.page").then(m => ({ default: m.MHome }))) },
+      { path: "groups", element: LazyLoad(() => import("../features/member/pages/m-groups.page").then(m => ({ default: m.MGroups }))) },
+      { path: "group/:id", element: LazyLoad(() => import("../features/member/pages/m-group-detail.page").then(m => ({ default: m.MGroupDetail }))) },
+      { path: "pay", element: LazyLoad(() => import("../features/member/pages/m-pay.page").then(m => ({ default: m.MPay }))) },
+      { path: "pay-success", element: LazyLoad(() => import("../features/member/pages/m-pay-success.page").then(m => ({ default: m.MPaySuccess }))) },
+      { path: "history", element: LazyLoad(() => import("../features/member/pages/m-history.page").then(m => ({ default: m.MHistory }))) },
+      { path: "notifications", element: LazyLoad(() => import("../features/member/pages/m-notifications.page").then(m => ({ default: m.MNotifications }))) },
+      { path: "profile", element: LazyLoad(() => import("../features/member/pages/m-profile.page").then(m => ({ default: m.MProfile }))) },
     ],
   },
 
@@ -91,5 +85,5 @@ export const router = createBrowserRouter([
   { path: "/payments", element: <Navigate to="/member/pay" replace /> },
   { path: "/transactions", element: <Navigate to="/member/history" replace /> },
 
-  { path: "*", element: <Navigate to="/" replace /> },
+  { path: "*", element: LazyLoad(() => import("../features/landing/pages/not-found.page").then(m => ({ default: m.NotFoundPage }))) },
 ]);

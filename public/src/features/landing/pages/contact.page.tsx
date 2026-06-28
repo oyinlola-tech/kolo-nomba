@@ -1,16 +1,20 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Mail, Phone, MapPin, MessageSquare, Send, CheckCircle } from "lucide-react";
+import { Mail, Phone, MapPin, MessageSquare, Send, CheckCircle, RefreshCw } from "lucide-react";
 import { Button } from "../../../components/shared/Button";
 import { Card } from "../../../components/shared/Card";
 import { Input } from "../../../components/shared/Input";
 import { ThemeToggle } from "../../../components/shared/ThemeToggle";
 import { Logo } from "../../../components/shared/Logo";
 import { LandingFooter } from "../../../components/shared/LandingFooter";
+import { apiClient } from "../../../api/client";
 
 export function ContactPage() {
   const navigate = useNavigate();
   const [sent, setSent] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [form, setForm] = useState({ firstName: "", lastName: "", email: "", subject: "", message: "" });
+  const [error, setError] = useState("");
 
   return (
     <div className="min-h-screen bg-white dark:bg-background">
@@ -47,17 +51,32 @@ export function ContactPage() {
                 <h2 className="font-bold text-gray-900 dark:text-white mb-5">Send us a message</h2>
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
-                    <Input label="First Name" placeholder="Your first name" onChange={() => {}} />
-                    <Input label="Last Name" placeholder="Your last name" onChange={() => {}} />
+                    <Input label="First Name" placeholder="Your first name" value={form.firstName} onChange={v => setForm(f => ({ ...f, firstName: v }))} />
+                    <Input label="Last Name" placeholder="Your last name" value={form.lastName} onChange={v => setForm(f => ({ ...f, lastName: v }))} />
                   </div>
-                  <Input label="Email" placeholder="you@example.com" onChange={() => {}} />
-                  <Input label="Subject" placeholder="How can we help?" onChange={() => {}} />
+                  <Input label="Email" placeholder="you@example.com" value={form.email} onChange={v => setForm(f => ({ ...f, email: v }))} />
+                  <Input label="Subject" placeholder="How can we help?" value={form.subject} onChange={v => setForm(f => ({ ...f, subject: v }))} />
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Message</label>
-                    <textarea rows={4} placeholder="Tell us more..."
+                    <textarea rows={4} placeholder="Tell us more..." value={form.message} onChange={e => setForm(f => ({ ...f, message: e.target.value }))}
                       className="w-full px-3 py-2.5 border border-gray-200 dark:border-border rounded-xl text-sm bg-white dark:bg-input-background text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/30" />
                   </div>
-                  <Button full onClick={() => setSent(true)}><Send className="w-4 h-4" />Send Message</Button>
+                  {error && <p className="text-xs text-red-500">{error}</p>}
+                  <Button full onClick={async () => {
+                    setError("");
+                    setSending(true);
+                    try {
+                      await apiClient.post("/contact", form);
+                      setSent(true);
+                    } catch {
+                      setError("Failed to send message. Please try again.");
+                    } finally {
+                      setSending(false);
+                    }
+                  }} disabled={sending}>
+                    {sending ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                    {sending ? "Sending..." : "Send Message"}
+                  </Button>
                 </div>
               </Card>
             )}

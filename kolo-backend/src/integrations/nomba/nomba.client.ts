@@ -57,15 +57,22 @@ export class NombaClient {
 
   private async send(reqConfig: NombaRequestConfig, url: string): Promise<Response> {
     const accessToken = await this.authService.getAccessToken();
-    return fetch(url, {
-      method: reqConfig.method,
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        accountId: this.config.parentAccountId,
-        "Content-Type": "application/json",
-      },
-      body: reqConfig.body ? JSON.stringify(reqConfig.body) : undefined,
-    });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
+    try {
+      return await fetch(url, {
+        signal: controller.signal,
+        method: reqConfig.method,
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          accountId: this.config.parentAccountId,
+          "Content-Type": "application/json",
+        },
+        body: reqConfig.body ? JSON.stringify(reqConfig.body) : undefined,
+      });
+    } finally {
+      clearTimeout(timeoutId);
+    }
   }
 
   private async handleResponse<T>(

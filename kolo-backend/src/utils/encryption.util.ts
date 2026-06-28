@@ -5,7 +5,8 @@ const ALGORITHM = "aes-256-gcm";
 
 export class EncryptionUtil {
   private static getKey(): Buffer {
-    const secret = EnvConfig.getInstance().JWT_SECRET;
+    const env = EnvConfig.getInstance();
+    const secret = env.ENCRYPTION_KEY || env.JWT_REFRESH_SECRET;
     return Buffer.from(secret.padEnd(32, "x").slice(0, 32));
   }
 

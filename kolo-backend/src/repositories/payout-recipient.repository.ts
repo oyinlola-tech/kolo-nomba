@@ -46,6 +46,25 @@ export class PayoutRecipientRepository {
     });
   }
 
+  async createMany(data: Array<{
+    payoutId: string;
+    userId: string;
+    amount: number;
+    destinationAccount?: string;
+    recipientAccountId?: string;
+  }>) {
+    return this.db.payoutRecipient.createMany({
+      data: data.map(d => ({
+        payoutId: d.payoutId,
+        userId: d.userId,
+        amount: d.amount,
+        destinationAccount: d.destinationAccount ?? null,
+        recipientAccountId: d.recipientAccountId ?? null,
+        status: "PENDING" as never,
+      })),
+    });
+  }
+
   async updateStatus(id: string, status: string, providerReference?: string) {
     const data: Record<string, unknown> = { status: status as never };
     if (providerReference) data.providerReference = providerReference;

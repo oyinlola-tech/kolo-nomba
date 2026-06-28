@@ -62,9 +62,13 @@ export class PayoutService {
       reason: dto.reason,
     });
 
-    for (const recipient of dto.recipients) {
-      if (recipient.recipientAccountId) {
-        const account = await this.accountRepository.findById(recipient.recipientAccountId);
+    const accountIds = dto.recipients.filter(r => r.recipientAccountId).map(r => r.recipientAccountId!);
+    if (accountIds.length > 0) {
+      const accounts = await this.accountRepository.findByIds(accountIds);
+      const accountMap = new Map(accounts.map(a => [a.id, a]));
+      for (const recipient of dto.recipients) {
+        if (!recipient.recipientAccountId) continue;
+        const account = accountMap.get(recipient.recipientAccountId);
         if (!account) {
           throw new ValidationError(`Recipient account ${recipient.recipientAccountId} not found`);
         }
@@ -75,15 +79,17 @@ export class PayoutService {
           throw new ValidationError("Recipient account is not verified");
         }
       }
-
-      await this.recipientRepository.create({
-        payoutId: payout.id,
-        userId: recipient.userId,
-        amount: recipient.amount,
-        destinationAccount: recipient.destinationAccount,
-        recipientAccountId: recipient.recipientAccountId,
-      });
     }
+
+    await this.recipientRepository.createMany(
+      dto.recipients.map(r => ({
+        payoutId: payout.id,
+        userId: r.userId,
+        amount: r.amount,
+        destinationAccount: r.destinationAccount,
+        recipientAccountId: r.recipientAccountId,
+      }))
+    );
 
     await this.auditService.log("PAYOUT_CREATED", {
       userId,

@@ -2,8 +2,10 @@ import { Check, Download, Loader2 } from "lucide-react";
 import { Badge } from "../../../components/shared/Badge";
 import { useContributions } from "../../../hooks/use-contributions";
 import { formatNaira } from "../../../utils/format";
+import { useNavigate } from "react-router-dom";
 
 export function MHistory() {
+  const navigate = useNavigate();
   const { data: contributions, isLoading } = useContributions();
   const contribs = contributions || [];
   const totalContributed = contribs.reduce((s, c) => s + c.amount, 0);
@@ -44,12 +46,12 @@ export function MHistory() {
                     <div className="flex items-center gap-2">
                       <Badge status={c.status} />
                       {c.status === "paid" && (
-                        <button className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 font-medium hover:underline">
+                        <button onClick={() => window.print()} className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 font-medium hover:underline">
                           <Download className="w-3 h-3" />Download Receipt
                         </button>
                       )}
                       {c.status === "pending" && (
-                        <button className="text-xs font-semibold text-primary hover:underline">Pay Now</button>
+                        <button onClick={() => navigate(`/member/pay?contributionId=${c.id}`)} className="text-xs font-semibold text-primary hover:underline">Pay Now</button>
                       )}
                     </div>
                   </div>

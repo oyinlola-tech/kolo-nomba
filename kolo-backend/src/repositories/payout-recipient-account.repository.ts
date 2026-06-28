@@ -9,6 +9,12 @@ export class PayoutRecipientAccountRepository {
     return this.db.payoutRecipientAccount.findUnique({ where: { id } });
   }
 
+  async findByIds(ids: string[]) {
+    return this.db.payoutRecipientAccount.findMany({
+      where: { id: { in: ids } },
+    });
+  }
+
   async findByUser(userId: string) {
     return this.db.payoutRecipientAccount.findMany({
       where: { userId },

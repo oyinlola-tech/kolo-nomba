@@ -26,4 +26,8 @@ export class AuditService {
 
     this.logger.log(action, options?.userId ?? "", options?.metadata);
   }
+
+  async getRecentFailureCount(userId: string, withinMinutes: number): Promise<number> {
+    return this.repository.countRecentByUserAndAction(userId, "LOGIN_FAILED", withinMinutes);
+  }
 }

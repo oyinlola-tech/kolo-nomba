@@ -7,6 +7,6 @@ export async function getPlatformAnalytics(): Promise<DashboardAnalytics> {
 }
 
 export async function getGroupAnalytics(groupId: string): Promise<DashboardAnalytics> {
-  const { data } = await apiClient.get<{ data: DashboardAnalytics }>(`/admin/groups/${groupId}`);
+  const { data } = await apiClient.get<{ data: DashboardAnalytics }>(`/admin/dashboard?groupId=${groupId}`);
   return data.data;
 }

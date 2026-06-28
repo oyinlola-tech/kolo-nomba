@@ -1,6 +1,6 @@
 export interface InitiatePaymentDto {
   contributionId: string;
-  amount: number;
+  amount?: number;
   paymentMethod: string;
 }
 
