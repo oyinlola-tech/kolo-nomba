@@ -2,6 +2,7 @@ import type { FastifyReply, FastifyRequest } from "fastify";
 import { WebhookService } from "../services/webhook.service";
 import { ResponseUtil } from "../utils/response.util";
 import { WebhookLogger } from "../logger/implementations/webhook.logger";
+import { AppError } from "../errors/app.error";
 
 export class WebhookController {
   private readonly webhookService: WebhookService;
@@ -33,20 +34,15 @@ export class WebhookController {
       const result = await this.webhookService.processNombaWebhook(signature, rawBody, request.body as Record<string, unknown>, timestamp);
       ResponseUtil.success(reply, result);
     } catch (error) {
-      const errorMessage = String(error);
-      const isSignatureError = errorMessage === "Invalid webhook signature" || 
-                              errorMessage.includes("signature") || 
-                              errorMessage.includes("Signature");
-      const isPayloadError = errorMessage === "Invalid webhook payload";
-      
-      if (isSignatureError) {
-        this.logger.log("Webhook signature verification failed", { error: errorMessage });
-        reply.status(401).send({ success: false, message: "Invalid webhook signature" });
-      } else if (isPayloadError) {
-        this.logger.log("Webhook payload validation failed", { error: errorMessage });
-        reply.status(422).send({ success: false, message: "Invalid webhook payload" });
+      if (error instanceof AppError) {
+        if (error.statusCode === 401) {
+          this.logger.log("Webhook signature verification failed", { error: error.message });
+        } else if (error.statusCode === 422) {
+          this.logger.log("Webhook payload validation failed", { error: error.message });
+        }
+        reply.status(error.statusCode).send({ success: false, message: error.message });
       } else {
-        this.logger.log("Webhook processing error", { error: errorMessage });
+        this.logger.log("Webhook processing error", { error: String(error) });
         reply.status(400).send({ success: false, message: "Webhook processing failed" });
       }
     }
