@@ -65,6 +65,8 @@ export class PaymentService {
       throw new ValidationError(`Amount must equal the outstanding balance of ${outstanding}`);
     }
 
+    const paymentRef = `PAY-${dto.contributionId.slice(0, 8).toUpperCase()}-${Date.now()}`;
+
     const prisma = PrismaDatabase.getInstance().getClient();
     const payment = await prisma.$transaction(async (tx) => {
       const existingPayments = await this.paymentRepository.findByContribution(dto.contributionId, tx);
@@ -81,18 +83,19 @@ export class PaymentService {
         currency: "NGN",
         provider: "nomba",
         status: "INITIALIZED",
+        reference: paymentRef,
         paymentMethod: dto.paymentMethod,
       }, tx);
     });
 
-    const reference = `PAY-${payment.id.slice(0, 8).toUpperCase()}-${Date.now()}`;
+    const nombaRef = `PAY-${payment.id.slice(0, 8).toUpperCase()}-${Date.now()}`;
 
     let nombaResult: { reference: string; paymentUrl: string | null };
     try {
       nombaResult = await this.nombaPayment.initiatePayment({
         amount,
         currency: "NGN",
-        reference,
+        reference: nombaRef,
         customerEmail: groupMember.user.email,
         customerName: `${groupMember.user.firstName} ${groupMember.user.lastName}`,
         paymentMethod: dto.paymentMethod,
@@ -117,12 +120,14 @@ export class PaymentService {
     this.paymentLogger.log("Payment initialized", {
       paymentId: payment.id,
       amount,
+      reference: payment.reference,
     });
 
     return {
       paymentId: payment.id,
       reference: nombaResult.reference,
       paymentUrl: nombaResult.paymentUrl,
+      paymentReference: paymentRef,
     };
   }
 
@@ -263,6 +268,10 @@ export class PaymentService {
     if (payment.status === "SUCCESSFUL") {
       this.logger.warn("Payment already completed", { paymentId });
       return;
+    }
+
+    if (payment.reference && payment.reference !== reference) {
+      this.logger.error("Reference mismatch", { paymentId, paymentReference: payment.reference, webhookReference: reference });
     }
 
     try {

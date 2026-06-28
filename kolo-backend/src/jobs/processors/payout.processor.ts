@@ -43,36 +43,36 @@ export class ProcessPayoutTransferProcessor implements JobProcessor {
       status: "PROCESSING",
     });
 
-    try {
-      const account = recipient.recipientAccount;
-      if (!account && !recipient.destinationAccount) {
-        throw new Error("No destination account for recipient");
-      }
+      try {
+        const wallet = groupId ? await this.walletService.getOrCreateWallet("GROUP", String(groupId)) : null;
+        if (wallet) {
+          await this.walletService.debit(wallet.id, recipient.amount, `Payout recipient: ${recipient.userId}`);
+        }
 
-      const transferRef = `PO-${String(payoutId).slice(0, 8)}-${recipient.id.slice(0, 8)}`;
+        const account = recipient.recipientAccount;
+        if (!account && !recipient.destinationAccount) {
+          throw new Error("No destination account for recipient");
+        }
 
-      const result = await this.transferService.initiateTransfer({
-        amount: recipient.amount,
-        currency: "NGN",
-        reference: transferRef,
-        destinationAccount: account?.accountNumber ?? recipient.destinationAccount ?? "",
-        destinationBank: account?.bankName ?? "",
-        accountName: account?.accountName ?? `${recipient.user.firstName} ${recipient.user.lastName}`,
-        narration: `Payout to ${recipient.user.firstName} ${recipient.user.lastName}`,
-      });
+        const transferRef = `PO-${String(payoutId).slice(0, 8)}-${recipient.id.slice(0, 8)}`;
 
-      const wallet = groupId ? await this.walletService.getOrCreateWallet("GROUP", String(groupId)) : null;
-      if (wallet) {
-        await this.walletService.debit(wallet.id, recipient.amount, `Payout recipient: ${recipient.userId}`);
-      }
+        const result = await this.transferService.initiateTransfer({
+          amount: recipient.amount,
+          currency: "NGN",
+          reference: transferRef,
+          destinationAccount: account?.accountNumber ?? recipient.destinationAccount ?? "",
+          destinationBank: account?.bankName ?? "",
+          accountName: account?.accountName ?? `${recipient.user.firstName} ${recipient.user.lastName}`,
+          narration: `Payout to ${recipient.user.firstName} ${recipient.user.lastName}`,
+        });
 
-      await this.recipientRepo.updateTransferDetails(recipient.id, {
-        transferReference: result.reference,
-        providerReference: result.providerReference,
-        transferStatus: result.status,
-        status: result.status === "SUCCESSFUL" ? "SUCCESSFUL" : "PROCESSING",
-        failureReason: undefined,
-      });
+        await this.recipientRepo.updateTransferDetails(recipient.id, {
+          transferReference: result.reference,
+          providerReference: result.providerReference,
+          transferStatus: result.status,
+          status: result.status === "SUCCESSFUL" ? "SUCCESSFUL" : "PROCESSING",
+          failureReason: undefined,
+        });
 
       if (result.status !== "SUCCESSFUL") {
         await this.queueManager.addJob("payout.queue.status", "CHECK_TRANSFER_STATUS", {

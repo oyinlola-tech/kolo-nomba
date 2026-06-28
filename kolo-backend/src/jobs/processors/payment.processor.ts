@@ -31,7 +31,18 @@ export class VerifyPaymentProcessor implements JobProcessor {
     }
 
     if (payment.status === "SUCCESSFUL") {
-      this.logger.info("Payment already successful", { paymentId: String(paymentId) });
+      this.logger.info("Payment already successful, skipping verification", { paymentId: String(paymentId) });
+      return;
+    }
+
+    const validStatusForVerification = ["PENDING", "INITIALIZED", "FAILED", "EXPIRED"];
+    if (!validStatusForVerification.includes(payment.status)) {
+      this.logger.warn("Payment status not suitable for verification, skipping", { 
+        paymentId: String(paymentId), 
+        paymentStatus: payment.status,
+        providerReference: payment.providerReference,
+        paymentReference: payment.reference,
+      });
       return;
     }
 
@@ -71,6 +82,10 @@ export class RetryFailedPaymentProcessor implements JobProcessor {
     if (payment.status === "SUCCESSFUL") {
       this.logger.info("Payment already successful, no retry needed", { paymentId: String(paymentId) });
       return;
+    }
+
+    if (!payment.reference) {
+      this.logger.warn("Payment missing reference, using fallback", { paymentId: String(paymentId) });
     }
 
     const reference = payment.providerReference ?? payment.id;
