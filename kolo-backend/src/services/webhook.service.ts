@@ -7,6 +7,7 @@ import { Logger } from "../logger/core/logger";
 import { QueueManager } from "../jobs/queue-manager";
 import { VirtualAccountService } from "./virtual-account.service";
 import { nombaWebhookPayloadSchema } from "../validators/webhook.validator";
+import { WebhookSignatureError, WebhookPayloadError, WebhookNotFoundError } from "../errors/webhook.error";
 
 export class WebhookService {
   private readonly webhookRepository: WebhookRepository;
@@ -36,7 +37,7 @@ export class WebhookService {
     const isValid = this.nombaWebhook.verifySignature(signature, rawBody, timestamp ?? "");
     if (!isValid) {
       this.webhookLogger.log("Webhook signature verification failed");
-      throw new Error("Invalid webhook signature");
+      throw new WebhookSignatureError();
     }
 
     const parsed = nombaWebhookPayloadSchema.safeParse(body);
@@ -44,7 +45,7 @@ export class WebhookService {
       this.webhookLogger.log("Webhook payload validation failed", {
         errors: parsed.error.issues.map(i => `${i.path.join(".")}: ${i.message}`),
       });
-      throw new Error("Invalid webhook payload");
+      throw new WebhookPayloadError();
     }
 
     const eventType = this.extractEventType(body);
@@ -107,7 +108,7 @@ export class WebhookService {
 
   async processStoredNombaWebhook(webhookId: string): Promise<void> {
     const webhook = await this.webhookRepository.findById(webhookId);
-    if (!webhook) throw new Error(`Webhook not found: ${webhookId}`);
+    if (!webhook) throw new WebhookNotFoundError();
     if (webhook.processed) return;
 
     try {
