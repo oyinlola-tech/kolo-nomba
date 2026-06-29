@@ -4,6 +4,7 @@ import { PayoutRecipientRepository } from "../../repositories/payout-recipient.r
 import { WalletService } from "../../services/wallet.service";
 import { TransferService } from "../../services/transfer.service";
 import { PayoutService } from "../../services/payout.service";
+import type { WalletResponse } from "../../dto/wallet.dto";
 import { QueueManager } from "../queue-manager";
 import { EventBus } from "../../events/core/event-bus";
 import { PayoutEvent } from "../../events/core/event";
@@ -43,10 +44,19 @@ export class ProcessPayoutTransferProcessor implements JobProcessor {
       status: "PROCESSING",
     });
 
+      let wallet: WalletResponse | null = null;
+      let debitDone = false;
+
       try {
         const account = recipient.recipientAccount;
         if (!account && !recipient.destinationAccount) {
           throw new Error("No destination account for recipient");
+        }
+
+        wallet = groupId ? await this.walletService.getOrCreateWallet("GROUP", String(groupId)) : null;
+        if (wallet) {
+          await this.walletService.debit(wallet.id, recipient.amount, `Payout recipient: ${recipient.userId}`);
+          debitDone = true;
         }
 
         const transferRef = `PO-${String(payoutId).slice(0, 8)}-${recipient.id.slice(0, 8)}`;
@@ -60,11 +70,6 @@ export class ProcessPayoutTransferProcessor implements JobProcessor {
           accountName: account?.accountName ?? `${recipient.user.firstName} ${recipient.user.lastName}`,
           narration: `Payout to ${recipient.user.firstName} ${recipient.user.lastName}`,
         });
-
-        const wallet = groupId ? await this.walletService.getOrCreateWallet("GROUP", String(groupId)) : null;
-        if (wallet) {
-          await this.walletService.debit(wallet.id, recipient.amount, `Payout recipient: ${recipient.userId}`);
-        }
 
         await this.recipientRepo.updateTransferDetails(recipient.id, {
           transferReference: result.reference,
@@ -92,6 +97,20 @@ export class ProcessPayoutTransferProcessor implements JobProcessor {
       this.logger.info("Payout transfer processed", { jobId: job.id, recipientId, status: result.status });
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : String(error);
+
+      if (debitDone && wallet) {
+        try {
+          await this.walletService.credit(wallet.id, recipient.amount, `Payout reversal (transfer failed): ${recipient.userId}`);
+          this.logger.warn("Wallet credited back after failed transfer", { recipientId, amount: recipient.amount });
+        } catch (creditError) {
+          this.logger.error("Failed to credit back wallet after transfer failure", {
+            recipientId,
+            walletId: wallet.id,
+            error: String(creditError),
+          });
+        }
+      }
+
       await this.recipientRepo.updateTransferDetails(recipient.id, {
         status: "FAILED",
         transferStatus: "FAILED",

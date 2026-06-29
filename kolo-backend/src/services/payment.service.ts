@@ -68,9 +68,23 @@ export class PaymentService {
     const payment = await prisma.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT id FROM "MemberContribution" WHERE id = ${dto.contributionId} FOR UPDATE`;
 
+      const lockedContribution = await this.memberContributionRepository.findById(dto.contributionId, tx);
+      if (!lockedContribution) {
+        throw new AuthError("Contribution not found");
+      }
+      if (lockedContribution.status === "PAID") {
+        throw new ValidationError("Contribution is already paid");
+      }
+      const lockedOutstanding = lockedContribution.expectedAmount - lockedContribution.paidAmount;
+      if (lockedOutstanding <= 0) {
+        throw new ValidationError("Contribution is already fully paid");
+      }
+
       const existingPayments = await this.paymentRepository.findByContribution(dto.contributionId, tx);
-      const hasPendingPayment = existingPayments.some(p => p.status === "PENDING" || p.status === "INITIALIZED");
-      if (hasPendingPayment) {
+      const hasActivePayment = existingPayments.some(
+        p => p.status === "PENDING" || p.status === "INITIALIZED" || p.status === "SUCCESSFUL"
+      );
+      if (hasActivePayment) {
         throw new PaymentError("A payment for this contribution is already being processed");
       }
 

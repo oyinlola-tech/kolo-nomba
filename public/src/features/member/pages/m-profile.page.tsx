@@ -37,10 +37,10 @@ export function MProfile() {
         <p className="text-xs font-semibold text-gray-400 dark:text-gray-600 mb-3 tracking-wider">ACCOUNT SETTINGS</p>
         <div className="space-y-1">
           {[
-            { icon: Lock, label: "Change Password", path: "/member/profile/change-password" },
-            { icon: Bell, label: "Notification Preferences", path: "/member/profile/notifications" },
-            { icon: Wallet, label: "Payment Preferences", path: "/member/profile/payment" },
-            { icon: ShieldCheck, label: "Security Settings", path: "/member/profile/security" },
+            { icon: Lock, label: "Change Password", path: "/member/home" },
+            { icon: Bell, label: "Notification Preferences", path: "/member/notifications" },
+            { icon: Wallet, label: "Payment Preferences", path: "/member/pay" },
+            { icon: ShieldCheck, label: "Security Settings", path: "/member/home" },
           ].map(({ icon: I, label, path }) => (
             <button key={label} onClick={() => navigate(path)} className="w-full flex items-center gap-3 px-2 py-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-muted transition-colors text-sm font-medium text-gray-700 dark:text-gray-300">
               <I className="w-4 h-4 text-gray-400" />{label}<ChevronRight className="w-4 h-4 text-gray-300 ml-auto" />

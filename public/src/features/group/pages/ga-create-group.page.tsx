@@ -2,11 +2,12 @@ import { useState } from "react";
 import { useNavigate } from "react-router";
 import {
   ArrowLeft, ArrowRight, Check, CheckCircle, ChevronLeft,
-  Building2, FileText, Archive, MapPin, Banknote, Calendar, BarChart2, Plus,
+  Building2, FileText, Archive, MapPin, Banknote, Calendar, BarChart2, Plus, RefreshCw,
 } from "lucide-react";
 import { Card } from "../../../components/shared/Card";
 import { Input } from "../../../components/shared/Input";
 import { Button } from "../../../components/shared/Button";
+import { apiClient } from "../../../api/client";
 
 interface GACreateGroupProps {
   onDone?: () => void;
@@ -15,6 +16,8 @@ interface GACreateGroupProps {
 export function GACreateGroup({ onDone }: GACreateGroupProps) {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
   const [form, setForm] = useState({
     name: "", desc: "", category: "", location: "",
     amount: "", frequency: "Monthly", startDate: "",
@@ -138,8 +141,32 @@ export function GACreateGroup({ onDone }: GACreateGroupProps) {
               </div>
               <div className="flex justify-between">
                 <Button variant="secondary" onClick={() => setStep(3)}><ChevronLeft className="w-4 h-4" />Back</Button>
-                <Button onClick={() => { if (onDone) onDone(); else navigate("../dashboard"); }}><CheckCircle className="w-4 h-4" />Create Group</Button>
+                <Button onClick={async () => {
+                  setError("");
+                  setSubmitting(true);
+                  try {
+                    await apiClient.post("/groups", {
+                      name: form.name || "New Group",
+                      description: form.desc || undefined,
+                      category: form.category || undefined,
+                      location: form.location || undefined,
+                      contributionAmount: form.amount ? Number(form.amount) : undefined,
+                      frequency: form.frequency.toUpperCase(),
+                      startDate: form.startDate || undefined,
+                    });
+                    if (onDone) onDone();
+                    else navigate("../dashboard");
+                  } catch {
+                    setError("Failed to create group. Please try again.");
+                  } finally {
+                    setSubmitting(false);
+                  }
+                }} disabled={submitting}>
+                  {submitting ? <RefreshCw className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
+                  {submitting ? "Creating..." : "Create Group"}
+                </Button>
               </div>
+              {error && <p className="text-xs text-red-500 mt-2">{error}</p>}
             </Card>
           )}
         </div>
