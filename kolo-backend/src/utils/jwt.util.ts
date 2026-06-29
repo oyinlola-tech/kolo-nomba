@@ -1,3 +1,4 @@
+import { createHash } from "crypto";
 import { SignJWT, jwtVerify } from "jose";
 import { EnvConfig } from "../config/env.config";
 
@@ -40,5 +41,9 @@ export class JwtUtil {
   static async verifyRefreshToken(token: string): Promise<JwtPayload> {
     const { payload } = await jwtVerify(token, JwtUtil.refreshSecret);
     return payload as unknown as JwtPayload;
+  }
+
+  static hashToken(token: string): string {
+    return createHash("sha256").update(token).digest("hex");
   }
 }

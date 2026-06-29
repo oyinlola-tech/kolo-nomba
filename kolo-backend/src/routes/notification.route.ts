@@ -58,5 +58,9 @@ export class NotificationRoute {
       ],
       handler: this.controller.retryFailed.bind(this.controller),
     });
+
+    app.get(`${prefix}/notifications/sse`, {
+      handler: this.controller.sse.bind(this.controller),
+    });
   }
 }

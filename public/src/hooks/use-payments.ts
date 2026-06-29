@@ -1,10 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createPayment, getPayments } from "../services/payment.service";
 
-export function usePayments() {
+export function usePayments(page = 1, limit = 20) {
   return useQuery({
-    queryKey: ["payments"],
-    queryFn: getPayments,
+    queryKey: ["payments", page, limit],
+    queryFn: () => getPayments(page, limit),
   });
 }
 

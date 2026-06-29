@@ -1,6 +1,8 @@
 import { PiggyBank, Building2, Calendar, Wallet, Receipt, Loader2 } from "lucide-react";
 import { Badge } from "../../../components/shared/Badge";
+import { AccountNumberCard } from "../../../components/shared/AccountNumberCard";
 import { useAuth } from "../../../hooks/use-auth";
+import { useVirtualAccount, useCreateVirtualAccount } from "../../../hooks/use-virtual-account";
 import { useCooperatives } from "../../../hooks/use-cooperatives";
 import { useContributions } from "../../../hooks/use-contributions";
 import { formatNaira } from "../../../utils/format";
@@ -12,6 +14,8 @@ export function MHome() {
   const { user } = useAuth();
   const { data: groups, isLoading: groupsLoading } = useCooperatives();
   const { data: contributions } = useContributions();
+  const { data: virtualAccount, isLoading: vaLoading } = useVirtualAccount();
+  const createVA = useCreateVirtualAccount();
 
   const totalContributed = (contributions || []).reduce((s, c) => s + (c.amount ?? 0), 0);
   const groupTotal = (groups || []).reduce((s, g) => s + (g.savingsBalance ?? 0), 0);
@@ -48,22 +52,15 @@ export function MHome() {
           </div>
         </div>
       </div>
-      <div className="grid grid-cols-3 gap-3 mb-5">
-        <div className="bg-white dark:bg-card rounded-xl shadow-sm border border-gray-100 dark:border-border p-3 text-center">
-          <PiggyBank className="w-4 h-4 text-emerald-600 dark:text-emerald-400 mx-auto mb-1.5" />
-          <p className="text-sm font-bold text-gray-900 dark:text-white">{formatNaira(totalContributed)}</p>
-          <p className="text-[10px] text-gray-400 mt-0.5">Contributed</p>
-        </div>
-        <div className="bg-white dark:bg-card rounded-xl shadow-sm border border-gray-100 dark:border-border p-3 text-center">
-          <Building2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 mx-auto mb-1.5" />
-          <p className="text-sm font-bold text-gray-900 dark:text-white">{formatNaira(groupTotal)}</p>
-          <p className="text-[10px] text-gray-400 mt-0.5">Group Total</p>
-        </div>
-        <div className="bg-white dark:bg-card rounded-xl shadow-sm border border-gray-100 dark:border-border p-3 text-center">
-          <Calendar className="w-4 h-4 text-emerald-600 dark:text-emerald-400 mx-auto mb-1.5" />
-          <p className="text-sm font-bold text-gray-900 dark:text-white">—</p>
-          <p className="text-[10px] text-gray-400 mt-0.5">Next Payout</p>
-        </div>
+      <div className="mb-5">
+        <AccountNumberCard
+          accountNumber={virtualAccount?.accountNumber}
+          accountName={virtualAccount?.accountName}
+          bankName={virtualAccount?.bankName}
+          loading={vaLoading}
+          onGenerate={() => createVA.mutate()}
+          generating={createVA.isPending}
+        />
       </div>
       {activeGroup && (
         <div className="mb-5">
@@ -89,6 +86,23 @@ export function MHome() {
           </div>
         </div>
       )}
+      <div className="grid grid-cols-3 gap-3 mb-5">
+        <div className="bg-white dark:bg-card rounded-xl shadow-sm border border-gray-100 dark:border-border p-3 text-center">
+          <PiggyBank className="w-4 h-4 text-emerald-600 dark:text-emerald-400 mx-auto mb-1.5" />
+          <p className="text-sm font-bold text-gray-900 dark:text-white">{formatNaira(totalContributed)}</p>
+          <p className="text-[10px] text-gray-400 mt-0.5">Contributed</p>
+        </div>
+        <div className="bg-white dark:bg-card rounded-xl shadow-sm border border-gray-100 dark:border-border p-3 text-center">
+          <Building2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 mx-auto mb-1.5" />
+          <p className="text-sm font-bold text-gray-900 dark:text-white">{formatNaira(groupTotal)}</p>
+          <p className="text-[10px] text-gray-400 mt-0.5">Group Total</p>
+        </div>
+        <div className="bg-white dark:bg-card rounded-xl shadow-sm border border-gray-100 dark:border-border p-3 text-center">
+          <Calendar className="w-4 h-4 text-emerald-600 dark:text-emerald-400 mx-auto mb-1.5" />
+          <p className="text-sm font-bold text-gray-900 dark:text-white">—</p>
+          <p className="text-[10px] text-gray-400 mt-0.5">Next Payout</p>
+        </div>
+      </div>
       <div>
         <p className="text-sm font-semibold text-gray-900 dark:text-white mb-3">Quick Actions</p>
         <div className="grid grid-cols-2 gap-3">

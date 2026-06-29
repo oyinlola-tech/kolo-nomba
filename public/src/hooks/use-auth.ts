@@ -1,6 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAppStore } from "../app/store";
-import { getAccessToken } from "../api/client";
 import * as authService from "../services/auth.service";
 import type { LoginPayload, RegisterPayload } from "../services/auth.service";
 import type { AuthUser, UserRole } from "../types/auth.types";
@@ -17,7 +16,7 @@ export function useAuth() {
     mutationFn: (payload: LoginPayload) => authService.login(payload),
     onSuccess: (result) => {
       setSession(result.user as AuthUser, result.accessToken);
-      queryClient.invalidateQueries({ queryKey: ["auth"] });
+      queryClient.invalidateQueries({ queryKey: ["auth", "profile"] });
     },
   });
 

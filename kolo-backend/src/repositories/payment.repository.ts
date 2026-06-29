@@ -21,10 +21,28 @@ export class PaymentRepository {
     });
   }
 
+  async findByUserPaginated(userId: string, skip: number, take: number) {
+    return Promise.all([
+      this.db.payment.findMany({
+        where: { userId },
+        orderBy: { createdAt: "desc" },
+        skip,
+        take,
+      }),
+      this.db.payment.count({ where: { userId } }),
+    ]);
+  }
+
   async findByContribution(contributionId: string, tx?: Prisma.TransactionClient) {
     return this.getClient(tx).payment.findMany({
       where: { contributionId },
       orderBy: { createdAt: "desc" },
+    });
+  }
+
+  async findByTransaction(transactionId: string) {
+    return this.db.payment.findMany({
+      where: { transactionId },
     });
   }
 

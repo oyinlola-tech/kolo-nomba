@@ -1,7 +1,7 @@
 import { useNavigate, useLocation, Outlet } from "react-router";
 import {
   LayoutDashboard, Users, Building2, CreditCard, Banknote,
-  TrendingUp, ArrowDownToLine, AlertCircle, UserCheck, Bell, Shield, Settings,
+  TrendingUp, ArrowDownToLine, AlertCircle, UserCheck, Bell, Shield, Settings, ScrollText,
 } from "lucide-react";
 import { AppLayout, type NavItem } from "../../../components/layout/AppLayout";
 
@@ -18,6 +18,7 @@ const SA_PAGES: NavItem[] = [
   { id: "notifications", icon: Bell, label: "Notifications" },
   { id: "security", icon: Shield, label: "Security" },
   { id: "settings", icon: Settings, label: "System Settings" },
+  { id: "audit-logs", icon: ScrollText, label: "Audit Logs" },
 ] as const;
 
 export function SuperAdminApp() {

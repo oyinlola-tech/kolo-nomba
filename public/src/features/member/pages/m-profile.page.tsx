@@ -1,15 +1,19 @@
 import {
-  Lock, Bell, Wallet, ShieldCheck, ChevronRight, LogOut,
+  Lock, Bell, Wallet, ShieldCheck, ChevronRight, LogOut, Landmark,
 } from "lucide-react";
 import { Card } from "../../../components/shared/Card";
 import { Badge } from "../../../components/shared/Badge";
+import { AccountNumberCard } from "../../../components/shared/AccountNumberCard";
 import { useAuth } from "../../../hooks/use-auth";
+import { useVirtualAccount, useCreateVirtualAccount } from "../../../hooks/use-virtual-account";
 
 import { useNavigate } from "react-router";
 
 export function MProfile() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const { data: virtualAccount, isLoading: vaLoading } = useVirtualAccount();
+  const createVA = useCreateVirtualAccount();
 
   return (
     <div className="px-5 py-5">
@@ -33,6 +37,17 @@ export function MProfile() {
           ))}
         </div>
       </Card>
+      <div className="mb-4">
+        <p className="text-xs font-semibold text-gray-400 dark:text-gray-600 mb-3 tracking-wider">BANK ACCOUNT</p>
+        <AccountNumberCard
+          accountNumber={virtualAccount?.accountNumber}
+          accountName={virtualAccount?.accountName}
+          bankName={virtualAccount?.bankName}
+          loading={vaLoading}
+          onGenerate={() => createVA.mutate()}
+          generating={createVA.isPending}
+        />
+      </div>
       <Card className="p-4 mb-4">
         <p className="text-xs font-semibold text-gray-400 dark:text-gray-600 mb-3 tracking-wider">ACCOUNT SETTINGS</p>
         <div className="space-y-1">

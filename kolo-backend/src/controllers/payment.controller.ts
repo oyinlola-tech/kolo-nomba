@@ -1,6 +1,7 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
 import { PaymentService } from "../services/payment.service";
 import { ResponseUtil } from "../utils/response.util";
+import { PaginationUtil } from "../utils/pagination.util";
 import { initiatePaymentSchema } from "../validators/payment.validator";
 import { ValidationError } from "../errors/validation.error";
 
@@ -34,13 +35,21 @@ export class PaymentController {
   }
 
   async history(request: FastifyRequest, reply: FastifyReply): Promise<void> {
-    const result = await this.paymentService.getPaymentHistory(request.userId!);
+    const query = request.query as { page?: string; limit?: string };
+    const { page, limit } = PaginationUtil.parse({ page: Number(query.page) || undefined, limit: Number(query.limit) || undefined });
+    const result = await this.paymentService.getPaymentHistory(request.userId!, page, limit);
     ResponseUtil.success(reply, result);
   }
 
   async getContributionPayments(request: FastifyRequest, reply: FastifyReply): Promise<void> {
     const { id } = request.params as { id: string };
     const result = await this.paymentService.getContributionPayments(id, request.userId!);
+    ResponseUtil.success(reply, result);
+  }
+
+  async receipt(request: FastifyRequest, reply: FastifyReply): Promise<void> {
+    const { reference } = request.params as { reference: string };
+    const result = await this.paymentService.getReceiptByReference(reference, request.userId!);
     ResponseUtil.success(reply, result);
   }
 }

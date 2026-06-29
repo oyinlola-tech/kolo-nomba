@@ -148,7 +148,7 @@ export class NombaService {
   }
 
   async createVirtualAccount(data: {
-    reference: string;
+    accountRef: string;
     accountName: string;
     ownerType: "USER" | "GROUP" | "PLATFORM";
     ownerId: string;

@@ -7,7 +7,7 @@ import { Input } from "../../../components/shared/Input";
 import { ThemeToggle } from "../../../components/shared/ThemeToggle";
 import { Logo } from "../../../components/shared/Logo";
 import { LandingFooter } from "../../../components/shared/LandingFooter";
-import { apiClient } from "../../../api/client";
+import { submitContactForm } from "../../../services/contact.service";
 
 export function ContactPage() {
   const navigate = useNavigate();
@@ -66,7 +66,7 @@ export function ContactPage() {
                     setError("");
                     setSending(true);
                     try {
-                      await apiClient.post("/contact", form);
+                      await submitContactForm(form);
                       setSent(true);
                     } catch {
                       setError("Failed to send message. Please try again.");

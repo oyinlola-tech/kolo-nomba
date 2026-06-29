@@ -27,9 +27,24 @@ export class Application {
     });
   }
 
+  private async ensurePlatformWallet(): Promise<void> {
+    try {
+      const db = PrismaDatabase.getInstance().getClient();
+      await db.wallet.upsert({
+        where: { ownerType_ownerId: { ownerType: "PLATFORM", ownerId: "platform" } },
+        create: { ownerType: "PLATFORM", ownerId: "platform", currency: "NGN" },
+        update: {},
+      });
+      this.logger.info("Platform wallet ensured");
+    } catch (error) {
+      this.logger.warn("Could not ensure platform wallet", { error: String(error) });
+    }
+  }
+
   async start(): Promise<void> {
     try {
       await this.loader.load(this.app);
+      await this.ensurePlatformWallet();
       await this.app.listen({ port: this.config.port, host: "0.0.0.0" });
       this.logger.info(`Server running on port ${this.config.port}`);
 

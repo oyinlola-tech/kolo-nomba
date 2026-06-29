@@ -1,11 +1,14 @@
 import { NombaClient } from "./nomba.client";
-import { NombaConfig } from "../../config/nomba.config";
 
 export interface NombaVirtualAccountRequest {
-  reference: string;
+  accountRef: string;
   accountName: string;
   ownerType: "USER" | "GROUP" | "PLATFORM";
   ownerId: string;
+  currency?: string;
+  expectedAmount?: number;
+  bvn?: string;
+  callbackUrl?: string;
   metadata?: Record<string, unknown>;
 }
 
@@ -19,17 +22,19 @@ export interface NombaVirtualAccountResponse {
 
 export class NombaVirtualAccount {
   private readonly client = new NombaClient();
-  private readonly config = new NombaConfig().runtime;
 
   async create(data: NombaVirtualAccountRequest): Promise<NombaVirtualAccountResponse> {
     const response = await this.client.request<NombaVirtualAccountResponse>({
       method: "POST",
-      path: "/virtual-accounts",
+      path: "/v1/accounts/virtual",
       body: {
-        reference: data.reference,
+        accountRef: data.accountRef,
         accountName: data.accountName,
-        subAccountId: this.config.subAccountId,
-        metadata: {
+        currency: data.currency ?? "NGN",
+        expectedAmount: data.expectedAmount,
+        bvn: data.bvn,
+        callbackUrl: data.callbackUrl,
+        meta: {
           ownerType: data.ownerType,
           ownerId: data.ownerId,
           ...(data.metadata ?? {}),
@@ -38,7 +43,7 @@ export class NombaVirtualAccount {
     });
 
     return {
-      providerReference: response.data?.providerReference ?? data.reference,
+      providerReference: response.data?.providerReference ?? data.accountRef,
       accountNumber: response.data?.accountNumber ?? "",
       accountName: response.data?.accountName ?? data.accountName,
       bankName: response.data?.bankName ?? "Nomba",
@@ -46,14 +51,14 @@ export class NombaVirtualAccount {
     };
   }
 
-  async get(providerReference: string): Promise<NombaVirtualAccountResponse> {
+  async get(accountNumber: string): Promise<NombaVirtualAccountResponse> {
     const response = await this.client.request<NombaVirtualAccountResponse>({
       method: "GET",
-      path: `/virtual-accounts/${providerReference}`,
+      path: `/v1/accounts/virtual/${accountNumber}`,
     });
     return {
-      providerReference: response.data?.providerReference ?? providerReference,
-      accountNumber: response.data?.accountNumber ?? "",
+      providerReference: response.data?.providerReference ?? "",
+      accountNumber: response.data?.accountNumber ?? accountNumber,
       accountName: response.data?.accountName ?? "",
       bankName: response.data?.bankName ?? "Nomba",
       status: response.data?.status ?? "ACTIVE",
@@ -63,7 +68,7 @@ export class NombaVirtualAccount {
   async listTransactions(providerReference: string): Promise<Array<Record<string, unknown>>> {
     const response = await this.client.request<{ transactions?: Array<Record<string, unknown>> }>({
       method: "GET",
-      path: `/virtual-accounts/${providerReference}/transactions`,
+      path: `/v1/accounts/virtual/${providerReference}/transactions`,
     });
     return response.data?.transactions ?? [];
   }
@@ -71,7 +76,8 @@ export class NombaVirtualAccount {
   async deactivate(providerReference: string): Promise<void> {
     await this.client.request({
       method: "PATCH",
-      path: `/virtual-accounts/${providerReference}/deactivate`,
+      path: `/v1/accounts/virtual/${providerReference}`,
+      body: { expired: true },
     });
   }
 }

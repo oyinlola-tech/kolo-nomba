@@ -19,7 +19,7 @@ export function RegisterCoopPage() {
     const [firstName, ...rest] = name.split(" ");
     const lastName = rest.join(" ") || firstName;
     register.mutate(
-      { firstName: firstName || name, lastName: lastName || "", email, phone, password },
+      { firstName: firstName || name, lastName: lastName || "", email, phone, password, coopName },
       { onSuccess: () => navigate("/verify-otp") },
     );
   };

@@ -4,6 +4,7 @@ import { ResponseUtil } from "../utils/response.util";
 import { registerSchema, loginSchema, verifyOtpSchema, resendOtpSchema } from "../validators/auth.validator";
 import { ValidationError } from "../errors/validation.error";
 import { EnvConfig } from "../config/env.config";
+import { Logger } from "../logger/core/logger";
 
 const REFRESH_COOKIE = "refreshToken";
 const COOKIE_PATH = "/api/v1/auth";
@@ -12,10 +13,12 @@ const COOKIE_MAX_AGE = 7 * 24 * 60 * 60;
 export class AuthController {
   private readonly authService: AuthService;
   private readonly env: EnvConfig;
+  private readonly logger: Logger;
 
   constructor() {
     this.authService = new AuthService();
     this.env = EnvConfig.getInstance();
+    this.logger = new Logger("auth-controller");
   }
 
   private domain(): string | undefined {
@@ -76,6 +79,13 @@ export class AuthController {
     const userAgent = request.headers["user-agent"];
 
     const result = await this.authService.register(parsed.data, ipAddress, userAgent);
+    if (parsed.data.coopName && result.userId) {
+      try {
+        await this.authService.createCooperativeAfterRegistration(result.userId, parsed.data.coopName);
+      } catch {
+        this.logger.warn("Cooperative auto-creation failed after registration", { userId: result.userId });
+      }
+    }
     ResponseUtil.created(reply, {
       userId: result.userId,
       message: "Account created. Check your email for verification code.",
@@ -202,7 +212,7 @@ export class AuthController {
     this.assertCookieOrigin(request);
     const refreshToken = request.cookies?.[REFRESH_COOKIE];
     if (refreshToken) {
-      await this.authService.logout(refreshToken, request.userId);
+      await this.authService.logout(refreshToken, request.userId, request.accessToken);
     }
     this.clearRefreshCookie(reply);
     ResponseUtil.success(reply, { message: "Logged out successfully" });

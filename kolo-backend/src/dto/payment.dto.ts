@@ -19,10 +19,18 @@ export interface PaymentResponse {
   createdAt: string;
 }
 
+export interface VirtualAccountInfo {
+  accountNumber: string;
+  accountName: string;
+  bankName: string;
+  amount: number;
+}
+
 export interface InitiatePaymentResult {
   paymentId: string;
   reference: string;
-  paymentUrl: string | null;
+  checkoutUrl: string | null;
+  virtualAccount?: VirtualAccountInfo | null;
 }
 
 export interface WebhookPayload {

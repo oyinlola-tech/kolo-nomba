@@ -19,7 +19,7 @@ export function MGroupDetail() {
   const { data: contributions, isLoading: contribsLoading } = useContributions();
 
   const group = (groups || []).find(g => g.id === id);
-  const groupPayouts = (payouts || []).slice(0, 6);
+  const groupPayouts = (payouts || []).filter(p => p.groupId === id).slice(0, 6);
   const groupContributions = (contributions || []).slice(0, 8);
 
   const isLoading = groupsLoading || payoutsLoading || contribsLoading;

@@ -4,6 +4,7 @@ import { PaymentRepository } from "../repositories/payment.repository";
 import { TransactionRepository } from "../repositories/transaction.repository";
 import { MemberContributionRepository } from "../repositories/member-contribution.repository";
 import { GroupMemberRepository } from "../repositories/group-member.repository";
+import { GroupRepository } from "../repositories/group.repository";
 import { AuditService } from "./audit.service";
 import { WalletService } from "./wallet.service";
 import { NotificationService } from "./notification.service";
@@ -12,32 +13,40 @@ import { NombaPaymentLogger } from "../logger/implementations/nomba-payment.logg
 import { AuthError } from "../errors/auth.error";
 import { PaymentError } from "../errors/payment.error";
 import { ValidationError } from "../errors/validation.error";
+import { PaginationUtil } from "../utils/pagination.util";
+import type { PaginatedResponse } from "../utils/pagination.util";
 import type { InitiatePaymentDto, PaymentResponse, InitiatePaymentResult } from "../dto/payment.dto";
 import { Logger } from "../logger/core/logger";
+import { SSEManager } from "./sse-manager.service";
+import { VirtualAccountService } from "./virtual-account.service";
 
 export class PaymentService {
   private readonly paymentRepository: PaymentRepository;
   private readonly transactionRepository: TransactionRepository;
   private readonly memberContributionRepository: MemberContributionRepository;
   private readonly groupMemberRepository: GroupMemberRepository;
+  private readonly groupRepository: GroupRepository;
   private readonly auditService: AuditService;
   private readonly walletService: WalletService;
   private readonly notificationService: NotificationService;
   private readonly nombaPayment: NombaPayment;
   private readonly paymentLogger: NombaPaymentLogger;
   private readonly logger: Logger;
+  private readonly virtualAccountService: VirtualAccountService;
 
   constructor() {
     this.paymentRepository = new PaymentRepository();
     this.transactionRepository = new TransactionRepository();
     this.memberContributionRepository = new MemberContributionRepository();
     this.groupMemberRepository = new GroupMemberRepository();
+    this.groupRepository = new GroupRepository();
     this.auditService = new AuditService();
     this.walletService = new WalletService();
     this.notificationService = new NotificationService();
     this.nombaPayment = new NombaPayment();
     this.paymentLogger = new NombaPaymentLogger();
     this.logger = new Logger("payment-service");
+    this.virtualAccountService = new VirtualAccountService();
   }
 
   async initiatePayment(dto: InitiatePaymentDto, userId: string): Promise<InitiatePaymentResult> {
@@ -100,9 +109,39 @@ export class PaymentService {
       }, tx);
     });
 
+    const isBankTransfer = dto.paymentMethod === "bank_transfer";
+
+    if (isBankTransfer) {
+      const va = await this.virtualAccountService.createVirtualAccount({
+        accountName: `${groupMember.user.firstName} ${groupMember.user.lastName}`,
+        ownerType: "USER",
+        ownerId: userId,
+        metadata: { paymentId: payment.id, contributionId: dto.contributionId },
+      });
+
+      await this.paymentRepository.updateStatus(payment.id, "PENDING");
+
+      await this.auditService.log("PAYMENT_INITIALIZED", {
+        userId,
+        metadata: { paymentId: payment.id, amount, method: "bank_transfer" },
+      });
+
+      return {
+        paymentId: payment.id,
+        reference: payment.id,
+        checkoutUrl: null,
+        virtualAccount: {
+          accountNumber: va.accountNumber,
+          accountName: va.accountName,
+          bankName: va.bankName,
+          amount,
+        },
+      };
+    }
+
     const nombaRef = `PAY-${payment.id.slice(0, 8).toUpperCase()}-${Date.now()}`;
 
-    let nombaResult: { reference: string; paymentUrl: string | null };
+    let nombaResult: { reference: string; checkoutUrl: string | null };
     try {
       nombaResult = await this.nombaPayment.initiatePayment({
         amount,
@@ -110,7 +149,6 @@ export class PaymentService {
         reference: nombaRef,
         customerEmail: groupMember.user.email,
         customerName: `${groupMember.user.firstName} ${groupMember.user.lastName}`,
-        paymentMethod: dto.paymentMethod,
       });
     } catch {
       await this.paymentRepository.updateStatus(payment.id, "FAILED");
@@ -138,7 +176,7 @@ export class PaymentService {
     return {
       paymentId: payment.id,
       reference: nombaResult.reference,
-      paymentUrl: nombaResult.paymentUrl,
+      checkoutUrl: nombaResult.checkoutUrl,
     };
   }
 
@@ -168,9 +206,10 @@ export class PaymentService {
     };
   }
 
-  async getPaymentHistory(userId: string): Promise<PaymentResponse[]> {
-    const payments = await this.paymentRepository.findByUser(userId);
-    return payments.map(p => ({
+  async getPaymentHistory(userId: string, page = 1, limit = 20): Promise<PaginatedResponse<PaymentResponse>> {
+    const { skip, take } = PaginationUtil.parse({ page, limit });
+    const [payments, total] = await this.paymentRepository.findByUserPaginated(userId, skip, take);
+    const items = payments.map(p => ({
       id: p.id,
       userId: p.userId,
       groupId: p.groupId,
@@ -184,6 +223,7 @@ export class PaymentService {
       paymentMethod: p.paymentMethod,
       createdAt: p.createdAt.toISOString(),
     }));
+    return PaginationUtil.paginated(items, total, page, limit);
   }
 
   async getContributionPayments(contributionId: string, userId: string): Promise<PaymentResponse[]> {
@@ -267,6 +307,52 @@ export class PaymentService {
       transactionId: transaction.id,
       amount: payment.amount,
     });
+
+    SSEManager.getInstance().sendToUser(payment.userId, "payment", {
+      title: "Payment Successful",
+      body: `Your payment of ${payment.amount} ${payment.currency} was successful.`,
+      data: { paymentId, transactionId: transaction.id, amount: payment.amount },
+    });
+  }
+
+  async getReceiptByReference(reference: string, userId: string): Promise<{
+    reference: string;
+    amount: number;
+    currency: string;
+    status: string;
+    paymentMethod: string | null;
+    groupName: string;
+    memberName: string;
+    paidAt: string | null;
+    transactionId: string | null;
+  }> {
+    const transaction = await this.transactionRepository.findByReference(reference);
+    if (!transaction) {
+      throw new AuthError("Transaction not found");
+    }
+
+    const payments = await this.paymentRepository.findByTransaction(transaction.id);
+    const payment = payments.length > 0 ? payments[0] : null;
+
+    let groupName = "—";
+    if (payment?.groupId) {
+      const group = await this.groupRepository.findById(payment.groupId);
+      if (group) groupName = group.name;
+    }
+
+    const userRecord = await this.groupMemberRepository.findById(userId) ?? null;
+
+    return {
+      reference: transaction.reference,
+      amount: transaction.amount,
+      currency: transaction.currency,
+      status: transaction.status,
+      paymentMethod: payment?.paymentMethod ?? null,
+      groupName,
+      memberName: userRecord ? userRecord.userId : "—",
+      paidAt: payment?.updatedAt.toISOString() ?? null,
+      transactionId: transaction.id,
+    };
   }
 
   async verifyAndCompletePayment(paymentId: string, reference: string): Promise<void> {

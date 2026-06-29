@@ -1,7 +1,7 @@
 import { useNavigate, useLocation, Outlet } from "react-router";
 import {
   LayoutDashboard, Users, PiggyBank, CreditCard, ArrowDownToLine,
-  BarChart2, Bell, Settings, Plus, Building2,
+  BarChart2, BarChart3, Bell, Settings, Plus, Building2,
 } from "lucide-react";
 import { AppLayout, type NavItem } from "../../../components/layout/AppLayout";
 import { SidebarLink } from "../../../components/layout/SidebarLink";
@@ -14,6 +14,7 @@ const ADMIN_PAGES: NavItem[] = [
   { id: "transactions", icon: CreditCard, label: "Transactions" },
   { id: "payouts", icon: ArrowDownToLine, label: "Payouts" },
   { id: "reports", icon: BarChart2, label: "Reports" },
+  { id: "payment-analytics", icon: BarChart3, label: "Payments Analytics" },
   { id: "notifications", icon: Bell, label: "Notifications" },
   { id: "settings", icon: Settings, label: "Settings" },
 ] as const;

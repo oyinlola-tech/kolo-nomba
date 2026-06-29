@@ -4,6 +4,7 @@ import { ThemeToggle } from "../../../components/shared/ThemeToggle";
 import { Logo } from "../../../components/shared/Logo";
 import { Avatar } from "../../../components/shared/Avatar";
 import { useAuth } from "../../../hooks/use-auth";
+import { useRealtimeNotifications } from "../../../hooks/use-realtime";
 
 type MemberScreen = "home" | "groups" | "history" | "notifications" | "profile";
 
@@ -19,6 +20,7 @@ export function MemberApp() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
+  useRealtimeNotifications();
   const userName = user ? `${user.firstName} ${user.lastName}` : "Member";
   const segments = location.pathname.replace(/^\/+/, "").split("/");
   const last = segments[segments.length - 1];

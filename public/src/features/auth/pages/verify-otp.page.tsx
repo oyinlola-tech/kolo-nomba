@@ -12,7 +12,7 @@ export function VerifyOTPPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const userId = searchParams.get("userId") ?? "";
-  const email = searchParams.get("email") ?? "";
+  const [email] = useState(() => sessionStorage.getItem("verifyEmail") ?? "");
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);

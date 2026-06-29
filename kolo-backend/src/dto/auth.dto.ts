@@ -4,6 +4,7 @@ export interface RegisterDto {
   email: string;
   phone: string;
   password: string;
+  coopName?: string;
 }
 
 export interface LoginDto {

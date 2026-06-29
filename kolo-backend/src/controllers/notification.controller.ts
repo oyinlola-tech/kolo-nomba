@@ -63,4 +63,46 @@ export class NotificationController {
     const retried = await this.notificationService.retryFailedDeliveries();
     ResponseUtil.success(reply, { retried });
   }
+
+  async sse(request: FastifyRequest, reply: FastifyReply): Promise<void> {
+    const { JwtUtil } = await import("../utils/jwt.util");
+
+    const refreshToken = request.cookies?.refreshToken;
+    if (!refreshToken) {
+      reply.status(401).send({ success: false, message: "Unauthorized" });
+      return;
+    }
+
+    try {
+      const payload = await JwtUtil.verifyRefreshToken(refreshToken);
+      request.userId = payload.sub;
+    } catch {
+      reply.status(401).send({ success: false, message: "Invalid token" });
+      return;
+    }
+
+    reply.raw.writeHead(200, {
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache",
+      Connection: "keep-alive",
+      "X-Accel-Buffering": "no",
+    });
+
+    reply.raw.write(`event: connected\ndata: ${JSON.stringify({ userId: request.userId })}\n\n`);
+
+    const { SSEManager } = await import("../services/sse-manager.service");
+    SSEManager.getInstance().addClient(request.userId!, reply);
+
+    const keepAlive = setInterval(() => {
+      try {
+        reply.raw.write(":keepalive\n\n");
+      } catch {
+        clearInterval(keepAlive);
+      }
+    }, 30_000);
+
+    reply.raw.on("close", () => {
+      clearInterval(keepAlive);
+    });
+  }
 }

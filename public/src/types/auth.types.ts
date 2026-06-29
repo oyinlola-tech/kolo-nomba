@@ -8,6 +8,11 @@ export interface AuthUser {
   phone: string;
   role: UserRole;
   status: string;
+  virtualAccount?: {
+    accountNumber: string;
+    accountName: string;
+    bankName: string;
+  } | null;
 }
 
 export interface AuthTokens {

@@ -1,5 +1,6 @@
 import { v4 as uuidv4 } from "uuid";
 import { VirtualAccountRepository } from "../repositories/virtual-account.repository";
+import { UserRepository } from "../repositories/user.repository";
 import { NombaVirtualAccount } from "../integrations/nomba/nomba.virtual-account";
 import { AuditService } from "./audit.service";
 import { AuthError } from "../errors/auth.error";
@@ -7,6 +8,7 @@ import { Logger } from "../logger/core/logger";
 
 export class VirtualAccountService {
   private readonly repository = new VirtualAccountRepository();
+  private readonly userRepository = new UserRepository();
   private readonly nomba = new NombaVirtualAccount();
   private readonly auditService = new AuditService();
   private readonly logger = new Logger("virtual-account-service");
@@ -21,9 +23,9 @@ export class VirtualAccountService {
     const active = existing.find(account => account.status === "ACTIVE");
     if (active) return active;
 
-    const reference = `VA-${uuidv4().slice(0, 8).toUpperCase()}`;
+    const accountRef = `VA-${uuidv4().slice(0, 8).toUpperCase()}`;
     const provider = await this.nomba.create({
-      reference,
+      accountRef,
       accountName: data.accountName,
       ownerType: data.ownerType,
       ownerId: data.ownerId,
@@ -63,6 +65,16 @@ export class VirtualAccountService {
     const account = await this.repository.findById(id);
     if (!account) throw new AuthError("Virtual account not found");
     return account;
+  }
+
+  async getByOwner(ownerType: string, ownerId: string) {
+    return this.repository.findByOwner(ownerType, ownerId);
+  }
+
+  async getUser(userId: string) {
+    const user = await this.userRepository.findById(userId);
+    if (!user) throw new AuthError("User not found");
+    return user;
   }
 
   async getByAccountNumber(accountNumber: string) {

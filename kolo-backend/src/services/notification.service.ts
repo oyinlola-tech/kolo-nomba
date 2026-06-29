@@ -49,6 +49,19 @@ export class NotificationService {
 
     await this.notificationRepository.updateStatus(notification.id, "SENT");
 
+    try {
+      const { SSEManager } = await import("./sse-manager.service");
+      SSEManager.getInstance().sendToUser(dto.userId, "notification", {
+        id: notification.id,
+        type: dto.type,
+        title: dto.title,
+        message: dto.message,
+        createdAt: notification.createdAt.toISOString(),
+      });
+    } catch {
+      // SSE not available
+    }
+
     const prefs = dto.userId
       ? await this.preferenceRepository.findByUser(dto.userId)
       : null;

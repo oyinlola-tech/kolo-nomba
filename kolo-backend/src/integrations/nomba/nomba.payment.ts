@@ -9,36 +9,42 @@ export class NombaPayment {
     this.client = new NombaClient();
   }
 
+  private get checkoutBasePath(): string {
+    return this.config.environment === "test" ? "/sandbox/checkout" : "/v1/checkout";
+  }
+
   async initiatePayment(data: {
     amount: number;
     currency: string;
     reference: string;
     customerEmail: string;
     customerName: string;
-    paymentMethod: string;
-  }): Promise<{ reference: string; paymentUrl: string | null }> {
+    callbackUrl?: string;
+  }): Promise<{ reference: string; checkoutUrl: string | null }> {
     const response = await this.client.request<{
-      reference: string;
-      paymentUrl: string;
+      orderReference: string;
+      checkoutLink: string;
     }>({
       method: "POST",
-      path: "/payments/initiate",
+      path: `${this.checkoutBasePath}/order`,
       body: {
-        amount: data.amount,
-        currency: data.currency,
-        reference: data.reference,
-        subAccountId: this.config.subAccountId,
-        customer: {
-          email: data.customerEmail,
-          name: data.customerName,
+        order: {
+          amount: data.amount,
+          currency: data.currency,
+          customerEmail: data.customerEmail,
+          customerName: data.customerName,
+          orderReference: data.reference,
         },
-        paymentMethod: data.paymentMethod,
+        callbackUrl: data.callbackUrl,
+        meta: {
+          internalReference: data.reference,
+        },
       },
     });
 
     return {
-      reference: response.data?.reference ?? data.reference,
-      paymentUrl: response.data?.paymentUrl ?? null,
+      reference: response.data?.orderReference ?? data.reference,
+      checkoutUrl: response.data?.checkoutLink ?? null,
     };
   }
 
@@ -53,7 +59,8 @@ export class NombaPayment {
       providerReference: string;
     }>({
       method: "GET",
-      path: `/payments/verify/${reference}`,
+      path: `${this.checkoutBasePath}/transaction`,
+      query: { orderReference: reference },
     });
 
     return {
@@ -71,18 +78,19 @@ export class NombaPayment {
     paidAt?: string;
   }> {
     const response = await this.client.request<{
-      reference: string;
+      orderReference: string;
       status: string;
       amount: number;
       providerReference: string;
       paidAt?: string;
     }>({
       method: "GET",
-      path: `/transactions/${reference}`,
+      path: `${this.checkoutBasePath}/transaction`,
+      query: { orderReference: reference },
     });
 
     return {
-      reference: response.data?.reference ?? reference,
+      reference: response.data?.orderReference ?? reference,
       status: response.data?.status ?? "FAILED",
       amount: response.data?.amount ?? 0,
       providerReference: response.data?.providerReference ?? reference,
@@ -97,5 +105,22 @@ export class NombaPayment {
       query,
     });
     return response.data?.transactions ?? [];
+  }
+
+  async verifyTransaction(orderReference: string): Promise<{
+    verified: boolean;
+    status: string;
+    amount: number;
+  }> {
+    try {
+      const result = await this.lookupTransaction(orderReference);
+      return {
+        verified: result.status === "SUCCESSFUL",
+        status: result.status,
+        amount: result.amount,
+      };
+    } catch {
+      return { verified: false, status: "FAILED", amount: 0 };
+    }
   }
 }

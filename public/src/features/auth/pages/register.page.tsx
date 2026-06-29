@@ -28,9 +28,10 @@ export function RegisterPage() {
     try {
       const payload = mode === "member"
         ? { firstName, lastName, email, phone, password }
-        : { firstName, lastName: lastName || firstName, email, phone, password };
+        : { firstName, lastName: lastName || firstName, email, phone, password, coopName };
       const result = await authService.register(payload);
-      navigate(`/verify-otp?userId=${result.userId}&email=${encodeURIComponent(email)}`);
+      sessionStorage.setItem("verifyEmail", email);
+      navigate(`/verify-otp?userId=${result.userId}`);
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Registration failed";
       setError(msg);

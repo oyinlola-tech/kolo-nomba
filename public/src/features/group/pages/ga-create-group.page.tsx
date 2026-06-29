@@ -145,7 +145,7 @@ export function GACreateGroup({ onDone }: GACreateGroupProps) {
                   setError("");
                   setSubmitting(true);
                   try {
-                    await apiClient.post("/groups", {
+                    const { data } = await apiClient.post<{ data: { id: string } }>("/groups", {
                       name: form.name || "New Group",
                       description: form.desc || undefined,
                       category: form.category || undefined,
@@ -154,6 +154,19 @@ export function GACreateGroup({ onDone }: GACreateGroupProps) {
                       frequency: form.frequency.toUpperCase(),
                       startDate: form.startDate || undefined,
                     });
+                    const groupId = data.data.id;
+                    const membersToInvite = form.members.filter(m => m.name && (m.phone || m.email));
+                    for (const m of membersToInvite) {
+                      try {
+                        await apiClient.post(`/groups/${groupId}/invitations`, {
+                          name: m.name,
+                          phone: m.phone || undefined,
+                          email: m.email || undefined,
+                        });
+                      } catch {
+                        // skip individual member failures
+                      }
+                    }
                     if (onDone) onDone();
                     else navigate("../dashboard");
                   } catch {

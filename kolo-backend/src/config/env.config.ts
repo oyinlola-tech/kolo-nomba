@@ -101,7 +101,7 @@ export class EnvConfig {
       : this.NOMBA_TEST_PRIVATE_KEY;
     this.validateNombaConfig();
     this.NOMBA_WEBHOOK_SECRET = EnvConfig.getEnvOrDefault("NOMBA_WEBHOOK_SECRET", "");
-    this.NOMBA_BASE_URL = EnvConfig.getEnvOrDefault("NOMBA_BASE_URL", "https://api.nomba.com/v1");
+    this.NOMBA_BASE_URL = EnvConfig.getEnvOrDefault("NOMBA_BASE_URL", "https://api.nomba.com");
     this.NOMBA_WEBHOOK_URL = EnvConfig.getEnvOrDefault("NOMBA_WEBHOOK_URL", "");
     this.SUPER_ADMIN_EMAIL = EnvConfig.getEnvOrThrow("SUPER_ADMIN_EMAIL");
     this.SUPER_ADMIN_PASSWORD = EnvConfig.getEnvOrThrow("SUPER_ADMIN_PASSWORD");
@@ -154,13 +154,7 @@ export class EnvConfig {
     this.PRIMARY_COLOR = EnvConfig.getEnvOrDefault("PRIMARY_COLOR", "#00A86B");
     this.SECONDARY_COLOR = EnvConfig.getEnvOrDefault("SECONDARY_COLOR", "#1F2937");
 
-    this.COOKIE_SECRET = EnvConfig.getEnvOrDefault("COOKIE_SECRET", "");
-    if (!this.COOKIE_SECRET) {
-      if (this.isProduction) {
-        throw new Error("Missing required environment variable: COOKIE_SECRET must be set in production");
-      }
-      this.COOKIE_SECRET = this.JWT_SECRET;
-    }
+    this.COOKIE_SECRET = EnvConfig.getEnvOrThrow("COOKIE_SECRET");
     this.COOKIE_SECURE = EnvConfig.getEnvOrDefault("COOKIE_SECURE", String(!this.isDevelopment)) === "true";
     this.COOKIE_SAME_SITE = this.parseSameSite();
     this.COOKIE_DOMAIN = EnvConfig.getEnvOrDefault("COOKIE_DOMAIN", "");

@@ -47,6 +47,7 @@ export const router = createBrowserRouter([
       { path: "notifications", element: LazyLoad(() => import("../features/admin/pages/sa-notifications.page").then(m => ({ default: m.SANotifications }))) },
       { path: "security", element: LazyLoad(() => import("../features/admin/pages/sa-security.page").then(m => ({ default: m.SASecurity }))) },
       { path: "settings", element: LazyLoad(() => import("../features/admin/pages/sa-settings.page").then(m => ({ default: m.SASettings }))) },
+      { path: "audit-logs", element: LazyLoad(() => import("../features/admin/pages/sa-audit-logs.page").then(m => ({ default: m.SAAuditLogs }))) },
     ],
   },
   {
@@ -60,6 +61,7 @@ export const router = createBrowserRouter([
       { path: "transactions", element: LazyLoad(() => import("../features/group/pages/ga-transactions.page").then(m => ({ default: m.GATransactions }))) },
       { path: "payouts", element: LazyLoad(() => import("../features/group/pages/ga-payouts.page").then(m => ({ default: m.GAPayouts }))) },
       { path: "reports", element: LazyLoad(() => import("../features/group/pages/ga-reports.page").then(m => ({ default: m.GAReports }))) },
+      { path: "payment-analytics", element: LazyLoad(() => import("../features/group/pages/ga-payment-analytics.page").then(m => ({ default: m.GAPaymentAnalytics }))) },
       { path: "notifications", element: LazyLoad(() => import("../features/group/pages/ga-notifications.page").then(m => ({ default: m.GANotifications }))) },
       { path: "settings", element: LazyLoad(() => import("../features/group/pages/ga-settings.page").then(m => ({ default: m.GASettings }))) },
       { path: "create-group", element: LazyLoad(() => import("../features/group/pages/ga-create-group.page").then(m => ({ default: m.GACreateGroup }))) },

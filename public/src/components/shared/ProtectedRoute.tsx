@@ -9,7 +9,7 @@ interface ProtectedRouteProps {
   fallbackPath?: string;
 }
 
-const AUTH_TIMEOUT_MS = 5000;
+const AUTH_TIMEOUT_MS = 15000;
 
 function AuthLoading() {
   return (

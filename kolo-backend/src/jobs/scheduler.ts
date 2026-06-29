@@ -13,6 +13,7 @@ export class JobScheduler {
   async registerSchedules(): Promise<void> {
     await this.scheduleAnalyticsUpdates();
     await this.scheduleOverdueChecks();
+    await this.scheduleCycleGeneration();
     await this.schedulePaymentChecks();
     await this.schedulePayoutStatusChecks();
     await this.scheduleSessionCleanup();
@@ -84,5 +85,16 @@ export class JobScheduler {
       { jobId: "daily-revenue-report" },
     );
     this.logger.info("Scheduled daily report generation");
+  }
+
+  private async scheduleCycleGeneration(): Promise<void> {
+    await this.queueManager.addRepeatableJob(
+      "contribution.queue",
+      "GENERATE_CYCLES",
+      {},
+      "0 2 * * *",
+      { jobId: "daily-cycle-generation" },
+    );
+    this.logger.info("Scheduled daily cycle generation");
   }
 }

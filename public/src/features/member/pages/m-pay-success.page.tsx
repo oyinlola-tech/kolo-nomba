@@ -1,6 +1,6 @@
 import { useNavigate, useSearchParams } from "react-router";
 import { CheckCircle, Download, Home } from "lucide-react";
-import { apiClient } from "../../../api/client";
+import { downloadReceipt } from "../../../services/receipt.service";
 
 export function MPaySuccess() {
   const navigate = useNavigate();
@@ -9,7 +9,7 @@ export function MPaySuccess() {
 
   const handleDownloadReceipt = async () => {
     try {
-      const { data } = await apiClient.get(`/payments/receipt/${reference}`, { responseType: "blob" });
+      const data = await downloadReceipt(reference);
       const url = window.URL.createObjectURL(new Blob([data]));
       const a = document.createElement("a");
       a.href = url;

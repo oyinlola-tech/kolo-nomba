@@ -1,5 +1,6 @@
 import { createHash } from "crypto";
 import { UserRepository } from "../repositories/user.repository";
+import { VirtualAccountRepository } from "../repositories/virtual-account.repository";
 import { PasswordValidationService } from "../services/password.service";
 import { AuditService } from "./audit.service";
 import { OtpService } from "./otp.service";
@@ -12,12 +13,18 @@ import { DateUtil } from "../utils/date.util";
 import { AuthError } from "../errors/auth.error";
 import { ValidationError } from "../errors/validation.error";
 import { PrismaDatabase } from "../database/prisma";
+import { RedisClient } from "../database/redis";
+import { GroupRepository } from "../repositories/group.repository";
+import { GroupMemberRepository } from "../repositories/group-member.repository";
 import type { RegisterDto, LoginDto, LoginResponse, TokenResponse } from "../dto/auth.dto";
 import type { UserProfileResponse } from "../dto/user.dto";
 import { Logger } from "../logger/core/logger";
 
 export class AuthService {
   private readonly userRepository: UserRepository;
+  private readonly groupRepository: GroupRepository;
+  private readonly groupMemberRepository: GroupMemberRepository;
+  private readonly virtualAccountRepository: VirtualAccountRepository;
   private readonly auditService: AuditService;
   private readonly otpService: OtpService;
   private readonly emailService: EmailService;
@@ -26,6 +33,9 @@ export class AuthService {
 
   constructor() {
     this.userRepository = new UserRepository();
+    this.groupRepository = new GroupRepository();
+    this.groupMemberRepository = new GroupMemberRepository();
+    this.virtualAccountRepository = new VirtualAccountRepository();
     this.auditService = new AuditService();
     this.otpService = new OtpService();
     this.emailService = new EmailService();
@@ -160,18 +170,32 @@ export class AuthService {
       throw new AuthError("Invalid email or password");
     }
 
+    if (user.lockedUntil && user.lockedUntil > new Date()) {
+      this.logger.warn("Account still locked", { userId: user.id, lockedUntil: user.lockedUntil });
+      throw new AuthError("Account is temporarily locked. Please try again later.");
+    }
+
+    if (user.status === "SUSPENDED") {
+      throw new AuthError("Account is suspended. Please contact support.");
+    }
+
     const passwordValid = await HashUtil.verifyPassword(user.passwordHash, dto.password);
     if (!passwordValid) {
-      const failCount = await this.auditService.getRecentFailureCount(user.id, 15);
       await this.auditService.log("LOGIN_FAILED", {
         userId: user.id,
         metadata: { reason: "wrong_password" },
         ipAddress,
         userAgent,
       });
-      if (failCount >= 4) {
+      const failCount = await this.auditService.getRecentFailureCount(user.id, 15);
+      if (failCount >= 5) {
+        const db = PrismaDatabase.getInstance().getClient();
+        await db.user.update({
+          where: { id: user.id },
+          data: { status: "SUSPENDED", lockedUntil: DateUtil.addMinutes(new Date(), 30) } as never,
+        });
         this.logger.warn("Account locked due to failed login attempts", { userId: user.id });
-        throw new AuthError("Account temporarily locked. Please try again later.");
+        throw new AuthError("Account is temporarily locked. Please try again later.");
       }
       throw new AuthError("Invalid email or password");
     }
@@ -294,13 +318,25 @@ export class AuthService {
     return tokens;
   }
 
-  async logout(refreshToken: string, userId?: string): Promise<void> {
+  async logout(refreshToken: string, userId?: string, accessToken?: string): Promise<void> {
     const db = PrismaDatabase.getInstance().getClient();
     const tokenHash = AuthService.hashToken(refreshToken);
     const session = await db.session.findUnique({ where: { refreshToken: tokenHash } });
 
     if (session) {
       await db.session.delete({ where: { id: session.id } });
+    }
+
+    if (accessToken) {
+      try {
+        const redis = RedisClient.getInstance().getClient();
+        if (redis) {
+          const accessHash = JwtUtil.hashToken(accessToken);
+          await redis.set(`blacklist:${accessHash}`, "1", "EX", 900);
+        }
+      } catch {
+        this.logger.warn("Failed to blacklist access token", { userId: userId ?? session?.userId });
+      }
     }
 
     await this.auditService.log("LOGOUT", {
@@ -310,11 +346,14 @@ export class AuthService {
     this.logger.info("User logged out", { userId: userId ?? session?.userId });
   }
 
-  async getProfile(userId: string): Promise<UserProfileResponse> {
+  async getProfile(userId: string): Promise<UserProfileResponse & { virtualAccount?: { accountNumber: string; accountName: string; bankName: string } | null }> {
     const user = await this.userRepository.findById(userId);
     if (!user) {
       throw new AuthError("User not found");
     }
+
+    const accounts = await this.virtualAccountRepository.findByOwner("USER", userId);
+    const activeAccount = accounts.find(a => a.status === "ACTIVE");
 
     return {
       id: user.id,
@@ -325,6 +364,11 @@ export class AuthService {
       role: user.role,
       status: user.status,
       createdAt: user.createdAt.toISOString(),
+      virtualAccount: activeAccount ? {
+        accountNumber: activeAccount.accountNumber,
+        accountName: activeAccount.accountName,
+        bankName: activeAccount.bankName,
+      } : null,
     };
   }
 
@@ -376,5 +420,19 @@ export class AuthService {
       role: user.role,
       status: user.status,
     };
+  }
+
+  async createCooperativeAfterRegistration(userId: string, coopName: string): Promise<void> {
+    const group = await this.groupRepository.create({
+      name: coopName,
+      createdBy: userId,
+    });
+    await this.groupMemberRepository.create({
+      groupId: group.id,
+      userId,
+      role: "GROUP_OWNER",
+      status: "ACTIVE",
+    });
+    this.logger.info("Cooperative auto-created after registration", { userId, groupId: group.id, name: coopName });
   }
 }

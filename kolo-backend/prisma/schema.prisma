@@ -10,6 +10,7 @@ datasource db {
 enum Role {
   SUPER_ADMIN
   GROUP_ADMIN
+  GROUP_OWNER
   MEMBER
 }
 
@@ -28,6 +29,7 @@ model User {
   lastName     String
   role         Role       @default(MEMBER)
   status       UserStatus @default(PENDING)
+  lockedUntil  DateTime?
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
   sessions          Session[]
@@ -47,6 +49,8 @@ model User {
   notificationPreference NotificationPreference?
   emailLogs EmailLog[]
 
+  @@index([status])
+  @@index([role])
   @@map("users")
 }
 
@@ -252,6 +256,8 @@ model AuditLog {
   metadata  Json?
   createdAt DateTime @default(now())
 
+  @@index([userId, action])
+  @@index([action, createdAt])
   @@map("audit_logs")
 }
 
@@ -298,6 +304,9 @@ model Payment {
 
   @@map("payments")
   @@unique([provider, providerReference])
+  @@index([userId])
+  @@index([groupId])
+  @@index([status])
 }
 
 model Transaction {
@@ -314,6 +323,9 @@ model Transaction {
   updatedAt DateTime          @updatedAt
   payment   Payment?
 
+  @@index([userId])
+  @@index([status])
+  @@index([type])
   @@map("transactions")
 }
 
@@ -348,6 +360,7 @@ model VirtualAccount {
   updatedAt         DateTime  @updatedAt
 
   @@index([ownerType, ownerId])
+  @@index([status])
   @@map("virtual_accounts")
 }
 
@@ -565,6 +578,8 @@ model Payout {
   recipients  PayoutRecipient[]
   approvals   PayoutApproval[]
 
+  @@index([status])
+  @@index([groupId, status])
   @@map("payouts")
 }
 
@@ -693,6 +708,8 @@ model Notification {
   updatedAt DateTime           @updatedAt
   deliveries NotificationDelivery[]
 
+  @@index([userId, status])
+  @@index([userId, createdAt])
   @@map("notifications")
 }
 
