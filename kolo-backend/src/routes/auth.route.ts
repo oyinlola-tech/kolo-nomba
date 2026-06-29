@@ -48,5 +48,13 @@ export class AuthRoute {
       preHandler: this.authMiddleware.authenticate.bind(this.authMiddleware),
       handler: this.controller.me.bind(this.controller),
     });
+    app.post(`${prefix}/auth/forgot-password`, {
+      config: { rateLimit: { max: 3, timeWindow: "15 minutes" } },
+      handler: this.controller.forgotPassword.bind(this.controller),
+    });
+    app.post(`${prefix}/auth/reset-password`, {
+      config: { rateLimit: { max: 5, timeWindow: "15 minutes" } },
+      handler: this.controller.resetPassword.bind(this.controller),
+    });
   }
 }

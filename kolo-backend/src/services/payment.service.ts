@@ -19,6 +19,7 @@ import type { InitiatePaymentDto, PaymentResponse, InitiatePaymentResult } from 
 import { Logger } from "../logger/core/logger";
 import { SSEManager } from "./sse-manager.service";
 import { VirtualAccountService } from "./virtual-account.service";
+import { formatKobo } from "../utils/format.util";
 
 export class PaymentService {
   private readonly paymentRepository: PaymentRepository;
@@ -310,7 +311,7 @@ export class PaymentService {
 
     SSEManager.getInstance().sendToUser(payment.userId, "payment", {
       title: "Payment Successful",
-      body: `Your payment of ${payment.amount} ${payment.currency} was successful.`,
+      body: `Your payment of ${formatKobo(payment.amount)} was successful.`,
       data: { paymentId, transactionId: transaction.id, amount: payment.amount },
     });
   }

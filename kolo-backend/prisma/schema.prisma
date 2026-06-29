@@ -64,6 +64,7 @@ model Session {
   createdAt    DateTime @default(now())
 
   @@index([userId, deviceHash])
+  @@index([expiresAt])
   @@map("sessions")
 }
 
@@ -144,6 +145,9 @@ model GroupInvitation {
   expiresAt DateTime
   createdAt DateTime        @default(now())
 
+  @@index([email, status])
+  @@index([phone, status])
+  @@index([groupId, status])
   @@map("group_invitations")
 }
 
@@ -215,6 +219,8 @@ model ContributionCycle {
   updatedAt       DateTime      @updatedAt
   contributions   MemberContribution[]
 
+  @@index([planId, cycleNumber])
+  @@index([planId, status])
   @@map("contribution_cycles")
 }
 
@@ -233,6 +239,8 @@ model MemberContribution {
   reminders           ContributionReminder[]
   payments Payment[]
 
+  @@index([cycleId, status])
+  @@index([groupMemberId])
   @@map("member_contributions")
 }
 
@@ -307,6 +315,7 @@ model Payment {
   @@index([userId])
   @@index([groupId])
   @@index([status])
+  @@index([status, createdAt])
 }
 
 model Transaction {
@@ -361,6 +370,7 @@ model VirtualAccount {
 
   @@index([ownerType, ownerId])
   @@index([status])
+  @@index([ownerType, ownerId, status])
   @@map("virtual_accounts")
 }
 
@@ -472,6 +482,8 @@ model LedgerEntry {
   description    String?
   createdAt      DateTime  @default(now())
 
+  @@index([walletId])
+  @@index([transactionId])
   @@map("ledger_entries")
 }
 
@@ -603,6 +615,8 @@ model PayoutRecipient {
   createdAt          DateTime        @default(now())
   updatedAt          DateTime        @updatedAt
 
+  @@index([payoutId])
+  @@index([userId])
   @@map("payout_recipients")
 }
 
@@ -667,6 +681,8 @@ model WithdrawalRequest {
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
 
+  @@index([userId, status])
+  @@index([walletId])
   @@map("withdrawal_requests")
 }
 
@@ -743,6 +759,8 @@ model NotificationDelivery {
   sentAt            DateTime?
   createdAt         DateTime           @default(now())
 
+  @@index([notificationId])
+  @@index([status])
   @@map("notification_deliveries")
 }
 
@@ -793,5 +811,8 @@ model EmailLog {
   sentAt            DateTime?
   createdAt         DateTime @default(now())
 
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
   @@map("email_logs")
 }

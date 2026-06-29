@@ -2,11 +2,12 @@ import { createHash } from "crypto";
 import { UserRepository } from "../repositories/user.repository";
 import { VirtualAccountRepository } from "../repositories/virtual-account.repository";
 import { PasswordValidationService } from "../services/password.service";
+import { VirtualAccountService } from "../services/virtual-account.service";
 import { AuditService } from "./audit.service";
 import { OtpService } from "./otp.service";
 import { EmailService } from "./email.service";
 import { EventBus } from "../events/core/event-bus";
-import { UserEvent } from "../events/core/event";
+import { UserEvent, GenericEvent } from "../events/core/event";
 import { HashUtil } from "../utils/hash.util";
 import { JwtUtil } from "../utils/jwt.util";
 import { DateUtil } from "../utils/date.util";
@@ -112,6 +113,10 @@ export class AuthService {
     }
 
     await this.userRepository.updateStatus(user.id, "ACTIVE");
+
+    this.provisionVirtualAccount(user).catch(err =>
+      this.logger.error("Failed to provision virtual account", { userId: user.id, error: err })
+    );
 
     const tokens = await this.generateTokens(user.id, user.role);
     await this.createSession(user.id, tokens.refreshToken);
@@ -420,6 +425,74 @@ export class AuthService {
       role: user.role,
       status: user.status,
     };
+  }
+
+  async forgotPassword(email: string): Promise<void> {
+    const user = await this.userRepository.findByEmail(email);
+    if (!user) {
+      this.logger.info("Password reset requested for non-existent email", { email });
+      return;
+    }
+
+    await this.otpService.invalidatePrevious(user.id, "PASSWORD_RESET");
+    const code = await this.otpService.create(user.id, "PASSWORD_RESET");
+
+    await this.emailService.sendNotificationEmail({
+      userId: user.id,
+      template: "passwordReset",
+      vars: {
+        firstName: user.firstName,
+        verificationCode: code,
+      },
+    });
+
+    await this.eventBus.publish(new GenericEvent("password.reset_requested", {
+      userId: user.id,
+    }));
+
+    this.logger.info("Password reset code sent", { userId: user.id });
+  }
+
+  async resetPassword(email: string, code: string, newPassword: string): Promise<void> {
+    const user = await this.userRepository.findByEmail(email);
+    if (!user) {
+      throw new AuthError("Invalid or expired reset code");
+    }
+
+    const valid = await this.otpService.verify(user.id, code, "PASSWORD_RESET");
+    if (!valid) {
+      throw new ValidationError("Invalid or expired reset code");
+    }
+
+    const validation = new PasswordValidationService().validatePassword(newPassword);
+    if (!validation.valid) {
+      throw new ValidationError(validation.message, { password: [validation.message] });
+    }
+
+    const newHash = await HashUtil.hashPassword(newPassword);
+    await this.userRepository.updatePassword(user.id, newHash);
+
+    const db = PrismaDatabase.getInstance().getClient();
+    await db.session.deleteMany({ where: { userId: user.id } });
+
+    await this.auditService.log("PASSWORD_RESET", {
+      userId: user.id,
+    });
+
+    await this.eventBus.publish(new GenericEvent("password.changed", {
+      userId: user.id,
+    }));
+
+    this.logger.info("Password reset successfully", { userId: user.id });
+  }
+
+  private async provisionVirtualAccount(user: { id: string; firstName: string; lastName: string }): Promise<void> {
+    const vaService = new VirtualAccountService();
+    await vaService.createVirtualAccount({
+      accountName: `${user.firstName} ${user.lastName}`,
+      ownerType: "USER",
+      ownerId: user.id,
+    });
   }
 
   async createCooperativeAfterRegistration(userId: string, coopName: string): Promise<void> {

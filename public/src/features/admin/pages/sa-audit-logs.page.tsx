@@ -81,7 +81,7 @@ export function SAAuditLogs() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{a.action}</p>
-                  <p className="text-xs text-gray-500 dark:text-muted-foreground truncate">{a.target} · by {a.actorName}</p>
+                  <p className="text-xs text-gray-500 dark:text-muted-foreground truncate">{a.target} by {a.actorName}</p>
                 </div>
                 <div className="text-right flex-shrink-0">
                   <p className="text-xs text-gray-500 dark:text-muted-foreground font-medium">{a.createdAt}</p>

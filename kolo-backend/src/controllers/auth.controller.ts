@@ -1,7 +1,7 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
 import { AuthService } from "../services/auth.service";
 import { ResponseUtil } from "../utils/response.util";
-import { registerSchema, loginSchema, verifyOtpSchema, resendOtpSchema } from "../validators/auth.validator";
+import { registerSchema, loginSchema, verifyOtpSchema, resendOtpSchema, forgotPasswordSchema, resetPasswordSchema } from "../validators/auth.validator";
 import { ValidationError } from "../errors/validation.error";
 import { EnvConfig } from "../config/env.config";
 import { Logger } from "../logger/core/logger";
@@ -221,5 +221,41 @@ export class AuthController {
   async me(request: FastifyRequest, reply: FastifyReply): Promise<void> {
     const profile = await this.authService.getProfile(request.userId!);
     ResponseUtil.success(reply, profile);
+  }
+
+  async forgotPassword(request: FastifyRequest, reply: FastifyReply): Promise<void> {
+    const parsed = forgotPasswordSchema.safeParse(request.body);
+    if (!parsed.success) {
+      const details: Record<string, string[]> = {};
+      for (const issue of parsed.error.issues) {
+        const key = issue.path.join(".");
+        if (!details[key]) details[key] = [];
+        details[key].push(issue.message);
+      }
+      throw new ValidationError("Validation failed", details);
+    }
+
+    await this.authService.forgotPassword(parsed.data.email);
+    ResponseUtil.success(reply, {
+      message: "If the email exists, a reset code has been sent.",
+    });
+  }
+
+  async resetPassword(request: FastifyRequest, reply: FastifyReply): Promise<void> {
+    const parsed = resetPasswordSchema.safeParse(request.body);
+    if (!parsed.success) {
+      const details: Record<string, string[]> = {};
+      for (const issue of parsed.error.issues) {
+        const key = issue.path.join(".");
+        if (!details[key]) details[key] = [];
+        details[key].push(issue.message);
+      }
+      throw new ValidationError("Validation failed", details);
+    }
+
+    await this.authService.resetPassword(parsed.data.email, parsed.data.code, parsed.data.newPassword);
+    ResponseUtil.success(reply, {
+      message: "Password reset successfully. Please log in with your new password.",
+    });
   }
 }

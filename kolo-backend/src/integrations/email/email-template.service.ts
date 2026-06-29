@@ -66,6 +66,7 @@ export class EmailTemplateService {
       passwordChanged: (v) => this.authTemplate("Password Changed", v, "Your password has been updated successfully."),
       newLoginAlert: (v) => this.loginAlertTemplate(v),
       loginFailed: (v) => this.authTemplate("Failed Login Attempt", v, "We detected a failed login attempt on your account.", "warning"),
+      passwordReset: (v) => this.passwordResetTemplate(v),
       passwordResetRequested: (v) => this.authTemplate("Password Reset Requested", v, "A password reset was requested for your account."),
       emailVerified: (v) => this.authTemplate("Email Verified", v, "Your email address has been verified successfully."),
       accountSuspended: (v) => this.authTemplate("Account Suspended", v, "Your account has been suspended. Please contact support.", "warning"),
@@ -234,6 +235,25 @@ export class EmailTemplateService {
         ${vars.confirmLink ? this.button(vars.confirmLink, "Verify Email") : ""}
       `),
       text: `Verify Your ${this.appName} Account\n\nHello ${name},\n\nThank you for creating an account. Use this verification code:\n\n${code}\n\nThis code expires in 10 minutes.`,
+    };
+  }
+
+  private passwordResetTemplate(vars: Record<string, string>): EmailTemplate {
+    const name = vars.firstName ?? "there";
+    const code = vars.verificationCode ?? "------";
+    return {
+      subject: `Reset Your ${this.appName} Password`,
+      html: this.layout(`
+        <h2 style="color:${this.secondaryColor};">Reset Your Password</h2>
+        ${this.greeting(vars)}
+        <p>We received a request to reset the password for your ${this.appName} account. Use the code below to reset your password:</p>
+        <div style="text-align:center;margin:24px 0;padding:16px;background-color:${this.primaryColor}10;border-radius:8px;border:1px solid ${this.primaryColor}30;">
+          <span style="font-size:32px;font-weight:700;letter-spacing:8px;color:${this.primaryColor};">${code}</span>
+        </div>
+        <p style="font-size:13px;color:#6b7280;">This code expires in 10 minutes. If you did not request a password reset, please ignore this email or contact support.</p>
+        ${this.securityNotice("If you didn't request this, someone else may be trying to access your account. Please secure your account immediately.")}
+      `),
+      text: `Reset Your ${this.appName} Password\n\nHello ${name},\n\nWe received a password reset request. Use this code:\n\n${code}\n\nThis code expires in 10 minutes. If you didn't request this, please contact support.`,
     };
   }
 

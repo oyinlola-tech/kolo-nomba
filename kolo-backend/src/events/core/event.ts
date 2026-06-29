@@ -45,3 +45,9 @@ export class SecurityEvent extends Event {
     super(`security.${name}`, payload);
   }
 }
+
+export class GenericEvent extends Event {
+  constructor(name: string, payload: Record<string, unknown>) {
+    super(name, payload);
+  }
+}

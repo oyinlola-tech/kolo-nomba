@@ -50,3 +50,13 @@ export interface LoginResponse {
   refreshToken: string;
   role: string;
 }
+
+export interface ForgotPasswordDto {
+  email: string;
+}
+
+export interface ResetPasswordDto {
+  email: string;
+  code: string;
+  newPassword: string;
+}

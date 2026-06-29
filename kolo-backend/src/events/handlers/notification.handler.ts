@@ -3,6 +3,7 @@ import { NotificationService } from "../../services/notification.service";
 import { UserRepository } from "../../repositories/user.repository";
 import { GroupMemberRepository } from "../../repositories/group-member.repository";
 import { Logger } from "../../logger/core/logger";
+import { formatKobo } from "../../utils/format.util";
 
 export class NotificationEventHandler {
   private readonly notificationService: NotificationService;
@@ -274,7 +275,7 @@ export class NotificationEventHandler {
           userId: String(userId),
           type: "CONTRIBUTION",
           title: "Contribution Reminder",
-          message: `Your contribution of ${String(amount ?? 0)} NGN is due.`,
+          message: `Your contribution of ${formatKobo(amount)} is due.`,
           channel: "EMAIL",
           metadata: {
             ...event.payload,
@@ -293,7 +294,7 @@ export class NotificationEventHandler {
           userId: String(userId),
           type: "CONTRIBUTION",
           title: "Contribution Received",
-          message: `Your contribution of ${String(amount ?? 0)} NGN has been received.`,
+          message: `Your contribution of ${formatKobo(amount)} has been received.`,
           channel: "EMAIL",
           metadata: {
             ...event.payload,
@@ -326,7 +327,7 @@ export class NotificationEventHandler {
           userId: String(userId),
           type: "CONTRIBUTION",
           title: "Overdue Contribution",
-          message: `Your contribution of ${String(amount ?? 0)} NGN is overdue.`,
+          message: `Your contribution of ${formatKobo(amount)} is overdue.`,
           channel: "EMAIL",
           metadata: {
             ...event.payload,
@@ -345,7 +346,7 @@ export class NotificationEventHandler {
             userId: admin.userId,
             type: "CONTRIBUTION",
             title: "Member Payment Overdue",
-            message: `A member has an overdue contribution of ${String(amount ?? 0)} NGN.`,
+            message: `A member has an overdue contribution of ${formatKobo(amount)}.`,
             channel: "EMAIL",
             metadata: { ...event.payload, amount: String(amount ?? "0"), groupName: String(groupName ?? "") },
           });
@@ -381,7 +382,7 @@ export class NotificationEventHandler {
           userId: String(userId),
           type: "PAYMENT",
           title: "Payment Initiated",
-          message: `A payment of ${String(amount ?? 0)} NGN has been initiated.`,
+          message: `A payment of ${formatKobo(amount)} has been initiated.`,
           channel: "EMAIL",
           metadata: { ...event.payload, amount: String(amount ?? "0"), reference: String(reference ?? ""), groupName: String(groupName ?? "") },
         });
@@ -395,7 +396,7 @@ export class NotificationEventHandler {
           userId: String(userId),
           type: "PAYMENT",
           title: "Payment Successful",
-          message: `Payment of ${String(amount ?? 0)} NGN was successful.`,
+          message: `Payment of ${formatKobo(amount)} was successful.`,
           channel: "EMAIL",
           metadata: {
             ...event.payload,
@@ -417,7 +418,7 @@ export class NotificationEventHandler {
           userId: String(userId),
           type: "PAYMENT",
           title: "Payment Failed",
-          message: `Payment of ${String(amount ?? 0)} NGN failed.`,
+          message: `Payment of ${formatKobo(amount)} failed.`,
           channel: "EMAIL",
           metadata: {
             ...event.payload,
@@ -436,7 +437,7 @@ export class NotificationEventHandler {
           userId: String(userId),
           type: "PAYMENT",
           title: "Payment Reversed",
-          message: `A payment of ${String(amount ?? 0)} NGN has been reversed.`,
+          message: `A payment of ${formatKobo(amount)} has been reversed.`,
           channel: "EMAIL",
           metadata: { ...event.payload, amount: String(amount ?? "0"), reference: String(reference ?? "") },
         });
@@ -450,7 +451,7 @@ export class NotificationEventHandler {
           userId: String(userId),
           type: "PAYMENT",
           title: "Payment Refunded",
-          message: `A refund of ${String(amount ?? 0)} NGN has been issued.`,
+          message: `A refund of ${formatKobo(amount)} has been issued.`,
           channel: "EMAIL",
           metadata: { ...event.payload, amount: String(amount ?? "0"), reference: String(reference ?? "") },
         });
@@ -466,7 +467,7 @@ export class NotificationEventHandler {
           userId: String(userId),
           type: "PAYOUT",
           title: "Payout Created",
-          message: `A payout of ${String(amount ?? 0)} NGN has been created.`,
+          message: `A payout of ${formatKobo(amount)} has been created.`,
           channel: "EMAIL",
           metadata: { ...event.payload, amount: String(amount ?? "0"), payoutId: String(payoutId ?? "") },
         });
@@ -487,7 +488,7 @@ export class NotificationEventHandler {
           userId: notifyUserId,
           type: "PAYOUT",
           title: "Payout Approval Required",
-          message: `A payout of ${String(amount ?? 0)} NGN requires your approval.`,
+          message: `A payout of ${formatKobo(amount)} requires your approval.`,
           channel: "EMAIL",
           metadata: {
             ...event.payload,
@@ -507,7 +508,7 @@ export class NotificationEventHandler {
           userId: String(userId),
           type: "PAYOUT",
           title: "Payout Approved",
-          message: `A payout of ${String(amount ?? 0)} NGN has been approved.`,
+          message: `A payout of ${formatKobo(amount)} has been approved.`,
           channel: "EMAIL",
           metadata: { ...event.payload, amount: String(amount ?? "0"), payoutId: String(payoutId ?? "") },
         });
@@ -521,7 +522,7 @@ export class NotificationEventHandler {
           userId: String(userId),
           type: "PAYOUT",
           title: "Payout Rejected",
-          message: `Your payout request of ${String(amount ?? 0)} NGN was not approved.`,
+          message: `Your payout request of ${formatKobo(amount)} was not approved.`,
           channel: "EMAIL",
           metadata: { ...event.payload, amount: String(amount ?? "0") },
         });
@@ -535,7 +536,7 @@ export class NotificationEventHandler {
           userId: String(userId),
           type: "PAYOUT",
           title: "Payout Processing",
-          message: `Your payout of ${String(amount ?? 0)} NGN is being processed.`,
+          message: `Your payout of ${formatKobo(amount)} is being processed.`,
           channel: "EMAIL",
           metadata: { ...event.payload, amount: String(amount ?? "0"), payoutId: String(payoutId ?? "") },
         });
@@ -549,7 +550,7 @@ export class NotificationEventHandler {
           userId: String(userId),
           type: "PAYOUT",
           title: "Payout Completed",
-          message: `A payout of ${String(amount ?? 0)} NGN has been sent to your account.`,
+          message: `A payout of ${formatKobo(amount)} has been sent to your account.`,
           channel: "EMAIL",
           metadata: {
             ...event.payload,
@@ -572,7 +573,7 @@ export class NotificationEventHandler {
           userId: String(userId),
           type: "PAYOUT",
           title: "Payout Failed",
-          message: `A payout of ${String(amount ?? 0)} NGN could not be completed.`,
+          message: `A payout of ${formatKobo(amount)} could not be completed.`,
           channel: "EMAIL",
           metadata: { ...event.payload, amount: String(amount ?? "0"), reason: String(reason ?? "Transfer failed") },
         });
@@ -667,7 +668,7 @@ export class NotificationEventHandler {
           userId: String(userId),
           type: "PAYMENT",
           title: "Large Transaction Alert",
-          message: `A large transaction of ${String(amount ?? 0)} NGN was processed.`,
+          message: `A large transaction of ${formatKobo(amount)} was processed.`,
           channel: "EMAIL",
           metadata: event.payload,
         });
