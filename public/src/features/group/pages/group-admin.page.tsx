@@ -5,6 +5,7 @@ import {
 } from "lucide-react";
 import { AppLayout, type NavItem } from "../../../components/layout/AppLayout";
 import { SidebarLink } from "../../../components/layout/SidebarLink";
+import { useCooperatives } from "../../../hooks/use-cooperatives";
 
 const ADMIN_PAGES: NavItem[] = [
   { id: "dashboard", icon: LayoutDashboard, label: "Dashboard" },
@@ -13,19 +14,21 @@ const ADMIN_PAGES: NavItem[] = [
   { id: "transactions", icon: CreditCard, label: "Transactions" },
   { id: "payouts", icon: ArrowDownToLine, label: "Payouts" },
   { id: "reports", icon: BarChart2, label: "Reports" },
-  { id: "notifications", icon: Bell, label: "Notifications", badge: 2 },
+  { id: "notifications", icon: Bell, label: "Notifications" },
   { id: "settings", icon: Settings, label: "Settings" },
 ] as const;
 
 export function GroupAdminApp() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { data: groups } = useCooperatives();
   const segments = location.pathname.replace(/^\/+/, "").split("/");
   const currentPage = segments[segments.length - 1] === "admin" || segments[segments.length - 1] === "group" ? "dashboard" : segments[segments.length - 1];
+  const groupName = groups?.[0]?.name ?? "Group";
 
   return (
     <AppLayout
-      title="Tech Founders Savings"
+      title={groupName}
       subtitle="Group Admin"
       logo={Building2}
       navItems={ADMIN_PAGES}

@@ -11,15 +11,15 @@ import { PageHeader } from "../../../components/shared/PageHeader";
 import { formatNaira } from "../../../utils/format";
 import { useChartTheme } from "../../../hooks/use-chart-theme";
 import { useGroupAnalytics } from "../../../hooks/use-analytics";
-import { useUsers } from "../../../hooks/use-users";
 import { useCooperatives } from "../../../hooks/use-cooperatives";
+import { useGroupMembers } from "../../../hooks/use-group-members";
 
 export function GAReports() {
   const ct = useChartTheme();
   const { data: groups } = useCooperatives();
   const groupId = (groups && groups.length > 0) ? groups[0].id : "";
   const { data: analytics, isLoading } = useGroupAnalytics(groupId);
-  const { data: members } = useUsers();
+  const { data: members } = useGroupMembers(groupId);
 
   if (isLoading) {
     return (
@@ -97,7 +97,7 @@ export function GAReports() {
               </thead>
               <tbody className="divide-y divide-gray-50 dark:divide-border">
                 {memberList.map(m => {
-                  const memberName = `${m.firstName} ${m.lastName}`;
+                  const memberName = m.name || `${m.firstName} ${m.lastName}`;
                   return (
                     <tr key={m.id} className="hover:bg-gray-50 dark:hover:bg-white/3">
                       <td className="px-3 py-2.5">
@@ -108,7 +108,7 @@ export function GAReports() {
                       </td>
                       <td className="px-3 py-2.5 text-gray-500 dark:text-muted-foreground text-sm">{m.email}</td>
                       <td className="px-3 py-2.5"><Badge status={m.status} /></td>
-                      <td className="px-3 py-2.5 text-gray-500 dark:text-muted-foreground text-sm">{m.createdAt}</td>
+                      <td className="px-3 py-2.5 text-gray-500 dark:text-muted-foreground text-sm">{m.joinedAt}</td>
                     </tr>
                   );
                 })}

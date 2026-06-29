@@ -70,11 +70,27 @@ export function SADashboard() {
         </Card>
         <Card className="p-5">
           <p className="font-semibold text-gray-900 dark:text-white mb-4">Recent Activity</p>
-          <div className="flex flex-col items-center justify-center py-8 text-gray-500 dark:text-muted-foreground">
-            <AlertTriangle className="w-8 h-8 mb-2 text-gray-300 dark:text-gray-600" />
-            <p className="text-sm">Activity feed coming from backend</p>
-            <p className="text-xs mt-1">Real-time activity will be enabled when the API is connected.</p>
-          </div>
+          {analytics?.activities && analytics.activities.length > 0 ? (
+            <div className="space-y-3">
+              {analytics.activities.slice(0, 5).map(a => (
+                <div key={a.id} className="flex items-start gap-3">
+                  <div className="w-8 h-8 bg-gray-100 dark:bg-muted rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <AlertTriangle className="w-4 h-4 text-gray-400" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-gray-900 dark:text-white">{a.action}</p>
+                    <p className="text-xs text-gray-500 dark:text-muted-foreground">{a.actorName ?? "System"} {a.target ? `— ${a.target}` : ""}</p>
+                    <p className="text-[10px] text-gray-400 mt-0.5">{a.createdAt}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-8 text-gray-500 dark:text-muted-foreground">
+              <AlertTriangle className="w-8 h-8 mb-2 text-gray-300 dark:text-gray-600" />
+              <p className="text-sm">No recent activity</p>
+            </div>
+          )}
         </Card>
       </div>
     </div>

@@ -1,4 +1,4 @@
-export type UserRole = "SUPER_ADMIN" | "GROUP_ADMIN" | "MEMBER";
+export type UserRole = "SUPER_ADMIN" | "GROUP_ADMIN" | "GROUP_OWNER" | "MEMBER";
 
 export interface AuthUser {
   id: string;

@@ -1,4 +1,5 @@
 {
-  "framework": "vite",
+  "build": "npm run build",
+  "start": "npm start",
   "outputDirectory": "dist"
 }

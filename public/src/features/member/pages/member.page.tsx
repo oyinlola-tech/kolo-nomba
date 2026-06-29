@@ -3,6 +3,7 @@ import { Home, Receipt, Building2, Bell, User, Search } from "lucide-react";
 import { ThemeToggle } from "../../../components/shared/ThemeToggle";
 import { Logo } from "../../../components/shared/Logo";
 import { Avatar } from "../../../components/shared/Avatar";
+import { useAuth } from "../../../hooks/use-auth";
 
 type MemberScreen = "home" | "groups" | "history" | "notifications" | "profile";
 
@@ -17,6 +18,8 @@ const navItems: { id: MemberScreen; icon: typeof Home; label: string }[] = [
 export function MemberApp() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
+  const userName = user ? `${user.firstName} ${user.lastName}` : "Member";
   const segments = location.pathname.replace(/^\/+/, "").split("/");
   const last = segments[segments.length - 1];
   const knownScreens = ["home", "groups", "history", "notifications", "profile"];
@@ -26,7 +29,7 @@ export function MemberApp() {
     <div className="min-h-screen bg-gray-50 dark:bg-background flex flex-col lg:flex-row">
       {/* Desktop sidebar - visible on lg+ */}
       <aside className="hidden lg:flex lg:flex-col lg:w-64 xl:w-72 bg-white dark:bg-card border-r border-gray-100 dark:border-border flex-shrink-0">
-        <div className="flex items-center gap-2.5 px-5 h-16 border-b border-gray-100 dark:border-border flex-shrink-0">
+          <div className="flex items-center gap-2.5 px-5 h-16 border-b border-gray-100 dark:border-border flex-shrink-0">
           <Logo size="sm" />
           <div>
             <p className="text-sm font-bold text-gray-900 dark:text-white">Member</p>
@@ -51,10 +54,10 @@ export function MemberApp() {
         </nav>
         <div className="border-t border-gray-100 dark:border-border p-3">
           <div className="flex items-center gap-3 px-3 py-2">
-            <Avatar name="Member" size="sm" />
+            <Avatar name={userName} size="sm" />
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">My Account</p>
-              <p className="text-xs text-gray-500 dark:text-muted-foreground">Member</p>
+              <p className="text-xs text-gray-500 dark:text-muted-foreground">{userName}</p>
             </div>
           </div>
         </div>
@@ -74,14 +77,14 @@ export function MemberApp() {
             </div>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="hidden md:inline text-xs text-gray-500 dark:text-muted-foreground mr-2">Member</span>
+            <span className="hidden md:inline text-xs text-gray-500 dark:text-muted-foreground mr-2">{userName}</span>
             <ThemeToggle />
             <button className="relative p-1.5 lg:p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-white/5" onClick={() => navigate("notifications")}>
               <Bell className="w-4 h-4 lg:w-5 lg:h-5" />
               <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-red-500 rounded-full" />
             </button>
             <div className="hidden lg:block">
-              <Avatar name="Member" size="sm" />
+              <Avatar name={userName} size="sm" />
             </div>
           </div>
         </header>

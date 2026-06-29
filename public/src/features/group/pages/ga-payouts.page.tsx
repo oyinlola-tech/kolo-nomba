@@ -16,6 +16,7 @@ export function GAPayouts() {
   const [step, setStep] = useState<"list" | "request" | "confirm" | "success">("list");
   const [amount, setAmount] = useState("");
   const [bank, setBank] = useState("");
+  const [narration, setNarration] = useState("");
   const [error, setError] = useState("");
   const { data: payouts, isLoading } = usePayouts();
   const { data: groups } = useCooperatives();
@@ -35,7 +36,7 @@ export function GAPayouts() {
         </Card>
         <Input label="Payout Amount" placeholder="₦0.00" value={amount} onChange={setAmount} icon={Banknote} required />
         <Input label="Bank Account" placeholder="GTBank •••• 2841" value={bank} onChange={setBank} icon={Landmark} required />
-        <Input label="Narration" placeholder="Monthly payout" onChange={() => {}} icon={FileText} />
+        <Input label="Narration" placeholder="Monthly payout" value={narration} onChange={setNarration} icon={FileText} />
         <Button full onClick={() => setStep("confirm")}><ArrowRight className="w-4 h-4" />Review Payout</Button>
       </div>
     </div>

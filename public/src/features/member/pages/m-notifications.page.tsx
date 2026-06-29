@@ -42,16 +42,16 @@ export function MNotifications() {
             const Icon = iconMap[n.type] || Bell;
             const color = colorMap[n.type] || colorMap.info;
             return (
-              <div key={n.id || i} className={`flex items-start gap-3 p-4 rounded-xl ${!n.read ? "bg-white dark:bg-card shadow-sm border border-gray-100 dark:border-border" : "bg-gray-50 dark:bg-muted/50"}`}>
+              <div key={n.id || i} className={`flex items-start gap-3 p-4 rounded-xl ${n.read === false ? "bg-white dark:bg-card shadow-sm border border-gray-100 dark:border-border" : "bg-gray-50 dark:bg-muted/50"}`}>
                 <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${color}`}>
                   <Icon className="w-4 h-4" />
                 </div>
                 <div className="flex-1">
-                  <p className={`text-sm font-semibold ${!n.read ? "text-gray-900 dark:text-white" : "text-gray-600 dark:text-gray-400"}`}>{n.title}</p>
-                  <p className="text-xs text-gray-500 dark:text-muted-foreground mt-0.5 leading-relaxed">{n.body}</p>
+                  <p className={`text-sm font-semibold ${n.read === false ? "text-gray-900 dark:text-white" : "text-gray-600 dark:text-gray-400"}`}>{n.title}</p>
+                  <p className="text-xs text-gray-500 dark:text-muted-foreground mt-0.5 leading-relaxed">{n.body ?? n.message}</p>
                   <p className="text-[10px] text-gray-400 mt-1">{n.createdAt}</p>
                 </div>
-                {!n.read && <span className="w-2 h-2 bg-emerald-500 rounded-full mt-1.5 flex-shrink-0" />}
+                {n.read === false && <span className="w-2 h-2 bg-emerald-500 rounded-full mt-1.5 flex-shrink-0" />}
               </div>
             );
           })}

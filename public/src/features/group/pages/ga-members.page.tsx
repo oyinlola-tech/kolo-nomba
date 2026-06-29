@@ -5,12 +5,14 @@ import { Badge } from "../../../components/shared/Badge";
 import { Avatar } from "../../../components/shared/Avatar";
 import { Button } from "../../../components/shared/Button";
 import { PageHeader } from "../../../components/shared/PageHeader";
-import { formatNaira } from "../../../utils/format";
-import { useUsers } from "../../../hooks/use-users";
+import { useCooperatives } from "../../../hooks/use-cooperatives";
+import { useGroupMembers } from "../../../hooks/use-group-members";
 
 export function GAMembers() {
   const [search, setSearch] = useState("");
-  const { data: members, isLoading } = useUsers();
+  const { data: groups } = useCooperatives();
+  const groupId = (groups && groups.length > 0) ? groups[0].id : "";
+  const { data: members, isLoading } = useGroupMembers(groupId);
 
   if (isLoading) {
     return (
@@ -49,7 +51,7 @@ export function GAMembers() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-100 dark:border-border">
-                  {["Member", "Phone", "Status", "Joined", "Email", "Actions"].map(h => (
+                  {["Member", "Role", "Status", "Joined", "Email", "Actions"].map(h => (
                     <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-muted-foreground uppercase tracking-wider whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
@@ -63,9 +65,9 @@ export function GAMembers() {
                         <span className="font-medium text-gray-900 dark:text-white">{m.name}</span>
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{m.phone}</td>
+                    <td className="px-4 py-3 text-gray-600 dark:text-gray-400 text-xs">{m.role}</td>
                     <td className="px-4 py-3"><Badge status={m.status} /></td>
-                    <td className="px-4 py-3 text-gray-500 dark:text-muted-foreground whitespace-nowrap">{m.createdAt}</td>
+                    <td className="px-4 py-3 text-gray-500 dark:text-muted-foreground whitespace-nowrap">{m.joinedAt}</td>
                     <td className="px-4 py-3 text-gray-500 dark:text-muted-foreground">{m.email}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1">

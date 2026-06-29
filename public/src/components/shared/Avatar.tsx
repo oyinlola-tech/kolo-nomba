@@ -15,10 +15,11 @@ interface AvatarProps {
 
 export function Avatar({ name, size = "md" }: AvatarProps) {
   const sz = { sm: "w-7 h-7 text-xs", md: "w-9 h-9 text-sm", lg: "w-11 h-11 text-base" }[size];
-  const c = AV_COLORS[name.charCodeAt(0) % AV_COLORS.length];
+  const safeName = name || "?";
+  const c = AV_COLORS[safeName.charCodeAt(0) % AV_COLORS.length];
   return (
     <div className={`${sz} ${c} rounded-full flex items-center justify-center font-bold flex-shrink-0 select-none`}>
-      {getInitials(name)}
+      {getInitials(safeName)}
     </div>
   );
 }
