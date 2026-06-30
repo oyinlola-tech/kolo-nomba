@@ -1,0 +1,7 @@
+{
+  "type": "node",
+  "directory": "kolo-frontend",
+  "build": "npm install && npm run build",
+  "start": "npx serve -s dist -l $PORT",
+  "env": "NODE_VERSION=22"
+}
