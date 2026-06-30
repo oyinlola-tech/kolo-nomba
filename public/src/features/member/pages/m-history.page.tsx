@@ -8,7 +8,7 @@ export function MHistory() {
   const navigate = useNavigate();
   const { data: contributions, isLoading } = useContributions();
   const contribs = contributions || [];
-  const totalContributed = contribs.reduce((s, c) => s + (c.amount ?? 0), 0);
+  const totalContributed = contribs.reduce((s, c) => s + (c.paidAmount ?? 0), 0);
 
   if (isLoading) {
     return (
@@ -34,23 +34,23 @@ export function MHistory() {
             <div className="space-y-4">
               {contribs.map((c, i) => (
                 <div key={c.id || i} className="relative pl-10">
-                  <div className={`absolute left-0 top-4 w-6 h-6 rounded-full border-2 flex items-center justify-center ${c.status === "paid" ? "bg-emerald-500 border-emerald-500" : "bg-white dark:bg-card border-gray-300 dark:border-gray-600"}`}>
-                    {c.status === "paid" && <Check className="w-3 h-3 text-white" />}
+                   <div className={`absolute left-0 top-4 w-6 h-6 rounded-full border-2 flex items-center justify-center ${c.status === "PAID" ? "bg-emerald-500 border-emerald-500" : "bg-white dark:bg-card border-gray-300 dark:border-gray-600"}`}>
+                    {c.status === "PAID" && <Check className="w-3 h-3 text-white" />}
                   </div>
                   <div className="bg-white dark:bg-card border border-gray-100 dark:border-border rounded-xl p-4 shadow-sm">
                     <div className="flex justify-between items-start mb-1">
                       <p className="font-bold text-gray-900 dark:text-white text-sm">{c.memberName}</p>
-                       <p className="font-bold text-gray-900 dark:text-white">{formatNaira(c.amount ?? 0)}</p>
+                       <p className="font-bold text-gray-900 dark:text-white">{formatNaira(c.paidAmount ?? 0)}</p>
                     </div>
                     <p className="text-xs text-gray-400 mb-3">{c.paidAt || "—"}</p>
                     <div className="flex items-center gap-2">
                       <Badge status={c.status} />
-                      {c.status === "paid" && (
+                      {c.status === "PAID" && (
                         <button onClick={() => window.print()} className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 font-medium hover:underline">
                           <Download className="w-3 h-3" />Download Receipt
                         </button>
                       )}
-                      {c.status === "pending" && (
+                      {c.status === "PENDING" && (
                         <button onClick={() => navigate(`/member/pay?contributionId=${c.id}`)} className="text-xs font-semibold text-primary hover:underline">Pay Now</button>
                       )}
                     </div>

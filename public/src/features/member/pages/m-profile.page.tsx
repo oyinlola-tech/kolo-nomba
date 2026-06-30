@@ -1,5 +1,5 @@
 import {
-  Lock, Bell, Wallet, ShieldCheck, ChevronRight, LogOut, Landmark,
+  Lock, Bell, Wallet, ShieldCheck, ChevronRight, LogOut,
 } from "lucide-react";
 import { Card } from "../../../components/shared/Card";
 import { Badge } from "../../../components/shared/Badge";
@@ -52,7 +52,7 @@ export function MProfile() {
         <p className="text-xs font-semibold text-gray-400 dark:text-gray-600 mb-3 tracking-wider">ACCOUNT SETTINGS</p>
         <div className="space-y-1">
           {[
-            { icon: Lock, label: "Change Password", path: "/member/home" },
+            { icon: Lock, label: "Change Password", path: "/forgot-password" },
             { icon: Bell, label: "Notification Preferences", path: "/member/notifications" },
             { icon: Wallet, label: "Payment Preferences", path: "/member/pay" },
             { icon: ShieldCheck, label: "Security Settings", path: "/member/home" },
@@ -63,7 +63,7 @@ export function MProfile() {
           ))}
         </div>
       </Card>
-      <button onClick={() => { logout.mutate(); navigate("/"); }}
+      <button onClick={() => { logout.mutate(undefined, { onSettled: () => navigate("/") }); }}
         className="w-full flex items-center justify-center gap-2 py-3 border border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 rounded-xl text-sm font-semibold hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors">
         <LogOut className="w-4 h-4" />Sign Out
       </button>

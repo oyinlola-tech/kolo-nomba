@@ -1,4 +1,4 @@
-import { Bell, CheckCircle, Building2, ShieldCheck, Loader2 } from "lucide-react";
+import { Bell, CheckCircle, ShieldCheck, Loader2 } from "lucide-react";
 import { useNotifications } from "../../../hooks/use-notifications";
 
 const iconMap: Record<string, typeof Bell> = {

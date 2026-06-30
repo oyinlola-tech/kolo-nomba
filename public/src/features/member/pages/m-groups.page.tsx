@@ -1,5 +1,4 @@
 import { Building2, Plus, Loader2, ChevronRight } from "lucide-react";
-import { Badge } from "../../../components/shared/Badge";
 import { formatNaira } from "../../../utils/format";
 import { useCooperatives } from "../../../hooks/use-cooperatives";
 import { useNavigate } from "react-router";

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import {
-  X, Wallet, Landmark, CreditCard, ShieldCheck, Lock, RefreshCw, Loader2, Copy, CheckCircle,
+  X, Landmark, CreditCard, ShieldCheck, Lock, RefreshCw, Loader2, Copy, CheckCircle,
 } from "lucide-react";
 import { useCreatePayment } from "../../../hooks/use-payments";
 import { useContribution } from "../../../hooks/use-contributions";
@@ -70,7 +70,7 @@ function BankTransferInfoDisplay({ info, onBack }: { info: { accountNumber: stri
   );
 }
 
-function BankTransferInit({ amount, contributionId, onReady, onBack }: { amount: number; contributionId: string | null; onReady: (info: { accountNumber: string; accountName: string; bankName: string; amount: number }) => void; onBack: () => void }) {
+function BankTransferInit({ contributionId, onReady, onBack }: { amount: number; contributionId: string | null; onReady: (info: { accountNumber: string; accountName: string; bankName: string; amount: number }) => void; onBack: () => void }) {
   const createPayment = useCreatePayment();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
