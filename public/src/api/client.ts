@@ -1,6 +1,7 @@
 import axios from "axios";
+import { getApiUrl } from "../utils/env";
 
-const baseURL = import.meta.env.VITE_API_URL;
+const baseURL = getApiUrl();
 
 let currentAccessToken: string | null = null;
 
