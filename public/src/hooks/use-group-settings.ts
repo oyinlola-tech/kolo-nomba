@@ -2,7 +2,6 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   getGroupSettings,
   updateGroupSettings,
-  type GroupSettings,
   type UpdateGroupSettingsPayload,
 } from "../services/group-settings.service";
 

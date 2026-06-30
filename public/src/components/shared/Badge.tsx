@@ -1,5 +1,3 @@
-import type { EntityStatus } from "../../types/platform.types";
-
 const badgeMap: Record<string, string> = {
   active:     "bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800",
   inactive:   "bg-gray-100 text-gray-600 border border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700",
@@ -22,9 +20,10 @@ interface BadgeProps {
 }
 
 export function Badge({ status }: BadgeProps) {
-  const label = status.replace(/_/g, " ");
+  const normalized = status.toLowerCase();
+  const label = normalized.replace(/_/g, " ");
   return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold capitalize ${badgeMap[status] || badgeMap.inactive}`}>
+    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold capitalize ${badgeMap[normalized] || badgeMap.inactive}`}>
       {label}
     </span>
   );

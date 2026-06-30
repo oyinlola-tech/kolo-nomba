@@ -11,3 +11,4 @@ export { SAVerification } from "./pages/sa-verification.page";
 export { SANotifications } from "./pages/sa-notifications.page";
 export { SASecurity } from "./pages/sa-security.page";
 export { SASettings } from "./pages/sa-settings.page";
+export { SAAuditLogs } from "./pages/sa-audit-logs.page";
