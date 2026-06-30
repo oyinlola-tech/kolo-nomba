@@ -1,6 +1,6 @@
 {
   "type": "node",
-  "build": "npm run build",
-  "start": "npm run start",
-  "outputDirectory": "dist"
+  "build": "cd public && npm install && npm run build",
+  "start": "cd public && npx serve -s dist -l $PORT",
+  "env": "NODE_VERSION=22"
 }
