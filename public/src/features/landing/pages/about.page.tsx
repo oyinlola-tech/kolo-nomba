@@ -82,9 +82,9 @@ export function AboutPage() {
           <p className="text-gray-600 dark:text-gray-400 mb-10 max-w-xl mx-auto">A passionate team building the financial infrastructure for African communities.</p>
           <div className="grid md:grid-cols-3 gap-6 max-w-3xl mx-auto">
             {[
-              { name: "Emeka Chibuike", role: "CEO & Co-Founder", bio: "Former fintech executive passionate about financial inclusion." },
-              { name: "Adaobi Okonkwo", role: "CTO & Co-Founder", bio: "Software engineer with 10+ years building payment systems." },
-              { name: "Chioma Eze", role: "Head of Product", bio: "Product leader focused on creating intuitive financial experiences." },
+              { name: "Oluwayemi Oyinlola", role: "CEO, CTO & Co-Founder", bio: "Former fintech executive passionate about financial inclusion." },
+              { name: "Lynnette", role: "Head of Product", bio: "Product leader focused on creating intuitive financial experiences." },
+              { name: "Michael Johnson", role: "Head of Engineering", bio: "Engineering leader dedicated to building secure and scalable solutions." },
             ].map(({ name, role, bio }) => (
               <Card key={name} className="p-6 text-center">
                 <Avatar name={name} />
