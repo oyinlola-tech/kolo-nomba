@@ -1,9 +1,9 @@
 import { useNavigate } from "react-router";
 import { useState } from "react";
 import {
-  UserPlus, Building2, Banknote, ArrowRight, Check,
-  TrendingUp, Percent, CreditCard, Users, Shield, Zap, ArrowDownToLine,
-  Smartphone, Award, Calculator, Minus, Plus,
+  UserPlus, Building2, Banknote, Check,
+  TrendingUp, Percent, CreditCard, Shield, ArrowDownToLine,
+  Award, Calculator, Minus, Plus,
 } from "lucide-react";
 import { Button } from "../../../components/shared/Button";
 import { Card } from "../../../components/shared/Card";

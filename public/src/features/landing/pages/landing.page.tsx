@@ -3,8 +3,8 @@ import { useNavigate } from "react-router";
 import {
   Star, Building2, ArrowRight, ShieldCheck, Zap, Globe,
   CreditCard, Users, BarChart2, Bell, ArrowDownToLine, Shield, Menu, X,
-  UserPlus, Banknote, Check, BookOpen, HelpCircle, Phone, FileText,
-  ScrollText, Lock, Eye, Database, RefreshCw, Smartphone,
+  UserPlus, Banknote, Check, BookOpen,
+  Lock, Eye, Database, RefreshCw, Smartphone,
   TrendingUp, CheckCircle, AlertTriangle, Award,
 } from "lucide-react";
 import { Button } from "../../../components/shared/Button";
@@ -141,12 +141,12 @@ export function LandingPage() {
       <section className="bg-gray-50 dark:bg-card border-y border-gray-100 dark:border-border py-10">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-            {[
-              { val: "₦42B+", label: "Total Processed" },
-              { val: "15,000+", label: "Active Cooperatives" },
-              { val: "2.4M+", label: "Members" },
-              { val: "99.9%", label: "Uptime SLA" },
-            ].map(({ val, label }) => (
+              {[
+                { val: "₦1B+", label: "Total Processed" },
+                { val: "100+", label: "Active Cooperatives" },
+                { val: "10K+", label: "Members" },
+                { val: "99.9%", label: "Uptime" },
+              ].map(({ val, label }) => (
               <div key={label}>
                 <p className="text-3xl font-extrabold text-primary">{val}</p>
                 <p className="text-sm text-gray-500 dark:text-muted-foreground mt-1">{label}</p>

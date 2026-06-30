@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router";
-import { Check, X, ArrowRight, Zap, TrendingUp, Award, Building2 } from "lucide-react";
+import { Check, X, ArrowRight, TrendingUp, Award, Building2 } from "lucide-react";
 import { Button } from "../../../components/shared/Button";
 import { Card } from "../../../components/shared/Card";
 import { ThemeToggle } from "../../../components/shared/ThemeToggle";

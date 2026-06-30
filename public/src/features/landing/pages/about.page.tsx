@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router";
-import { Users, Shield, Globe, Target, Heart, ArrowRight } from "lucide-react";
+import { Users, Shield, Globe, Target, Heart } from "lucide-react";
 import { Button } from "../../../components/shared/Button";
 import { Card } from "../../../components/shared/Card";
 import { Avatar } from "../../../components/shared/Avatar";

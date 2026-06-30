@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
-import { Search, BookOpen, HelpCircle, Mail, MessageSquare, ChevronRight, ArrowRight } from "lucide-react";
+import { Search, Mail } from "lucide-react";
 import { Button } from "../../../components/shared/Button";
 import { Card } from "../../../components/shared/Card";
 import { ThemeToggle } from "../../../components/shared/ThemeToggle";
