@@ -8,6 +8,7 @@ export async function getPayouts(page = 1, limit = 20): Promise<PaginatedRespons
 }
 
 export async function requestPayout(payload: { amount: number; groupId: string; bankAccountId?: string }): Promise<Payout> {
-  const { data } = await apiClient.post<{ data: Payout }>(`/groups/${payload.groupId}/payouts`, payload);
+  const { groupId, ...rest } = payload;
+  const { data } = await apiClient.post<{ data: Payout }>(`/groups/${groupId}/payouts`, { amount: rest.amount, bankAccountId: rest.bankAccountId });
   return data.data;
 }

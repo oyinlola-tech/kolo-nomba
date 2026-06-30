@@ -1,10 +1,11 @@
 import { useParams, useNavigate } from "react-router";
 import {
   Building2, ArrowLeft, Users, Calendar, Wallet, PiggyBank,
-  Loader2, Clock,
+  Loader2, Clock, LogOut, FileText,
 } from "lucide-react";
 import { Badge } from "../../../components/shared/Badge";
 import { Avatar } from "../../../components/shared/Avatar";
+import { Button } from "../../../components/shared/Button";
 import { formatNaira } from "../../../utils/format";
 import { useCooperatives } from "../../../hooks/use-cooperatives";
 import { usePayouts } from "../../../hooks/use-payouts";
@@ -124,6 +125,18 @@ export function MGroupDetail() {
           </div>
         </Card>
       </div>
+
+      <Card className="p-4 mb-5">
+        <div className="flex items-center gap-2 mb-3">
+          <Wallet className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+          <p className="font-semibold text-sm text-gray-900 dark:text-white">Group Actions</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="secondary" size="sm" onClick={() => navigate(`/member/group/${id}/withdraw`)}><Wallet className="w-3.5 h-3.5" />Request Withdrawal</Button>
+          <Button variant="secondary" size="sm" onClick={() => navigate(`/member/group/${id}/dispute`)}><FileText className="w-3.5 h-3.5" />Create Dispute</Button>
+          <Button variant="danger" size="sm" onClick={() => { if (confirm("Leave this group?")) navigate("/member/groups"); }}><LogOut className="w-3.5 h-3.5" />Leave Group</Button>
+        </div>
+      </Card>
 
       <Card className="p-4">
         <div className="flex items-center gap-2 mb-3">

@@ -10,3 +10,8 @@ export async function getDisputes(page = 1, limit = 20): Promise<PaginatedRespon
 export async function resolveDispute(id: string): Promise<void> {
   await apiClient.post(`/admin/disputes/${id}/resolve`);
 }
+
+export async function createDispute(payload: { groupId: string; issue: string; amount: number }): Promise<Dispute> {
+  const { data } = await apiClient.post<{ data: Dispute }>("/disputes", payload);
+  return data.data;
+}

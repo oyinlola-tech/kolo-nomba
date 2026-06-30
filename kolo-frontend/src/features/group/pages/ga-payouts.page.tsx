@@ -9,6 +9,7 @@ import { Button } from "../../../components/shared/Button";
 import { Input } from "../../../components/shared/Input";
 import { PageHeader } from "../../../components/shared/PageHeader";
 import { formatNaira } from "../../../utils/format";
+import { extractApiError } from "../../../utils/error";
 import { usePayouts, useRequestPayout } from "../../../hooks/use-payouts";
 import { useCooperatives } from "../../../hooks/use-cooperatives";
 
@@ -68,8 +69,7 @@ export function GAPayouts() {
           });
           setStep("success");
         } catch (err: unknown) {
-          const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Payout request failed";
-          setError(msg);
+          setError(extractApiError(err, "Payout request failed"));
         }
       }} disabled={requestPayoutMutation.isPending}>
         {requestPayoutMutation.isPending ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Lock className="w-4 h-4" />}

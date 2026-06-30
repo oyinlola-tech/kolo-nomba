@@ -1,5 +1,5 @@
 import { apiClient } from "../api/client";
-import type { AuthUser } from "../types/auth.types";
+import type { AuthUser, UserRole } from "../types/auth.types";
 
 export interface LoginPayload {
   email: string;
@@ -18,7 +18,7 @@ export interface RegisterPayload {
 export interface LoginResponse {
   user: AuthUser;
   accessToken: string;
-  role: string;
+  role: UserRole;
 }
 
 export interface RegisterResponse {
@@ -36,13 +36,24 @@ export async function register(payload: RegisterPayload): Promise<RegisterRespon
   return data.data;
 }
 
+function hasAccessToken(obj: unknown): obj is { accessToken: string } {
+  return typeof obj === "object" && obj !== null && "accessToken" in obj && typeof (obj as Record<string, unknown>).accessToken === "string";
+}
+
 export async function refreshToken(): Promise<string | null> {
-  const { data } = await apiClient.post<Record<string, unknown>>("/auth/refresh", {});
-  return (data.accessToken as string) ?? ((data.data as Record<string, unknown>)?.accessToken as string) ?? null;
+  const { data } = await apiClient.post<{ data: { accessToken: string } } | { accessToken: string }>("/auth/refresh", {});
+  if (hasAccessToken(data)) return data.accessToken;
+  if (hasAccessToken(data.data)) return data.data.accessToken;
+  return null;
 }
 
 export async function logout(): Promise<void> {
   await apiClient.post("/auth/logout");
+}
+
+export async function updateProfile(payload: Partial<Pick<AuthUser, "firstName" | "lastName" | "phone" | "email">>): Promise<AuthUser> {
+  const { data } = await apiClient.patch<{ data: AuthUser }>("/auth/me", payload);
+  return data.data;
 }
 
 export async function getProfile(): Promise<AuthUser> {
@@ -58,7 +69,7 @@ export interface VerifyOtpPayload {
 export interface VerifyOtpResponse {
   user: AuthUser;
   accessToken: string;
-  role: string;
+  role: UserRole;
 }
 
 export async function verifyOtp(payload: VerifyOtpPayload): Promise<VerifyOtpResponse> {

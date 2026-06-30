@@ -8,6 +8,7 @@ import { PageHeader } from "../../../components/shared/PageHeader";
 import { Pagination } from "../../../components/shared/Pagination";
 import { useTransactions } from "../../../hooks/use-transactions";
 import { formatNaira } from "../../../utils/format";
+import { downloadCsv } from "../../../utils/csv";
 
 export function SATransactions() {
   const [page, setPage] = useState(1);
@@ -18,10 +19,18 @@ export function SATransactions() {
 
   const filtered = filter === "all" ? transactions : transactions.filter(t => t.status === filter);
 
+  const handleExport = () => {
+    downloadCsv(
+      "transactions.csv",
+      ["Txn ID", "User", "Group", "Amount", "Provider", "Status", "Date"],
+      filtered.map(t => [t.id, t.userName ?? "", t.cooperativeName ?? "", formatNaira(t.amount), t.provider ?? "", t.status, t.createdAt]),
+    );
+  };
+
   return (
     <div>
       <PageHeader title="Transaction Monitoring" subtitle="All platform payments in real-time.">
-        <Button size="sm" variant="secondary"><Download className="w-4 h-4" />Export CSV</Button>
+        <Button size="sm" variant="secondary" onClick={handleExport}><Download className="w-4 h-4" />Export CSV</Button>
       </PageHeader>
       <div className="flex gap-2 mb-4 flex-wrap">
         {["all", "success", "pending", "failed", "reversed"].map(s => (

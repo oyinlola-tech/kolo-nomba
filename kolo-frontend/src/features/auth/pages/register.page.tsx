@@ -4,6 +4,7 @@ import { User, Mail, Phone, Lock, Building2, Users, RefreshCw, ArrowRight } from
 import { AuthLayout } from "../../../components/layout/AuthLayout";
 import { Input } from "../../../components/shared/Input";
 import { Button } from "../../../components/shared/Button";
+import { extractApiError } from "../../../utils/error";
 import * as authService from "../../../services/auth.service";
 
 type RegisterMode = "member" | "cooperative";
@@ -33,8 +34,7 @@ export function RegisterPage() {
       sessionStorage.setItem("verifyEmail", email);
       navigate(`/verify-otp?userId=${result.userId}`);
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Registration failed";
-      setError(msg);
+      setError(extractApiError(err, "Registration failed"));
     } finally {
       setLoading(false);
     }

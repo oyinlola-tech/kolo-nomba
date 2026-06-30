@@ -5,6 +5,7 @@ import { AuthLayout } from "../../../components/layout/AuthLayout";
 import { Input } from "../../../components/shared/Input";
 import { Button } from "../../../components/shared/Button";
 import { resetPassword } from "../../../services/auth.service";
+import { extractApiError } from "../../../utils/error";
 
 export function ResetPasswordPage() {
   const navigate = useNavigate();
@@ -25,7 +26,7 @@ export function ResetPasswordPage() {
       setMessage("Password reset successfully! Redirecting to login\u2026");
       setTimeout(() => navigate("/login"), 2000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      setError(extractApiError(err, "Something went wrong"));
     } finally {
       setLoading(false);
     }

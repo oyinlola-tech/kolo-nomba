@@ -2,7 +2,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAppStore } from "../app/store";
 import * as authService from "../services/auth.service";
 import type { LoginPayload, RegisterPayload } from "../services/auth.service";
-import type { AuthUser } from "../types/auth.types";
 
 export function useAuth() {
   const queryClient = useQueryClient();
@@ -15,7 +14,7 @@ export function useAuth() {
   const loginMutation = useMutation({
     mutationFn: (payload: LoginPayload) => authService.login(payload),
     onSuccess: (result) => {
-      setSession(result.user as AuthUser, result.accessToken);
+      setSession(result.user, result.accessToken);
       queryClient.invalidateQueries({ queryKey: ["auth", "profile"] });
     },
   });

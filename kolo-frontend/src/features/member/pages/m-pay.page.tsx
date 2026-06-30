@@ -4,11 +4,17 @@ import {
   X, Landmark, CreditCard, ShieldCheck, Lock, RefreshCw, Loader2, Copy, CheckCircle,
 } from "lucide-react";
 import { useCreatePayment } from "../../../hooks/use-payments";
+import { usePaymentStatus } from "../../../hooks/use-payment-status";
 import { useContribution } from "../../../hooks/use-contributions";
+import { usePaymentPolling } from "../../../hooks/use-payment-polling";
 import { formatNaira } from "../../../utils/format";
+import { extractApiError } from "../../../utils/error";
 
-function BankTransferInfoDisplay({ info, onBack }: { info: { accountNumber: string; accountName: string; bankName: string; amount: number }; onBack: () => void }) {
+function BankTransferInfoDisplay({ info, onBack, paymentId, onConfirmed }: { info: { accountNumber: string; accountName: string; bankName: string; amount: number }; onBack: () => void; paymentId: string | null; onConfirmed: () => void }) {
   const [copied, setCopied] = useState(false);
+  const { data: paymentStatus } = usePaymentStatus(paymentId, !!paymentId);
+
+  usePaymentPolling(!paymentStatus || paymentStatus.status === "pending" || paymentStatus.status === "processing");
 
   const handleCopy = async (text: string) => {
     try {
@@ -26,6 +32,22 @@ function BankTransferInfoDisplay({ info, onBack }: { info: { accountNumber: stri
       setTimeout(() => setCopied(false), 2000);
     }
   };
+
+  const isConfirmed = paymentStatus && (paymentStatus.status === "paid" || paymentStatus.status === "success");
+
+  if (isConfirmed) {
+    onConfirmed();
+    return (
+      <div className="px-5 py-5">
+        <div className="flex flex-col items-center justify-center py-16">
+          <CheckCircle className="w-16 h-16 text-emerald-600 dark:text-emerald-400 mb-4" />
+          <p className="text-lg font-bold text-gray-900 dark:text-white mb-2">Payment Confirmed!</p>
+          <p className="text-sm text-gray-500 dark:text-muted-foreground mb-6">Your bank transfer has been received.</p>
+          <button onClick={() => window.location.href = "/member/history"} className="w-full py-3 bg-primary text-white font-bold rounded-xl hover:opacity-90">View History</button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="px-5 py-5">
@@ -66,11 +88,15 @@ function BankTransferInfoDisplay({ info, onBack }: { info: { accountNumber: stri
           <li>Your payment will be confirmed automatically</li>
         </ol>
       </div>
+      <div className="mt-4 p-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 text-xs flex items-center gap-2">
+        <RefreshCw className="w-3 h-3 animate-spin" />
+        Awaiting payment confirmation… this page refreshes automatically.
+      </div>
     </div>
   );
 }
 
-function BankTransferInit({ contributionId, onReady, onBack }: { amount: number; contributionId: string | null; onReady: (info: { accountNumber: string; accountName: string; bankName: string; amount: number }) => void; onBack: () => void }) {
+function BankTransferInit({ contributionId, onReady, onBack }: { amount: number; contributionId: string | null; onReady: (info: { accountNumber: string; accountName: string; bankName: string; amount: number; paymentId: string | null }) => void; onBack: () => void }) {
   const createPayment = useCreatePayment();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -85,7 +111,7 @@ function BankTransferInit({ contributionId, onReady, onBack }: { amount: number;
         paymentMethod: "bank_transfer",
       });
       if (result.virtualAccount) {
-        onReady(result.virtualAccount);
+        onReady({ ...result.virtualAccount, paymentId: result.paymentId });
       } else {
         setError("Failed to generate account number. Please try again.");
       }
@@ -132,13 +158,16 @@ export function MPay() {
     accountName: string;
     bankName: string;
     amount: number;
+    paymentId: string | null;
   } | null>(null);
 
   const amount = contribution?.expectedAmount ?? 0;
 
+  usePaymentPolling(method === "bank" && !!bankTransferInfo);
+
   if (method === "bank") {
     if (bankTransferInfo) {
-      return <BankTransferInfoDisplay info={bankTransferInfo} onBack={() => { setMethod("card"); setBankTransferInfo(null); }} />;
+      return <BankTransferInfoDisplay info={bankTransferInfo} onBack={() => { setMethod("card"); setBankTransferInfo(null); }} paymentId={bankTransferInfo.paymentId} onConfirmed={() => { setMethod("card"); setBankTransferInfo(null); }} />;
     }
     return <BankTransferInit amount={amount} contributionId={contributionId}
       onReady={(info) => setBankTransferInfo(info)}
@@ -167,8 +196,7 @@ export function MPay() {
         navigate(`pay-success?reference=${result.reference}&paymentId=${result.paymentId}`);
       }
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Payment failed. Please try again.";
-      setError(msg);
+      setError(extractApiError(err, "Payment failed. Please try again."));
     }
   };
 
@@ -224,10 +252,17 @@ export function MPay() {
       {error && (
         <div className="mb-4 p-3 rounded-xl bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm">{error}</div>
       )}
+      {error && (
+        <button onClick={handlePay} disabled={createPayment.isPending || !contributionId}
+          className="w-full py-4 border-2 border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 font-bold text-base rounded-2xl flex items-center justify-center gap-2 transition-all mb-3 hover:bg-red-50 dark:hover:bg-red-900/10">
+          <RefreshCw className="w-4 h-4" />
+          Retry Payment
+        </button>
+      )}
       <button onClick={handlePay} disabled={createPayment.isPending || !contributionId}
         className="w-full py-4 bg-primary hover:opacity-90 disabled:opacity-60 text-white font-bold text-base rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-500/20">
         {createPayment.isPending ? <RefreshCw className="w-5 h-5 animate-spin" /> : <Lock className="w-4 h-4" />}
-        {createPayment.isPending ? "Processing\u2026" : `Pay ${formatNaira(amount)} Now`}
+        {createPayment.isPending ? "Processing…" : `Pay ${formatNaira(amount)} Now`}
       </button>
       <p className="text-center text-xs text-gray-400 mt-3 flex items-center justify-center gap-1">
         <ShieldCheck className="w-3 h-3" />Secured by Nomba Checkout

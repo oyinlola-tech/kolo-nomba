@@ -7,3 +7,5 @@ export { MHistory } from "./pages/m-history.page";
 export { MNotifications } from "./pages/m-notifications.page";
 export { MProfile } from "./pages/m-profile.page";
 export { MGroupDetail } from "./pages/m-group-detail.page";
+export { MDispute } from "./pages/m-dispute.page";
+export { MWithdraw } from "./pages/m-withdraw.page";

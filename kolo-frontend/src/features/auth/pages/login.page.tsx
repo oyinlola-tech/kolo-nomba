@@ -23,7 +23,8 @@ export function LoginPage() {
       { email, password },
       {
         onSuccess: (result) => {
-          const role = (result.user?.role ?? "MEMBER") as UserRole;
+        const allowed: UserRole[] = ["SUPER_ADMIN", "GROUP_ADMIN", "MEMBER"];
+        const role = allowed.includes(result.user?.role ?? "MEMBER") ? result.user!.role : "MEMBER";
           if (role === "SUPER_ADMIN") {
             navigate("/ajo/admin/dashboard");
           } else if (role === "GROUP_ADMIN") {
@@ -89,6 +90,9 @@ export function LoginPage() {
         >
           {mode === "member" ? "Create one" : "Register your cooperative"}
         </button>
+      </p>
+      <p className="text-center text-sm text-gray-500 dark:text-muted-foreground mt-2">
+        <button onClick={() => navigate("/forgot-password")} className="text-primary font-semibold hover:underline">Forgot password?</button>
       </p>
     </AuthLayout>
   );

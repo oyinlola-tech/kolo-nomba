@@ -5,6 +5,7 @@ import { AuthLayout } from "../../../components/layout/AuthLayout";
 import { Input } from "../../../components/shared/Input";
 import { Button } from "../../../components/shared/Button";
 import { forgotPassword } from "../../../services/auth.service";
+import { extractApiError } from "../../../utils/error";
 
 export function ForgotPasswordPage() {
   const navigate = useNavigate();
@@ -21,7 +22,7 @@ export function ForgotPasswordPage() {
       await forgotPassword(email);
       setMessage("If an account with that email exists, a reset code has been sent.");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      setError(extractApiError(err, "Something went wrong"));
     } finally {
       setLoading(false);
     }

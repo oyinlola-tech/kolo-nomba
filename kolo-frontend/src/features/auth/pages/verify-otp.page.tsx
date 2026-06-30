@@ -6,6 +6,7 @@ import { AuthLayout } from "../../../components/layout/AuthLayout";
 import { setAccessToken } from "../../../api/client";
 import { useAppStore } from "../../../app/store";
 import * as authService from "../../../services/auth.service";
+import { extractApiError } from "../../../utils/error";
 import type { UserRole } from "../../../types/auth.types";
 
 export function VerifyOTPPage() {
@@ -33,12 +34,12 @@ export function VerifyOTPPage() {
       const result = await authService.verifyOtp({ userId, code: otp.join("") });
       setAccessToken(result.accessToken);
       setSession(result.user, result.accessToken);
-      const role = result.role as UserRole;
+      const allowed: UserRole[] = ["SUPER_ADMIN", "GROUP_ADMIN", "MEMBER"];
+      const role = allowed.includes(result.role) ? result.role : "MEMBER";
       const target = role === "SUPER_ADMIN" ? "/ajo/admin/dashboard" : role === "GROUP_ADMIN" ? "/group/admin/dashboard" : "/member/home";
       navigate(target, { replace: true });
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Verification failed";
-      setError(msg);
+      setError(extractApiError(err, "Verification failed"));
     } finally {
       setLoading(false);
     }
@@ -50,8 +51,7 @@ export function VerifyOTPPage() {
     try {
       await authService.resendOtp(userId);
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Failed to resend code";
-      setError(msg);
+      setError(extractApiError(err, "Failed to resend code"));
     } finally {
       setResending(false);
     }

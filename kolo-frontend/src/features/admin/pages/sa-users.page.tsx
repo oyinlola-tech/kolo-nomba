@@ -7,6 +7,7 @@ import { Button } from "../../../components/shared/Button";
 import { PageHeader } from "../../../components/shared/PageHeader";
 import { Pagination } from "../../../components/shared/Pagination";
 import { useUsers } from "../../../hooks/use-users";
+import { downloadCsv } from "../../../utils/csv";
 
 export function SAUsers() {
   const [page, setPage] = useState(1);
@@ -45,10 +46,18 @@ export function SAUsers() {
     );
   }
 
+  const handleExport = () => {
+    downloadCsv(
+      "users.csv",
+      ["User", "Phone", "Email", "Role", "Status", "Joined"],
+      filtered.map(u => [u.name, u.phone, u.email, u.role, u.status, u.createdAt]),
+    );
+  };
+
   return (
     <div>
       <PageHeader title="User Management" subtitle={`${pagination?.total ?? users.length} total users`}>
-        <Button size="sm" variant="secondary"><Download className="w-4 h-4" />Export</Button>
+        <Button size="sm" variant="secondary" onClick={handleExport}><Download className="w-4 h-4" />Export</Button>
         <Button size="sm"><UserPlus className="w-4 h-4" />Add User</Button>
       </PageHeader>
       <Card className="overflow-hidden">

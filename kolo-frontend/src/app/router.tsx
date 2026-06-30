@@ -82,6 +82,8 @@ export const router = createBrowserRouter([
       { path: "history", element: LazyLoad(() => import("../features/member/pages/m-history.page").then(m => ({ default: m.MHistory }))) },
       { path: "notifications", element: LazyLoad(() => import("../features/member/pages/m-notifications.page").then(m => ({ default: m.MNotifications }))) },
       { path: "profile", element: LazyLoad(() => import("../features/member/pages/m-profile.page").then(m => ({ default: m.MProfile }))) },
+      { path: "group/:id/dispute", element: LazyLoad(() => import("../features/member/pages/m-dispute.page").then(m => ({ default: m.MDispute }))) },
+      { path: "group/:id/withdraw", element: LazyLoad(() => import("../features/member/pages/m-withdraw.page").then(m => ({ default: m.MWithdraw }))) },
     ],
   },
 
