@@ -1,0 +1,9 @@
+export { MemberApp } from "./pages/member.page";
+export { MHome } from "./pages/m-home.page";
+export { MGroups } from "./pages/m-groups.page";
+export { MPay } from "./pages/m-pay.page";
+export { MPaySuccess } from "./pages/m-pay-success.page";
+export { MHistory } from "./pages/m-history.page";
+export { MNotifications } from "./pages/m-notifications.page";
+export { MProfile } from "./pages/m-profile.page";
+export { MGroupDetail } from "./pages/m-group-detail.page";
