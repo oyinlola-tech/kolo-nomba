@@ -5,23 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#059669" />
     <meta name="color-scheme" content="light dark" />
-    <!--
-      IMPORTANT: CSP via meta tag ONLY covers basic loading.
-      FOR PRODUCTION: Move this CSP to HTTP headers at your CDN/host layer (Vercel, Netlify, Cloudflare, Nginx).
-      The meta tag CSP cannot enforce frame-ancestors or report-uri.
-      The connect-src 'self' allows the frontend's own origin; VITE_API_URL must be on the same origin
-      OR you must add the API origin to connect-src in your HTTP-header version of this policy.
-      In dev mode, Vite HMR injects inline scripts — remove this meta tag entirely for dev,
-      or add 'unsafe-inline' to script-src.
-    -->
-    <meta http-equiv="Content-Security-Policy"
-      content="default-src 'self';
-               script-src 'self';
-               style-src 'self' https://fonts.googleapis.com;
-               font-src 'self' https://fonts.gstatic.com;
-               img-src 'self' data:;
-               connect-src 'self';
-               base-uri 'self'" />
+
+    <!-- PRODUCTION: Configure CSP via HTTP headers (Vercel/Netlify/Nginx headers, not meta tag) -->
 
     <title>KOLO — Digital Cooperative Savings Platform for Modern Africa</title>
     <meta name="description" content="KOLO digitizes traditional African cooperative savings (Ajo/Esusu). Join a group, contribute via bank transfer/USSD/card, track savings in real-time, and receive payouts securely. Free plan available." />
