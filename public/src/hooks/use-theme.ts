@@ -1,7 +1,0 @@
-import { useAppStore } from "../app/store";
-
-export function useTheme() {
-  const theme = useAppStore((state) => state.theme);
-  const toggleTheme = useAppStore((state) => state.toggleTheme);
-  return { dark: theme === "dark", toggle: toggleTheme };
-}
