@@ -1,9 +1,2 @@
 export { LandingPage } from "./pages/landing.page";
-export { AboutPage } from "./pages/about.page";
-export { ContactPage } from "./pages/contact.page";
-export { PricingPage } from "./pages/pricing.page";
-export { SecurityPage } from "./pages/security.page";
-export { HelpPage } from "./pages/help.page";
-export { TermsPage } from "./pages/terms.page";
-export { PrivacyPage } from "./pages/privacy.page";
 export { HowItWorksPage } from "./pages/how-it-works.page";
