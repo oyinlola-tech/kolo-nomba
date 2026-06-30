@@ -54,7 +54,7 @@ export function SARevenue() {
               <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
               <XAxis dataKey="month" tick={{ fill: ct.tick, fontSize: 11 }} axisLine={false} tickLine={false} />
               <YAxis tickFormatter={v => `₦${(v / 1000000).toFixed(0)}M`} tick={{ fill: ct.tick, fontSize: 11 }} axisLine={false} tickLine={false} />
-              <Tooltip {...ct.tooltip} formatter={(v: number) => [formatNaira(v), "Revenue"]} />
+              <Tooltip {...ct.tooltip} formatter={(v) => [formatNaira(Number(v ?? 0)), "Revenue"]} />
               <Area type="monotone" dataKey="revenue" stroke="#10b981" fill="url(#rvg)" strokeWidth={2} />
             </AreaChart>
           </ResponsiveContainer>

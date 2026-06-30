@@ -1,7 +1,6 @@
-import { Shield, Activity, Clock, User, Globe, Search, Filter, Download, Loader2, AlertTriangle } from "lucide-react";
+import { Shield, Activity, Clock, User, Filter, Download, Loader2, AlertTriangle } from "lucide-react";
 import { Card } from "../../../components/shared/Card";
 import { PageHeader } from "../../../components/shared/PageHeader";
-import { Badge } from "../../../components/shared/Badge";
 import { useAuditLogs } from "../../../hooks/use-audit-logs";
 
 export function SAAuditLogs() {

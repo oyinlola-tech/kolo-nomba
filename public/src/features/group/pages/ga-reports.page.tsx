@@ -54,7 +54,7 @@ export function GAReports() {
                 <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
                 <XAxis dataKey="month" tick={{ fill: ct.tick, fontSize: 11 }} axisLine={false} tickLine={false} />
                 <YAxis tickFormatter={v => `₦${(v / 1000000).toFixed(1)}M`} tick={{ fill: ct.tick, fontSize: 11 }} axisLine={false} tickLine={false} />
-                <Tooltip {...ct.tooltip} formatter={(v: number) => [formatNaira(v)]} />
+                <Tooltip {...ct.tooltip} formatter={(v) => [formatNaira(Number(v ?? 0))]} />
                 <Line type="monotone" dataKey="savings" stroke="#10b981" strokeWidth={2} dot={{ fill: "#10b981", r: 3 }} />
               </LineChart>
             </ResponsiveContainer>
@@ -72,7 +72,7 @@ export function GAReports() {
                 <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
                 <XAxis dataKey="month" tick={{ fill: ct.tick, fontSize: 11 }} axisLine={false} tickLine={false} />
                 <YAxis tickFormatter={v => `₦${(v / 1000).toFixed(0)}K`} tick={{ fill: ct.tick, fontSize: 11 }} axisLine={false} tickLine={false} />
-                <Tooltip {...ct.tooltip} formatter={(v: number) => [formatNaira(v)]} />
+                <Tooltip {...ct.tooltip} formatter={(v) => [formatNaira(Number(v ?? 0))]} />
                 <Bar dataKey="contributions" fill="#065f46" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>

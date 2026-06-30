@@ -90,7 +90,7 @@ export function GADashboard() {
                 <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
                 <XAxis dataKey="month" tick={{ fill: ct.tick, fontSize: 11 }} axisLine={false} tickLine={false} />
                 <YAxis tickFormatter={v => `₦${(v / 1000000).toFixed(1)}M`} tick={{ fill: ct.tick, fontSize: 11 }} axisLine={false} tickLine={false} />
-                <Tooltip {...ct.tooltip} formatter={(v: number) => [formatNaira(v)]} />
+                <Tooltip {...ct.tooltip} formatter={(v) => [formatNaira(Number(v ?? 0))]} />
                 <Area type="monotone" dataKey="savings" stroke="#10b981" fill="url(#sg)" strokeWidth={2} />
               </AreaChart>
             </ResponsiveContainer>

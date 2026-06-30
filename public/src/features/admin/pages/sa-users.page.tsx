@@ -6,7 +6,6 @@ import { Avatar } from "../../../components/shared/Avatar";
 import { Button } from "../../../components/shared/Button";
 import { PageHeader } from "../../../components/shared/PageHeader";
 import { useUsers } from "../../../hooks/use-users";
-import { formatNaira } from "../../../utils/format";
 
 export function SAUsers() {
   const { data: users, isLoading, error } = useUsers();

@@ -1,6 +1,6 @@
 import { Loader2, TrendingUp, Users, Wallet, Target, CheckCircle2, Clock } from "lucide-react";
 import {
-  LineChart, Line, BarChart, Bar,
+  BarChart, Bar,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
 import { Card } from "../../../components/shared/Card";
