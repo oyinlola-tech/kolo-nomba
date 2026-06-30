@@ -6,30 +6,34 @@ export function useRealtimeNotifications() {
   const esRef = useRef<EventSource | null>(null);
 
   useEffect(() => {
-    const baseUrl = import.meta.env.VITE_API_URL?.replace(/\/api\/v1\/?$/, "") ?? "";
-    const url = `${baseUrl}/api/v1/notifications/sse`;
+    const apiUrl = import.meta.env.VITE_API_URL as string;
+    if (!apiUrl) return;
+    const url = `${apiUrl.replace(/\/+$/, "")}/notifications/sse`;
 
-    const es = new EventSource(url, { withCredentials: true });
-    esRef.current = es;
+    function connect() {
+      const es = new EventSource(url, { withCredentials: true });
 
-    es.addEventListener("notification", () => {
-      queryClient.invalidateQueries({ queryKey: ["notifications"] });
-    });
+      es.addEventListener("notification", () => {
+        queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      });
 
-    es.addEventListener("payment", () => {
-      queryClient.invalidateQueries({ queryKey: ["payments"] });
-      queryClient.invalidateQueries({ queryKey: ["contributions"] });
-    });
+      es.addEventListener("payment", () => {
+        queryClient.invalidateQueries({ queryKey: ["payments"] });
+        queryClient.invalidateQueries({ queryKey: ["contributions"] });
+      });
 
-    es.onerror = () => {
-      es.close();
-      setTimeout(() => {
-        esRef.current = new EventSource(url, { withCredentials: true });
-      }, 5000);
-    };
+      es.onerror = () => {
+        es.close();
+        setTimeout(connect, 5000);
+      };
+
+      esRef.current = es;
+    }
+
+    connect();
 
     return () => {
-      es.close();
+      esRef.current?.close();
     };
   }, [queryClient]);
 }
