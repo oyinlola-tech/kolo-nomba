@@ -61,6 +61,20 @@ export interface SecurityEventResponse {
   createdAt: string;
 }
 
+export interface DisputeResponse {
+  id: string;
+  userId: string | null;
+  userEmail: string | null;
+  type: string;
+  description: string;
+  status: string;
+  reference: string | null;
+  amount: number | null;
+  createdAt: string;
+  resolvedAt: string | null;
+  resolvedBy: string | null;
+}
+
 export interface PaginationMeta {
   page: number;
   limit: number;

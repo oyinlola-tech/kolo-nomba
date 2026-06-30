@@ -18,7 +18,7 @@ export class JwtUtil {
   }
 
   static async signAccessToken(payload: JwtPayload): Promise<string> {
-    return new SignJWT(payload)
+    return new SignJWT({ ...payload, iss: "kolo-api", aud: "kolo-client" })
       .setProtectedHeader({ alg: "HS256" })
       .setIssuedAt()
       .setExpirationTime("15m")
@@ -26,7 +26,7 @@ export class JwtUtil {
   }
 
   static async signRefreshToken(payload: JwtPayload): Promise<string> {
-    return new SignJWT(payload)
+    return new SignJWT({ ...payload, iss: "kolo-api", aud: "kolo-client" })
       .setProtectedHeader({ alg: "HS256" })
       .setIssuedAt()
       .setExpirationTime("7d")

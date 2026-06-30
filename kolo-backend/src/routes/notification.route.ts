@@ -60,6 +60,7 @@ export class NotificationRoute {
     });
 
     app.get(`${prefix}/notifications/sse`, {
+      config: { rateLimit: { max: 5, timeWindow: "1 minute" } },
       handler: this.controller.sse.bind(this.controller),
     });
   }

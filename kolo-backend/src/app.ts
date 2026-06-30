@@ -6,11 +6,14 @@ import { Logger } from "./logger/core/logger";
 import { PrismaDatabase } from "./database/prisma";
 import { QueueManager } from "./jobs/queue-manager";
 
+const SHUTDOWN_TIMEOUT_MS = 10_000;
+
 export class Application {
   private readonly app: FastifyInstance;
   private readonly config: AppConfig;
   private readonly logger: Logger;
   private readonly loader: AppLoader;
+  private shuttingDown = false;
 
   constructor() {
     this.config = new AppConfig();
@@ -48,21 +51,37 @@ export class Application {
       await this.app.listen({ port: this.config.port, host: "0.0.0.0" });
       this.logger.info(`Server running on port ${this.config.port}`);
 
-      const shutdown = async (signal: string) => {
-        this.logger.info(`Received ${signal}, shutting down gracefully...`);
-        try {
-          await this.stop();
-        } catch (err) {
-          this.logger.error("Error during shutdown", { error: String(err) });
-        }
-        process.exit(0);
-      };
-
-      process.on("SIGTERM", () => shutdown("SIGTERM"));
-      process.on("SIGINT", () => shutdown("SIGINT"));
-    } catch (error) {
-      this.logger.fatal("Failed to start application", { error: String(error) });
+      process.on("SIGTERM", () => this.shutdown("SIGTERM"));
+      process.on("SIGINT", () => this.shutdown("SIGINT"));
+    } catch (error: unknown) {
+      const err = error as NodeJS.ErrnoException | Error;
+      if (err && "code" in err && (err as NodeJS.ErrnoException).code === "EADDRINUSE") {
+        this.logger.fatal(`Port ${this.config.port} is already in use`);
+      } else {
+        this.logger.fatal("Failed to start application", { error: String(error) });
+      }
       process.exit(1);
+    }
+  }
+
+  async shutdown(signal: string): Promise<void> {
+    if (this.shuttingDown) return;
+    this.shuttingDown = true;
+
+    this.logger.info(`Received ${signal}, shutting down gracefully...`);
+
+    const forceExit = setTimeout(() => {
+      this.logger.error("Forced shutdown after timeout");
+      process.exit(1);
+    }, SHUTDOWN_TIMEOUT_MS);
+
+    try {
+      await this.stop();
+    } catch (err) {
+      this.logger.error("Error during shutdown", { error: String(err) });
+    } finally {
+      clearTimeout(forceExit);
+      process.exit(0);
     }
   }
 

@@ -4,7 +4,6 @@ import { PaymentRepository } from "../repositories/payment.repository";
 import { TransactionRepository } from "../repositories/transaction.repository";
 import { MemberContributionRepository } from "../repositories/member-contribution.repository";
 import { GroupMemberRepository } from "../repositories/group-member.repository";
-import { GroupRepository } from "../repositories/group.repository";
 import { AuditService } from "./audit.service";
 import { WalletService } from "./wallet.service";
 import { NotificationService } from "./notification.service";
@@ -26,7 +25,6 @@ export class PaymentService {
   private readonly transactionRepository: TransactionRepository;
   private readonly memberContributionRepository: MemberContributionRepository;
   private readonly groupMemberRepository: GroupMemberRepository;
-  private readonly groupRepository: GroupRepository;
   private readonly auditService: AuditService;
   private readonly walletService: WalletService;
   private readonly notificationService: NotificationService;
@@ -40,7 +38,6 @@ export class PaymentService {
     this.transactionRepository = new TransactionRepository();
     this.memberContributionRepository = new MemberContributionRepository();
     this.groupMemberRepository = new GroupMemberRepository();
-    this.groupRepository = new GroupRepository();
     this.auditService = new AuditService();
     this.walletService = new WalletService();
     this.notificationService = new NotificationService();
@@ -314,46 +311,6 @@ export class PaymentService {
       body: `Your payment of ${formatKobo(payment.amount)} was successful.`,
       data: { paymentId, transactionId: transaction.id, amount: payment.amount },
     });
-  }
-
-  async getReceiptByReference(reference: string, userId: string): Promise<{
-    reference: string;
-    amount: number;
-    currency: string;
-    status: string;
-    paymentMethod: string | null;
-    groupName: string;
-    memberName: string;
-    paidAt: string | null;
-    transactionId: string | null;
-  }> {
-    const transaction = await this.transactionRepository.findByReference(reference);
-    if (!transaction) {
-      throw new AuthError("Transaction not found");
-    }
-
-    const payments = await this.paymentRepository.findByTransaction(transaction.id);
-    const payment = payments.length > 0 ? payments[0] : null;
-
-    let groupName = "—";
-    if (payment?.groupId) {
-      const group = await this.groupRepository.findById(payment.groupId);
-      if (group) groupName = group.name;
-    }
-
-    const userRecord = await this.groupMemberRepository.findById(userId) ?? null;
-
-    return {
-      reference: transaction.reference,
-      amount: transaction.amount,
-      currency: transaction.currency,
-      status: transaction.status,
-      paymentMethod: payment?.paymentMethod ?? null,
-      groupName,
-      memberName: userRecord ? userRecord.userId : "—",
-      paidAt: payment?.updatedAt.toISOString() ?? null,
-      transactionId: transaction.id,
-    };
   }
 
   async verifyAndCompletePayment(paymentId: string, reference: string): Promise<void> {

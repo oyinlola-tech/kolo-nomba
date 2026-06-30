@@ -13,6 +13,11 @@ export class ErrorMiddleware {
   }
 
   handle(error: FastifyError | AppError | Error, request: FastifyRequest, reply: FastifyReply): void {
+    if (error && "code" in error && error.code === "FST_ERR_CTP_BODY_TOO_LARGE") {
+      ResponseUtil.error(reply, "Request body too large", "PAYLOAD_TOO_LARGE", 413);
+      return;
+    }
+
     if (error instanceof AppError) {
       this.logger.warn("Operational error", {
         errorCode: error.errorCode,

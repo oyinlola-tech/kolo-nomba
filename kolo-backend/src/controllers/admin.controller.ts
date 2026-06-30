@@ -294,6 +294,20 @@ export class AdminController {
     });
   }
 
+  async listDisputes(request: FastifyRequest, reply: FastifyReply): Promise<void> {
+    const { page = "1", limit = "20" } = request.query as { page?: string; limit?: string };
+    const pageNum = Math.max(1, parseInt(page, 10) || 1);
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
+    const result = await this.adminService.getDisputes(pageNum, limitNum);
+    ResponseUtil.success(reply, result);
+  }
+
+  async resolveDispute(request: FastifyRequest, reply: FastifyReply): Promise<void> {
+    const { id } = request.params as { id: string };
+    const result = await this.adminService.resolveDispute(id, request.userId!);
+    ResponseUtil.success(reply, result);
+  }
+
   async getNombaReconciliationResults(request: FastifyRequest, reply: FastifyReply): Promise<void> {
     const { page = "1", limit = "20", status } = request.query as { page?: string; limit?: string; status?: string };
     const pageNum = Math.max(1, parseInt(page, 10) || 1);

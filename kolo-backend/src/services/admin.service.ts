@@ -1,4 +1,5 @@
 import { AdminRepository } from "../repositories/admin.repository";
+import { DisputeRepository } from "../repositories/dispute.repository";
 import { UserRepository } from "../repositories/user.repository";
 import { GroupRepository } from "../repositories/group.repository";
 import { AuditService } from "./audit.service";
@@ -7,11 +8,13 @@ import type {
   DashboardMetrics, ChartDataPoint, AdminUserResponse,
   AdminGroupResponse, AdminTransactionResponse,
   SecurityEventResponse, PaginatedResponse, AdminRevenueResponse,
+  DisputeResponse,
 } from "../dto/admin.dto";
 import { Logger } from "../logger/core/logger";
 
 export class AdminService {
   private readonly adminRepository: AdminRepository;
+  private readonly disputeRepository: DisputeRepository;
   private readonly userRepository: UserRepository;
   private readonly groupRepository: GroupRepository;
   private readonly auditService: AuditService;
@@ -19,6 +22,7 @@ export class AdminService {
 
   constructor() {
     this.adminRepository = new AdminRepository();
+    this.disputeRepository = new DisputeRepository();
     this.userRepository = new UserRepository();
     this.groupRepository = new GroupRepository();
     this.auditService = new AuditService();
@@ -232,6 +236,48 @@ export class AdminService {
         ipAddress: e.ipAddress, userAgent: e.userAgent, createdAt: e.createdAt.toISOString(),
       })),
       meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
+    };
+  }
+
+  async getDisputes(page: number, limit: number): Promise<PaginatedResponse<DisputeResponse>> {
+    const skip = (page - 1) * limit;
+    const { data, total } = await this.disputeRepository.findMany({ skip, take: limit });
+    return {
+      data: data.map(d => ({
+        id: d.id,
+        userId: d.userId,
+        userEmail: d.user?.email ?? null,
+        type: d.type,
+        description: d.title,
+        status: d.status,
+        reference: d.reference,
+        amount: d.amount,
+        createdAt: d.createdAt.toISOString(),
+        resolvedAt: d.resolvedAt?.toISOString() ?? null,
+        resolvedBy: d.resolvedBy,
+      })),
+      meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
+    };
+  }
+
+  async resolveDispute(id: string, adminId: string): Promise<DisputeResponse> {
+    const resolved = await this.disputeRepository.resolve(id, adminId);
+    await this.auditService.log("DISPUTE_RESOLVED", {
+      userId: adminId,
+      metadata: { disputeId: id },
+    });
+    return {
+      id: resolved.id,
+      userId: resolved.userId,
+      userEmail: null,
+      type: resolved.type,
+      description: resolved.title,
+      status: resolved.status,
+      reference: resolved.reference,
+      amount: resolved.amount,
+      createdAt: resolved.createdAt.toISOString(),
+      resolvedAt: resolved.resolvedAt?.toISOString() ?? null,
+      resolvedBy: resolved.resolvedBy,
     };
   }
 }

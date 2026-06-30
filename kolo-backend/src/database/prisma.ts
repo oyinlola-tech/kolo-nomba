@@ -10,7 +10,14 @@ export class PrismaDatabase {
 
   private constructor() {
     this.logger = new Logger("database");
-    const adapter = new PrismaPg({ connectionString: EnvConfig.getInstance().DATABASE_URL });
+    const env = EnvConfig.getInstance();
+    const poolConfig: { connectionString: string; pool?: { max?: number } } = {
+      connectionString: env.DATABASE_URL,
+    };
+    if (!env.isDevelopment) {
+      poolConfig.pool = { max: 10 };
+    }
+    const adapter = new PrismaPg(poolConfig);
     this.client = new PrismaClient({ adapter });
   }
 

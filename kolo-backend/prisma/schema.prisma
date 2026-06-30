@@ -47,6 +47,7 @@ model User {
   payoutRecipientAccounts PayoutRecipientAccount[]
   notifications Notification[]
   notificationPreference NotificationPreference?
+  disputes Dispute[]
   emailLogs EmailLog[]
 
   @@index([status])
@@ -114,6 +115,7 @@ model Group {
   payments Payment[]
   payouts Payout[]
   payoutSchedules PayoutSchedule[]
+  disputes Dispute[]
 
   @@map("groups")
 }
@@ -798,6 +800,58 @@ model PlatformSetting {
   updatedAt    DateTime @updatedAt
 
   @@map("platform_settings")
+}
+
+enum DisputeStatus {
+  OPEN
+  INVESTIGATING
+  RESOLVED
+  DISMISSED
+}
+
+enum DisputeSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum DisputeType {
+  PAYMENT_FAILURE
+  MISSING_CONTRIBUTION
+  INCORRECT_AMOUNT
+  DUPLICATE_PAYMENT
+  UNAUTHORIZED_TRANSACTION
+  WITHDRAWAL_ISSUE
+  PAYOUT_ISSUE
+  OTHER
+}
+
+model Dispute {
+  id          String         @id @default(uuid())
+  userId      String?
+  user        User?          @relation(fields: [userId], references: [id])
+  groupId     String?
+  group       Group?         @relation(fields: [groupId], references: [id])
+  type        DisputeType
+  severity    DisputeSeverity @default(MEDIUM)
+  status      DisputeStatus  @default(OPEN)
+  title       String
+  description String
+  reference   String?
+  amount      Int?
+  metadata    Json?
+  resolvedBy  String?
+  resolvedAt  DateTime?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@index([userId])
+  @@index([groupId])
+  @@index([status])
+  @@index([type])
+  @@index([createdAt])
+  @@map("disputes")
 }
 
 model EmailLog {

@@ -69,6 +69,10 @@ export class AdminRoute {
     app.patch(`${prefix}/admin/settings/notifications`, mutationConfig, this.controller.updateNotificationSettings.bind(this.controller));
     app.get(`${prefix}/admin/payment-config`, readConfig, this.controller.getPaymentConfig.bind(this.controller));
 
+    // Disputes
+    app.get(`${prefix}/admin/disputes`, readConfig, this.controller.listDisputes.bind(this.controller));
+    app.post(`${prefix}/admin/disputes/:id/resolve`, mutationConfig, this.controller.resolveDispute.bind(this.controller));
+
     // Audit
     app.get(`${prefix}/admin/audit-logs`, readConfig, this.controller.listAuditLogs.bind(this.controller));
 

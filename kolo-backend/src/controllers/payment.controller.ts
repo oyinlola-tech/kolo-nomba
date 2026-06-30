@@ -1,5 +1,6 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
 import { PaymentService } from "../services/payment.service";
+import { ReceiptService } from "../services/receipt.service";
 import { ResponseUtil } from "../utils/response.util";
 import { PaginationUtil } from "../utils/pagination.util";
 import { initiatePaymentSchema } from "../validators/payment.validator";
@@ -7,9 +8,11 @@ import { ValidationError } from "../errors/validation.error";
 
 export class PaymentController {
   private readonly paymentService: PaymentService;
+  private readonly receiptService: ReceiptService;
 
   constructor() {
     this.paymentService = new PaymentService();
+    this.receiptService = new ReceiptService();
   }
 
   async initiate(request: FastifyRequest, reply: FastifyReply): Promise<void> {
@@ -49,7 +52,10 @@ export class PaymentController {
 
   async receipt(request: FastifyRequest, reply: FastifyReply): Promise<void> {
     const { reference } = request.params as { reference: string };
-    const result = await this.paymentService.getReceiptByReference(reference, request.userId!);
-    ResponseUtil.success(reply, result);
+    const pdf = await this.receiptService.generatePdf(reference, request.userId!);
+    reply.header("Content-Type", "application/pdf");
+    reply.header("Content-Disposition", `attachment; filename="receipt-${reference}.pdf"`);
+    reply.header("Content-Length", pdf.length.toString());
+    reply.send(pdf);
   }
 }

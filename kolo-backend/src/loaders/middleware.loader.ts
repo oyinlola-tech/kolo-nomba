@@ -52,8 +52,8 @@ export class MiddlewareLoader {
           baseUri: ["'self'"],
         },
       },
-      crossOriginOpenerPolicy: { policy: "same-origin" },
-      crossOriginEmbedderPolicy: false,
+      crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" },
+      crossOriginEmbedderPolicy: { policy: "require-corp" },
     });
     await app.register(rateLimit, {
       max: this.config.rateLimitMax,
