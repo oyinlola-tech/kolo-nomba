@@ -9,8 +9,9 @@ import { useGroupSettings, useUpdateGroupSettings } from "../../../hooks/use-gro
 const FREQUENCY_OPTIONS = ["WEEKLY", "MONTHLY"] as const;
 
 export function GASettings() {
-  const { data: groups } = useCooperatives();
-  const groupId = (groups && groups.length > 0) ? groups[0].id : "";
+  const { data: groupData } = useCooperatives();
+  const groups = groupData?.items ?? [];
+  const groupId = groups.length > 0 ? groups[0].id : "";
   const { data: settings, isLoading } = useGroupSettings(groupId);
   const updateSettings = useUpdateGroupSettings(groupId);
 

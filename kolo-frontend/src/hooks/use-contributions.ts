@@ -1,10 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { getContributions, getContributionById } from "../services/contribution.service";
 
-export function useContributions() {
+export function useContributions(page = 1, limit = 20) {
   return useQuery({
-    queryKey: ["contributions"],
-    queryFn: getContributions,
+    queryKey: ["contributions", page, limit],
+    queryFn: () => getContributions(page, limit),
   });
 }
 

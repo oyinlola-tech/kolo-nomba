@@ -4,13 +4,17 @@ import { Card } from "../../../components/shared/Card";
 import { Badge } from "../../../components/shared/Badge";
 import { Button } from "../../../components/shared/Button";
 import { PageHeader } from "../../../components/shared/PageHeader";
+import { Pagination } from "../../../components/shared/Pagination";
 import { useCooperatives } from "../../../hooks/use-cooperatives";
 import { formatNaira } from "../../../utils/format";
 
 export function SAGroups() {
-  const { data: groups, isLoading, error } = useCooperatives();
+  const [page, setPage] = useState(1);
+  const { data, isLoading, error } = useCooperatives(page);
+  const groups = data?.items ?? [];
+  const pagination = data?.pagination;
   const [search, setSearch] = useState("");
-  const filtered = (groups || []).filter(g => g.name.toLowerCase().includes(search.toLowerCase()));
+  const filtered = groups.filter(g => g.name.toLowerCase().includes(search.toLowerCase()));
 
   if (isLoading) {
     return (
@@ -39,7 +43,7 @@ export function SAGroups() {
 
   return (
     <div>
-      <PageHeader title="Group Management" subtitle={`${groups?.length || 0} total groups`}>
+      <PageHeader title="Group Management" subtitle={`${pagination?.total ?? groups.length} total groups`}>
         <Button size="sm" variant="secondary"><Download className="w-4 h-4" />Export</Button>
       </PageHeader>
       <Card className="overflow-hidden">
@@ -57,42 +61,45 @@ export function SAGroups() {
             <p className="text-xs mt-1">{search ? "Try a different search term." : "No cooperatives registered yet."}</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-100 dark:border-border">
-                  {["Group", "Admin", "Members", "Total Savings", "Status", "Created", "Actions"].map(h => (
-                    <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-muted-foreground uppercase tracking-wider whitespace-nowrap">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50 dark:divide-border">
-                {filtered.map(g => (
-                  <tr key={g.id} className="hover:bg-gray-50 dark:hover:bg-white/3 transition-colors">
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg flex items-center justify-center">
-                          <Building2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                        </div>
-                        <span className="font-medium text-gray-900 dark:text-white">{g.name}</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{g.adminName}</td>
-                    <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{g.memberCount}</td>
-                    <td className="px-4 py-3 font-semibold text-gray-900 dark:text-white whitespace-nowrap">{formatNaira(g.savingsBalance ?? 0)}</td>
-                    <td className="px-4 py-3"><Badge status={g.status} /></td>
-                    <td className="px-4 py-3 text-gray-500 dark:text-muted-foreground whitespace-nowrap">{g.createdAt}</td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-1">
-                        <Button variant="ghost" size="sm"><Eye className="w-3.5 h-3.5" /></Button>
-                        <Button variant="ghost" size="sm"><MoreVertical className="w-3.5 h-3.5" /></Button>
-                      </div>
-                    </td>
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-100 dark:border-border">
+                    {["Group", "Admin", "Members", "Total Savings", "Status", "Created", "Actions"].map(h => (
+                      <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-muted-foreground uppercase tracking-wider whitespace-nowrap">{h}</th>
+                    ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-gray-50 dark:divide-border">
+                  {filtered.map(g => (
+                    <tr key={g.id} className="hover:bg-gray-50 dark:hover:bg-white/3 transition-colors">
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg flex items-center justify-center">
+                            <Building2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                          </div>
+                          <span className="font-medium text-gray-900 dark:text-white">{g.name}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{g.adminName}</td>
+                      <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{g.memberCount}</td>
+                      <td className="px-4 py-3 font-semibold text-gray-900 dark:text-white whitespace-nowrap">{formatNaira(g.savingsBalance ?? 0)}</td>
+                      <td className="px-4 py-3"><Badge status={g.status} /></td>
+                      <td className="px-4 py-3 text-gray-500 dark:text-muted-foreground whitespace-nowrap">{g.createdAt}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-1">
+                          <Button variant="ghost" size="sm" aria-label="View group"><Eye className="w-3.5 h-3.5" /></Button>
+                          <Button variant="ghost" size="sm" aria-label="Group actions"><MoreVertical className="w-3.5 h-3.5" /></Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {pagination && <Pagination pagination={pagination} onPageChange={setPage} />}
+          </>
         )}
       </Card>
     </div>

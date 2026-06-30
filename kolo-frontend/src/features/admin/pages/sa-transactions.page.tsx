@@ -5,14 +5,18 @@ import { Badge } from "../../../components/shared/Badge";
 import { Avatar } from "../../../components/shared/Avatar";
 import { Button } from "../../../components/shared/Button";
 import { PageHeader } from "../../../components/shared/PageHeader";
+import { Pagination } from "../../../components/shared/Pagination";
 import { useTransactions } from "../../../hooks/use-transactions";
 import { formatNaira } from "../../../utils/format";
 
 export function SATransactions() {
-  const { data: transactions, isLoading, error } = useTransactions();
+  const [page, setPage] = useState(1);
+  const { data, isLoading, error } = useTransactions(page);
+  const transactions = data?.items ?? [];
+  const pagination = data?.pagination;
   const [filter, setFilter] = useState("all");
 
-  const filtered = !transactions ? [] : filter === "all" ? transactions : transactions.filter(t => t.status === filter);
+  const filtered = filter === "all" ? transactions : transactions.filter(t => t.status === filter);
 
   return (
     <div>
@@ -44,35 +48,38 @@ export function SATransactions() {
             <p className="text-xs mt-1">No transactions match the current filter.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-100 dark:border-border">
-                  {["Txn ID", "User", "Group", "Amount", "Provider", "Status", "Date"].map(h => (
-                    <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-muted-foreground uppercase tracking-wider whitespace-nowrap">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50 dark:divide-border">
-                {filtered.map(t => (
-                  <tr key={t.id} className="hover:bg-gray-50 dark:hover:bg-white/3 transition-colors">
-                    <td className="px-4 py-3 font-mono text-xs text-gray-500 dark:text-gray-400">{t.id}</td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <Avatar name={t.userName ?? ""} size="sm" />
-                        <span className="font-medium text-gray-900 dark:text-white">{t.userName}</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-gray-600 dark:text-gray-400 max-w-[140px] truncate">{t.cooperativeName}</td>
-                    <td className="px-4 py-3 font-bold text-gray-900 dark:text-white whitespace-nowrap">{formatNaira(t.amount)}</td>
-                    <td className="px-4 py-3"><span className="text-xs bg-gray-100 dark:bg-muted px-2 py-1 rounded-full text-gray-600 dark:text-gray-400">{t.provider}</span></td>
-                    <td className="px-4 py-3"><Badge status={t.status} /></td>
-                    <td className="px-4 py-3 text-gray-500 dark:text-muted-foreground whitespace-nowrap">{t.createdAt}</td>
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-100 dark:border-border">
+                    {["Txn ID", "User", "Group", "Amount", "Provider", "Status", "Date"].map(h => (
+                      <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-muted-foreground uppercase tracking-wider whitespace-nowrap">{h}</th>
+                    ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-gray-50 dark:divide-border">
+                  {filtered.map(t => (
+                    <tr key={t.id} className="hover:bg-gray-50 dark:hover:bg-white/3 transition-colors">
+                      <td className="px-4 py-3 font-mono text-xs text-gray-500 dark:text-gray-400">{t.id}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <Avatar name={t.userName ?? ""} size="sm" />
+                          <span className="font-medium text-gray-900 dark:text-white">{t.userName}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-gray-600 dark:text-gray-400 max-w-[140px] truncate">{t.cooperativeName}</td>
+                      <td className="px-4 py-3 font-bold text-gray-900 dark:text-white whitespace-nowrap">{formatNaira(t.amount)}</td>
+                      <td className="px-4 py-3"><span className="text-xs bg-gray-100 dark:bg-muted px-2 py-1 rounded-full text-gray-600 dark:text-gray-400">{t.provider}</span></td>
+                      <td className="px-4 py-3"><Badge status={t.status} /></td>
+                      <td className="px-4 py-3 text-gray-500 dark:text-muted-foreground whitespace-nowrap">{t.createdAt}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {pagination && <Pagination pagination={pagination} onPageChange={setPage} />}
+          </>
         )}
       </Card>
     </div>

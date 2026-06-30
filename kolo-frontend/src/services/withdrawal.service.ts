@@ -1,9 +1,10 @@
 import { apiClient } from "../api/client";
-import type { Withdrawal } from "../types/platform.types";
+import type { PaginatedResponse, Withdrawal } from "../types/platform.types";
 
-export async function getWithdrawals(): Promise<Withdrawal[]> {
-  const { data } = await apiClient.get<{ data: Withdrawal[] }>("/withdrawals");
-  return data.data;
+export async function getWithdrawals(page = 1, limit = 20): Promise<PaginatedResponse<Withdrawal>> {
+  const { data } = await apiClient.get<{ data: Withdrawal[] | PaginatedResponse<Withdrawal> }>("/withdrawals", { params: { page, limit } });
+  if ("items" in data.data) return data.data;
+  return { items: data.data, pagination: { page, limit, total: data.data.length, totalPages: 1, hasNext: false, hasPrev: false } };
 }
 
 export async function approveWithdrawal(id: string): Promise<void> {

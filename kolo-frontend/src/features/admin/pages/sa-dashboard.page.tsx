@@ -13,7 +13,8 @@ import { formatNaira } from "../../../utils/format";
 
 export function SADashboard() {
   const { data: analytics, isLoading: analyticsLoading } = usePlatformAnalytics();
-  const { data: transactions, isLoading: txnsLoading } = useTransactions();
+  const { data: txnData, isLoading: txnsLoading } = useTransactions();
+  const transactions = txnData?.items ?? [];
 
   if (analyticsLoading) {
     return (

@@ -1,10 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getPayouts, requestPayout } from "../services/payout.service";
 
-export function usePayouts() {
+export function usePayouts(page = 1, limit = 20) {
   return useQuery({
-    queryKey: ["payouts"],
-    queryFn: getPayouts,
+    queryKey: ["payouts", page, limit],
+    queryFn: () => getPayouts(page, limit),
   });
 }
 

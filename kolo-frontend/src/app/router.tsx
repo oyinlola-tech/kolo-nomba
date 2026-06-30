@@ -28,7 +28,9 @@ export const router = createBrowserRouter([
 
   { path: "/login", element: <LoginPage /> },
   { path: "/register", element: LazyLoad(() => import("../features/auth/pages/register.page").then(m => ({ default: m.RegisterPage }))) },
-  { path: "/register/cooperative", element: LazyLoad(() => import("../features/auth/pages/register-cooperative.page").then(m => ({ default: m.RegisterCoopPage }))) },
+  { path: "/register/cooperative", element: <Navigate to="/register" replace /> },
+  { path: "/forgot-password", element: LazyLoad(() => import("../features/auth/pages/forgot-password.page").then(m => ({ default: m.ForgotPasswordPage }))) },
+  { path: "/reset-password", element: LazyLoad(() => import("../features/auth/pages/reset-password.page").then(m => ({ default: m.ResetPasswordPage }))) },
   { path: "/verify-otp", element: LazyLoad(() => import("../features/auth/pages/verify-otp.page").then(m => ({ default: m.VerifyOTPPage }))) },
   {
     path: "/ajo/admin",

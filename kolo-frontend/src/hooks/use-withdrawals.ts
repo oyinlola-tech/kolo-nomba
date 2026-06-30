@@ -1,10 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getWithdrawals, approveWithdrawal, rejectWithdrawal } from "../services/withdrawal.service";
 
-export function useWithdrawals() {
+export function useWithdrawals(page = 1, limit = 20) {
   return useQuery({
-    queryKey: ["withdrawals"],
-    queryFn: getWithdrawals,
+    queryKey: ["withdrawals", page, limit],
+    queryFn: () => getWithdrawals(page, limit),
   });
 }
 

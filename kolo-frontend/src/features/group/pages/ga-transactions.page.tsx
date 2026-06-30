@@ -8,8 +8,8 @@ import { formatNaira } from "../../../utils/format";
 import { useTransactions } from "../../../hooks/use-transactions";
 
 export function GATransactions() {
-  const { data: transactions, isLoading } = useTransactions();
-  const txns = transactions || [];
+  const { data, isLoading } = useTransactions();
+  const txns = data?.items ?? [];
 
   return (
     <div>

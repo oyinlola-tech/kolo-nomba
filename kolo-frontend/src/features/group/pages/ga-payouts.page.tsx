@@ -18,9 +18,11 @@ export function GAPayouts() {
   const [bank, setBank] = useState("");
   const [narration, setNarration] = useState("");
   const [error, setError] = useState("");
-  const { data: payouts, isLoading } = usePayouts();
-  const { data: groups } = useCooperatives();
-  const groupId = (groups && groups.length > 0) ? groups[0].id : "";
+  const { data: payoutData, isLoading } = usePayouts();
+  const payouts = payoutData?.items ?? [];
+  const { data: groupData } = useCooperatives();
+  const groups = groupData?.items ?? [];
+  const groupId = groups.length > 0 ? groups[0].id : "";
   const requestPayoutMutation = useRequestPayout();
 
   if (step === "request") return (
@@ -87,7 +89,7 @@ export function GAPayouts() {
     </div>
   );
 
-  const payoutList = payouts || [];
+  const payoutList = payouts;
   const totalPaid = payoutList.reduce((s, p) => s + p.amount, 0);
 
   return (

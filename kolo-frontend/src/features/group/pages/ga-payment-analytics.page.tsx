@@ -10,8 +10,9 @@ import { useCooperatives } from "../../../hooks/use-cooperatives";
 import { formatNaira } from "../../../utils/format";
 
 export function GAPaymentAnalytics() {
-  const { data: groups } = useCooperatives();
-  const groupId = (groups && groups.length > 0) ? groups[0].id : "";
+  const { data: groupData } = useCooperatives();
+  const groups = groupData?.items ?? [];
+  const groupId = groups.length > 0 ? groups[0].id : "";
   const { data: analytics, isLoading } = useGroupPaymentAnalytics(groupId);
 
   if (isLoading) {

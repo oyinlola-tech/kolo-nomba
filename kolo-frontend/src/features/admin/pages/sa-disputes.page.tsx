@@ -1,13 +1,18 @@
+import { useState } from "react";
 import { AlertCircle, Loader2, RefreshCw } from "lucide-react";
 import { Card } from "../../../components/shared/Card";
 import { Badge } from "../../../components/shared/Badge";
 import { Button } from "../../../components/shared/Button";
 import { PageHeader } from "../../../components/shared/PageHeader";
+import { Pagination } from "../../../components/shared/Pagination";
 import { formatNaira } from "../../../utils/format";
 import { useDisputes, useResolveDispute } from "../../../hooks/use-disputes";
 
 export function SADisputes() {
-  const { data: disputes, isLoading } = useDisputes();
+  const [page, setPage] = useState(1);
+  const { data, isLoading } = useDisputes(page);
+  const disputes = data?.items ?? [];
+  const pagination = data?.pagination;
   const resolve = useResolveDispute();
 
   if (isLoading) {
@@ -21,7 +26,7 @@ export function SADisputes() {
     );
   }
 
-  if (!disputes || disputes.length === 0) {
+  if (disputes.length === 0) {
     return (
       <div>
         <PageHeader title="Disputes & Complaints" subtitle="Manage and resolve member disputes." />
@@ -71,6 +76,7 @@ export function SADisputes() {
           </Card>
         ))}
       </div>
+      {pagination && <div className="mt-4"><Pagination pagination={pagination} onPageChange={setPage} /></div>}
     </div>
   );
 }

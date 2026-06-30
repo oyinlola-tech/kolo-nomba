@@ -1,16 +1,35 @@
-import { XCircle, AlertTriangle, Info, Check, Loader2 } from "lucide-react";
+import { useState } from "react";
+import { XCircle, AlertTriangle, Info, Check, Loader2, RefreshCw } from "lucide-react";
 import { Card } from "../../../components/shared/Card";
 import { Button } from "../../../components/shared/Button";
 import { PageHeader } from "../../../components/shared/PageHeader";
 import { useNotifications } from "../../../hooks/use-notifications";
+import { markAllNotificationsRead } from "../../../services/notification.service";
+import { useQueryClient } from "@tanstack/react-query";
 
 export function SANotifications() {
-  const { data: notifications, isLoading } = useNotifications();
+  const { data, isLoading } = useNotifications();
+  const notifications = data?.items ?? [];
+  const [marking, setMarking] = useState(false);
+  const queryClient = useQueryClient();
+
+  const handleMarkAllRead = async () => {
+    setMarking(true);
+    try {
+      await markAllNotificationsRead();
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+    } finally {
+      setMarking(false);
+    }
+  };
 
   return (
     <div>
       <PageHeader title="Notifications" subtitle="Platform-wide alerts and system messages.">
-        <Button variant="secondary" size="sm"><Check className="w-4 h-4" />Mark all read</Button>
+        <Button variant="secondary" size="sm" onClick={handleMarkAllRead} disabled={marking}>
+          {marking ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+          {marking ? "Marking..." : "Mark all read"}
+        </Button>
       </PageHeader>
       {isLoading ? (
         <div className="flex items-center justify-center py-12">

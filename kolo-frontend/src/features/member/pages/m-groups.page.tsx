@@ -5,8 +5,8 @@ import { useNavigate } from "react-router";
 
 export function MGroups() {
   const navigate = useNavigate();
-  const { data: cooperatives, isLoading } = useCooperatives();
-  const groups = cooperatives || [];
+  const { data, isLoading } = useCooperatives();
+  const groups = data?.items ?? [];
 
   if (isLoading) {
     return (
@@ -25,7 +25,7 @@ export function MGroups() {
           <p className="text-sm font-semibold">No groups found</p>
           <p className="text-xs mt-1">Join a group to start saving together.</p>
         </div>
-        <button className="w-full border-2 border-dashed border-gray-200 dark:border-border rounded-2xl p-4 flex items-center justify-center gap-2 text-gray-400 hover:border-primary hover:text-primary transition-colors text-sm font-medium">
+        <button onClick={() => navigate("/member/home")} className="w-full border-2 border-dashed border-gray-200 dark:border-border rounded-2xl p-4 flex items-center justify-center gap-2 text-gray-400 hover:border-primary hover:text-primary transition-colors text-sm font-medium">
           <Plus className="w-4 h-4" />Join a Group
         </button>
       </div>

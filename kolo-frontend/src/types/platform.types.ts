@@ -141,6 +141,20 @@ export interface Payout {
   bankName?: string;
 }
 
+export interface PaginationInfo {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  hasNext: boolean;
+  hasPrev: boolean;
+}
+
+export interface PaginatedResponse<T> {
+  items: T[];
+  pagination: PaginationInfo;
+}
+
 export interface DashboardAnalytics {
   metrics: {
     totalUsers: number;

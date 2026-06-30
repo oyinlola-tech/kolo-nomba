@@ -7,8 +7,8 @@ import { PageHeader } from "../../../components/shared/PageHeader";
 import { useContributions } from "../../../hooks/use-contributions";
 
 export function GAContributions() {
-  const { data: contributions, isLoading } = useContributions();
-  const contribs = contributions || [];
+  const { data, isLoading } = useContributions();
+  const contribs = data?.items ?? [];
 
   if (isLoading) {
     return (

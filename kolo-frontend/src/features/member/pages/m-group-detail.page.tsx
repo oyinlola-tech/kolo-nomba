@@ -14,13 +14,16 @@ import { Card } from "../../../components/shared/Card";
 export function MGroupDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { data: groups, isLoading: groupsLoading } = useCooperatives();
-  const { data: payouts, isLoading: payoutsLoading } = usePayouts();
-  const { data: contributions, isLoading: contribsLoading } = useContributions();
+  const { data: groupData, isLoading: groupsLoading } = useCooperatives();
+  const groups = groupData?.items ?? [];
+  const { data: payoutData, isLoading: payoutsLoading } = usePayouts();
+  const payouts = payoutData?.items ?? [];
+  const { data: contribData, isLoading: contribsLoading } = useContributions();
+  const contributions = contribData?.items ?? [];
 
-  const group = (groups || []).find(g => g.id === id);
-  const groupPayouts = (payouts || []).filter(p => p.groupId === id).slice(0, 6);
-  const groupContributions = (contributions || []).slice(0, 8);
+  const group = groups.find(g => g.id === id);
+  const groupPayouts = payouts.filter(p => p.groupId === id).slice(0, 6);
+  const groupContributions = contributions.slice(0, 8);
 
   const isLoading = groupsLoading || payoutsLoading || contribsLoading;
 

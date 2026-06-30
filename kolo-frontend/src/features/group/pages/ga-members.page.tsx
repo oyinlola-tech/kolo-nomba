@@ -5,13 +5,15 @@ import { Badge } from "../../../components/shared/Badge";
 import { Avatar } from "../../../components/shared/Avatar";
 import { Button } from "../../../components/shared/Button";
 import { PageHeader } from "../../../components/shared/PageHeader";
+import { apiClient } from "../../../api/client";
 import { useCooperatives } from "../../../hooks/use-cooperatives";
 import { useGroupMembers } from "../../../hooks/use-group-members";
 
 export function GAMembers() {
   const [search, setSearch] = useState("");
-  const { data: groups } = useCooperatives();
-  const groupId = (groups && groups.length > 0) ? groups[0].id : "";
+  const { data: groupData } = useCooperatives();
+  const groups = groupData?.items ?? [];
+  const groupId = groups.length > 0 ? groups[0].id : "";
   const { data: members, isLoading } = useGroupMembers(groupId);
 
   if (isLoading) {
@@ -31,7 +33,9 @@ export function GAMembers() {
   return (
     <div>
       <PageHeader title="Member Management" subtitle={`${memberList.length} members in your group`}>
-        <Button size="sm"><UserPlus className="w-4 h-4" />Invite Member</Button>
+        <Button size="sm" onClick={() => { const email = prompt("Enter email to invite:"); if (email) apiClient.post(`/groups/${groupId}/invitations`, { email }); }}>
+          <UserPlus className="w-4 h-4" />Invite Member
+        </Button>
       </PageHeader>
       <Card className="overflow-hidden">
         <div className="p-4 border-b border-gray-100 dark:border-border flex gap-3">
@@ -71,9 +75,9 @@ export function GAMembers() {
                     <td className="px-4 py-3 text-gray-500 dark:text-muted-foreground">{m.email}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1">
-                        <Button variant="ghost" size="sm"><Eye className="w-3.5 h-3.5" /></Button>
-                        <Button variant="ghost" size="sm"><Send className="w-3.5 h-3.5" /></Button>
-                        <Button variant="ghost" size="sm"><MoreVertical className="w-3.5 h-3.5" /></Button>
+                        <Button variant="ghost" size="sm" aria-label="View member"><Eye className="w-3.5 h-3.5" /></Button>
+                        <Button variant="ghost" size="sm" aria-label="Send message"><Send className="w-3.5 h-3.5" /></Button>
+                        <Button variant="ghost" size="sm" aria-label="Member actions"><MoreVertical className="w-3.5 h-3.5" /></Button>
                       </div>
                     </td>
                   </tr>

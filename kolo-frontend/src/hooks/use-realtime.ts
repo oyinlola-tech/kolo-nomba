@@ -1,14 +1,15 @@
 import { useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { getApiUrl } from "../utils/env";
 
 export function useRealtimeNotifications() {
   const queryClient = useQueryClient();
   const esRef = useRef<EventSource | null>(null);
+  const retryRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    const apiUrl = import.meta.env.VITE_API_URL as string;
-    if (!apiUrl) return;
-    const url = `${apiUrl.replace(/\/+$/, "")}/notifications/sse`;
+    const apiUrl = getApiUrl();
+    const url = `${apiUrl}/notifications/sse`;
 
     function connect() {
       const es = new EventSource(url, { withCredentials: true });
@@ -24,7 +25,7 @@ export function useRealtimeNotifications() {
 
       es.onerror = () => {
         es.close();
-        setTimeout(connect, 5000);
+        retryRef.current = setTimeout(connect, 5000);
       };
 
       esRef.current = es;
@@ -34,6 +35,7 @@ export function useRealtimeNotifications() {
 
     return () => {
       esRef.current?.close();
+      if (retryRef.current) clearTimeout(retryRef.current);
     };
   }, [queryClient]);
 }

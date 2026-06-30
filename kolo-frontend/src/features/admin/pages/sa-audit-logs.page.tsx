@@ -1,10 +1,15 @@
+import { useState } from "react";
 import { Shield, Activity, Clock, User, Filter, Download, Loader2, AlertTriangle } from "lucide-react";
 import { Card } from "../../../components/shared/Card";
 import { PageHeader } from "../../../components/shared/PageHeader";
+import { Pagination } from "../../../components/shared/Pagination";
 import { useAuditLogs } from "../../../hooks/use-audit-logs";
 
 export function SAAuditLogs() {
-  const { data: auditLogs, isLoading } = useAuditLogs();
+  const [page, setPage] = useState(1);
+  const { data, isLoading } = useAuditLogs(page);
+  const auditLogs = data?.items ?? [];
+  const pagination = data?.pagination;
 
   return (
     <div>
@@ -16,7 +21,7 @@ export function SAAuditLogs() {
           </div>
           <div>
             <p className="text-sm font-semibold text-gray-900 dark:text-white">Total Events</p>
-            <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium mt-0.5">{isLoading ? "--" : auditLogs?.length ?? "0"}</p>
+            <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium mt-0.5">{isLoading ? "--" : (pagination?.total ?? auditLogs.length).toString()}</p>
           </div>
         </Card>
         <Card className="p-4 flex items-center gap-3">
@@ -34,7 +39,7 @@ export function SAAuditLogs() {
           </div>
           <div>
             <p className="text-sm font-semibold text-gray-900 dark:text-white">Last Event</p>
-            <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5 font-medium">{isLoading ? "--" : auditLogs && auditLogs.length ? auditLogs[0].createdAt : "No events"}</p>
+            <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5 font-medium">{isLoading ? "--" : auditLogs.length ? auditLogs[0].createdAt : "No events"}</p>
           </div>
         </Card>
         <Card className="p-4 flex items-center gap-3">
@@ -43,7 +48,7 @@ export function SAAuditLogs() {
           </div>
           <div>
             <p className="text-sm font-semibold text-gray-900 dark:text-white">Actors</p>
-            <p className="text-xs text-purple-600 dark:text-purple-400 mt-0.5 font-medium">{isLoading ? "--" : auditLogs ? new Set(auditLogs.map(a => a.actorName)).size : "0"}</p>
+            <p className="text-xs text-purple-600 dark:text-purple-400 mt-0.5 font-medium">{isLoading ? "--" : new Set(auditLogs.map(a => a.actorName)).size.toString()}</p>
           </div>
         </Card>
       </div>
@@ -65,7 +70,7 @@ export function SAAuditLogs() {
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
             <span className="ml-3 text-sm text-gray-500">Loading audit logs...</span>
           </div>
-        ) : !auditLogs || auditLogs.length === 0 ? (
+        ) : auditLogs.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-gray-500 dark:text-muted-foreground">
             <AlertTriangle className="w-12 h-12 mb-3 text-gray-300 dark:text-gray-600" />
             <p className="text-sm font-semibold">No audit logs yet</p>
@@ -90,6 +95,7 @@ export function SAAuditLogs() {
             ))}
           </div>
         )}
+        {pagination && <Pagination pagination={pagination} onPageChange={setPage} />}
       </Card>
 
       <Card className="p-5">

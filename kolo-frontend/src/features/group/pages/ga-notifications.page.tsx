@@ -4,7 +4,8 @@ import { PageHeader } from "../../../components/shared/PageHeader";
 import { useNotifications } from "../../../hooks/use-notifications";
 
 export function GANotifications() {
-  const { data: notifications, isLoading } = useNotifications();
+  const { data, isLoading } = useNotifications();
+  const notifications = data?.items ?? [];
 
   if (isLoading) {
     return (

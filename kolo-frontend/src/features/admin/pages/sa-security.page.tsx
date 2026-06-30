@@ -4,7 +4,8 @@ import { PageHeader } from "../../../components/shared/PageHeader";
 import { useAuditLogs } from "../../../hooks/use-audit-logs";
 
 export function SASecurity() {
-  const { data: auditLogs, isLoading } = useAuditLogs();
+  const { data, isLoading } = useAuditLogs();
+  const auditLogs = data?.items ?? [];
 
   return (
     <div>

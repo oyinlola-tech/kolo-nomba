@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Clock, CheckCircle, ArrowDownToLine, Check, X, Loader2, RefreshCw } from "lucide-react";
 import { Card } from "../../../components/shared/Card";
 import { MetricCard } from "../../../components/shared/MetricCard";
@@ -5,11 +6,15 @@ import { Badge } from "../../../components/shared/Badge";
 import { Avatar } from "../../../components/shared/Avatar";
 import { Button } from "../../../components/shared/Button";
 import { PageHeader } from "../../../components/shared/PageHeader";
+import { Pagination } from "../../../components/shared/Pagination";
 import { formatNaira } from "../../../utils/format";
 import { useWithdrawals, useApproveWithdrawal, useRejectWithdrawal } from "../../../hooks/use-withdrawals";
 
 export function SAWithdrawals() {
-  const { data: withdrawals, isLoading } = useWithdrawals();
+  const [page, setPage] = useState(1);
+  const { data, isLoading } = useWithdrawals(page);
+  const withdrawals = data?.items ?? [];
+  const pagination = data?.pagination;
   const approve = useApproveWithdrawal();
   const reject = useRejectWithdrawal();
 
@@ -24,7 +29,7 @@ export function SAWithdrawals() {
     );
   }
 
-  const pendingCount = (withdrawals || []).filter(w => w.status === "pending").length;
+  const pendingCount = withdrawals.filter(w => w.status === "pending").length;
 
   return (
     <div>
@@ -34,7 +39,7 @@ export function SAWithdrawals() {
         <MetricCard title="Total Withdrawn" value="—" change="" icon={ArrowDownToLine} />
         <MetricCard title="Approved" value="—" change="" icon={CheckCircle} />
       </div>
-      {!withdrawals || withdrawals.length === 0 ? (
+      {withdrawals.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 text-gray-500 dark:text-muted-foreground">
           <p className="text-sm font-semibold">No withdrawals</p>
           <p className="text-xs mt-1">Withdrawal requests from group admins will appear here.</p>
@@ -68,10 +73,10 @@ export function SAWithdrawals() {
                     <td className="px-4 py-3">
                       {w.status === "pending" && (
                         <div className="flex gap-1">
-                          <Button variant="primary" size="sm" onClick={() => approve.mutate(w.id)}>
+                          <Button variant="primary" size="sm" onClick={() => approve.mutate(w.id)} aria-label="Approve withdrawal">
                             {approve.isPending ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
                           </Button>
-                          <Button variant="danger" size="sm" onClick={() => reject.mutate(w.id)}>
+                          <Button variant="danger" size="sm" onClick={() => reject.mutate(w.id)} aria-label="Reject withdrawal">
                             {reject.isPending ? <RefreshCw className="w-3 h-3 animate-spin" /> : <X className="w-3 h-3" />}
                           </Button>
                         </div>
@@ -82,6 +87,7 @@ export function SAWithdrawals() {
               </tbody>
             </table>
           </div>
+          {pagination && <Pagination pagination={pagination} onPageChange={setPage} />}
         </Card>
       )}
     </div>

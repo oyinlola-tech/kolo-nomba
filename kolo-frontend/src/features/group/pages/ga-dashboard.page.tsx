@@ -16,10 +16,12 @@ import { useCooperatives } from "../../../hooks/use-cooperatives";
 
 export function GADashboard() {
   const ct = useChartTheme();
-  const { data: groups } = useCooperatives();
-  const groupId = (groups && groups.length > 0) ? groups[0].id : "";
+  const { data: groupData } = useCooperatives();
+  const groups = groupData?.items ?? [];
+  const groupId = groups.length > 0 ? groups[0].id : "";
   const { data: analytics, isLoading } = useGroupAnalytics(groupId);
-  const { data: contributions } = useContributions();
+  const { data: contribData } = useContributions();
+  const contributions = contribData?.items ?? [];
 
   if (isLoading) {
     return (

@@ -6,8 +6,8 @@ import { useNavigate } from "react-router";
 
 export function MHistory() {
   const navigate = useNavigate();
-  const { data: contributions, isLoading } = useContributions();
-  const contribs = contributions || [];
+  const { data, isLoading } = useContributions();
+  const contribs = data?.items ?? [];
   const totalContributed = contribs.reduce((s, c) => s + (c.paidAmount ?? 0), 0);
 
   if (isLoading) {

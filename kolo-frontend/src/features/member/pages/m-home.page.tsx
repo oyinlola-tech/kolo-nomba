@@ -12,14 +12,16 @@ import { useNavigate } from "react-router";
 export function MHome() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { data: groups, isLoading: groupsLoading } = useCooperatives();
-  const { data: contributions } = useContributions();
+  const { data: groupData, isLoading: groupsLoading } = useCooperatives();
+  const groups = groupData?.items ?? [];
+  const { data: contribData } = useContributions();
+  const contributions = contribData?.items ?? [];
   const { data: virtualAccount, isLoading: vaLoading } = useVirtualAccount();
   const createVA = useCreateVirtualAccount();
 
-  const totalContributed = (contributions || []).reduce((s, c) => s + (c.amount ?? 0), 0);
-  const groupTotal = (groups || []).reduce((s, g) => s + (g.savingsBalance ?? 0), 0);
-  const activeGroup = (groups || [])[0];
+  const totalContributed = contributions.reduce((s, c) => s + (c.amount ?? 0), 0);
+  const groupTotal = groups.reduce((s, g) => s + (g.savingsBalance ?? 0), 0);
+  const activeGroup = groups[0];
 
   const progressPercent = activeGroup && (activeGroup.savingsBalance ?? 0) > 0
     ? Math.min(100, Math.round(((activeGroup.savingsBalance ?? 0) / Math.max(1, (activeGroup.memberCount ?? 1) * (activeGroup.contributionAmount ?? 50000))) * 100))
@@ -36,7 +38,7 @@ export function MHome() {
   return (
     <div className="p-4 md:p-6 lg:p-5">
       <div className="bg-gradient-to-br from-emerald-700 to-emerald-900 rounded-2xl px-5 pt-5 pb-8 mb-5">
-        <p className="text-emerald-200 text-sm mb-0.5">Good morning,</p>
+        <p className="text-emerald-200 text-sm mb-0.5">{new Date().getHours() < 12 ? "Good morning" : new Date().getHours() < 17 ? "Good afternoon" : "Good evening"},</p>
         <p className="text-white text-xl font-bold mb-5">{user?.firstName || "Member"} 👋</p>
         <div className="bg-white/10 backdrop-blur rounded-2xl p-4 border border-white/15">
           <p className="text-emerald-200 text-xs mb-1">Total Contributed</p>

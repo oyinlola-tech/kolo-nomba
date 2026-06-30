@@ -1,17 +1,21 @@
 import { useState } from "react";
-import { Search, Filter, Download, UserPlus, Eye, Edit, ChevronLeft, ChevronRight, Loader2, AlertTriangle } from "lucide-react";
+import { Search, Filter, Download, UserPlus, Eye, Edit, Loader2, AlertTriangle } from "lucide-react";
 import { Card } from "../../../components/shared/Card";
 import { Badge } from "../../../components/shared/Badge";
 import { Avatar } from "../../../components/shared/Avatar";
 import { Button } from "../../../components/shared/Button";
 import { PageHeader } from "../../../components/shared/PageHeader";
+import { Pagination } from "../../../components/shared/Pagination";
 import { useUsers } from "../../../hooks/use-users";
 
 export function SAUsers() {
-  const { data: users, isLoading, error } = useUsers();
+  const [page, setPage] = useState(1);
+  const { data, isLoading, error } = useUsers(page);
+  const users = data?.items ?? [];
+  const pagination = data?.pagination;
   const [search, setSearch] = useState("");
 
-  const filtered = (users || []).filter(u =>
+  const filtered = users.filter(u =>
     u.name.toLowerCase().includes(search.toLowerCase()) ||
     u.email.toLowerCase().includes(search.toLowerCase())
   );
@@ -43,7 +47,7 @@ export function SAUsers() {
 
   return (
     <div>
-      <PageHeader title="User Management" subtitle={`${users?.length || 0} total users`}>
+      <PageHeader title="User Management" subtitle={`${pagination?.total ?? users.length} total users`}>
         <Button size="sm" variant="secondary"><Download className="w-4 h-4" />Export</Button>
         <Button size="sm"><UserPlus className="w-4 h-4" />Add User</Button>
       </PageHeader>
@@ -92,8 +96,8 @@ export function SAUsers() {
                       <td className="px-4 py-3 text-gray-500 dark:text-muted-foreground whitespace-nowrap">{u.createdAt}</td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1">
-                          <Button variant="ghost" size="sm"><Eye className="w-3.5 h-3.5" /></Button>
-                          <Button variant="ghost" size="sm"><Edit className="w-3.5 h-3.5" /></Button>
+                          <Button variant="ghost" size="sm" aria-label="View user"><Eye className="w-3.5 h-3.5" /></Button>
+                          <Button variant="ghost" size="sm" aria-label="Edit user"><Edit className="w-3.5 h-3.5" /></Button>
                         </div>
                       </td>
                     </tr>
@@ -101,14 +105,7 @@ export function SAUsers() {
                 </tbody>
               </table>
             </div>
-            <div className="px-4 py-3 border-t border-gray-100 dark:border-border flex items-center justify-between text-xs text-gray-500 dark:text-muted-foreground">
-              <span>Showing {filtered.length} of {users?.length || 0} users</span>
-              <div className="flex items-center gap-1">
-                <Button variant="ghost" size="sm"><ChevronLeft className="w-3.5 h-3.5" /></Button>
-                <span className="px-2">1 of 1</span>
-                <Button variant="ghost" size="sm"><ChevronRight className="w-3.5 h-3.5" /></Button>
-              </div>
-            </div>
+            {pagination && <Pagination pagination={pagination} onPageChange={setPage} />}
           </>
         )}
       </Card>

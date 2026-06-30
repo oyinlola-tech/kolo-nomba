@@ -28,9 +28,9 @@ export async function getGroupSettings(groupId: string): Promise<GroupSettings> 
 }
 
 export async function updateGroupSettings(groupId: string, payload: UpdateGroupSettingsPayload): Promise<GroupSettings> {
-  const { data } = await apiClient.put<{ data: { success: boolean; group: GroupSettings } }>(
+  const { data } = await apiClient.patch<{ data: GroupSettings }>(
     `/groups/${groupId}/settings`,
     payload,
   );
-  return data.data.group;
+  return data.data;
 }

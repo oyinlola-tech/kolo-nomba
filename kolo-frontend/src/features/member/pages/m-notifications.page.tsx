@@ -1,5 +1,7 @@
 import { Bell, CheckCircle, ShieldCheck, Loader2 } from "lucide-react";
 import { useNotifications } from "../../../hooks/use-notifications";
+import { markNotificationRead } from "../../../services/notification.service";
+import { useQueryClient } from "@tanstack/react-query";
 
 const iconMap: Record<string, typeof Bell> = {
   info: Bell,
@@ -16,7 +18,17 @@ const colorMap: Record<string, string> = {
 };
 
 export function MNotifications() {
-  const { data: notifications, isLoading } = useNotifications();
+  const { data, isLoading } = useNotifications();
+  const notifs = data?.items ?? [];
+  const queryClient = useQueryClient();
+
+  const handleMarkRead = async (id: string) => {
+    try {
+      await markNotificationRead(id);
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+    } catch {
+    }
+  };
 
   if (isLoading) {
     return (
@@ -25,8 +37,6 @@ export function MNotifications() {
       </div>
     );
   }
-
-  const notifs = notifications || [];
 
   return (
     <div className="px-5 py-5">
@@ -42,7 +52,7 @@ export function MNotifications() {
             const Icon = iconMap[n.type] || Bell;
             const color = colorMap[n.type] || colorMap.info;
             return (
-              <div key={n.id || i} className={`flex items-start gap-3 p-4 rounded-xl ${n.read === false ? "bg-white dark:bg-card shadow-sm border border-gray-100 dark:border-border" : "bg-gray-50 dark:bg-muted/50"}`}>
+              <div key={n.id || i} onClick={() => n.read === false && handleMarkRead(n.id)} className={`flex items-start gap-3 p-4 rounded-xl cursor-pointer transition-colors ${n.read === false ? "bg-white dark:bg-card shadow-sm border border-gray-100 dark:border-border hover:bg-gray-50 dark:hover:bg-muted" : "bg-gray-50 dark:bg-muted/50"}`}>
                 <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${color}`}>
                   <Icon className="w-4 h-4" />
                 </div>

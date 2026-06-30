@@ -1,10 +1,10 @@
 import { apiClient } from "../api/client";
 import type { Payment } from "../types/platform.types";
 
-function generateIdempotencyKey(): string {
-  const arr = new Uint8Array(16);
-  crypto.getRandomValues(arr);
-  return Array.from(arr, b => b.toString(16).padStart(2, "0")).join("");
+async function generateIdempotencyKey(payload: CreatePaymentPayload): Promise<string> {
+  const data = new TextEncoder().encode(JSON.stringify(payload));
+  const hash = await crypto.subtle.digest("SHA-256", data);
+  return Array.from(new Uint8Array(hash), b => b.toString(16).padStart(2, "0")).join("").slice(0, 32);
 }
 
 export async function getPayments(page = 1, limit = 20): Promise<{ items: Payment[]; pagination: { page: number; limit: number; total: number; totalPages: number; hasNext: boolean; hasPrev: boolean } }> {
@@ -33,7 +33,7 @@ export interface InitiatePaymentResponse {
 }
 
 export async function createPayment(payload: CreatePaymentPayload): Promise<InitiatePaymentResponse> {
-  const idempotencyKey = generateIdempotencyKey();
+  const idempotencyKey = await generateIdempotencyKey(payload);
   const { data } = await apiClient.post<{ data: InitiatePaymentResponse }>(
     "/payments/initiate",
     payload,

@@ -22,10 +22,11 @@ const ADMIN_PAGES: NavItem[] = [
 export function GroupAdminApp() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { data: groups } = useCooperatives();
+  const { data: groupData } = useCooperatives();
+  const groups = groupData?.items ?? [];
   const segments = location.pathname.replace(/^\/+/, "").split("/");
   const currentPage = segments[segments.length - 1] === "admin" || segments[segments.length - 1] === "group" ? "dashboard" : segments[segments.length - 1];
-  const groupName = groups?.[0]?.name ?? "Group";
+  const groupName = groups[0]?.name ?? "Group";
 
   return (
     <AppLayout
