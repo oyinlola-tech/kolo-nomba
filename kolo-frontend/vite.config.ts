@@ -23,7 +23,7 @@ export default defineConfig({
 
   build: {
     // Output to dist (standard for deployment)
-    outDir: 'dist',
+    outDir: '../dist',
     // Generate sourcemaps only for non-production builds
     sourcemap: process.env.NODE_ENV !== 'production',
     // Enable chunk splitting for better caching
