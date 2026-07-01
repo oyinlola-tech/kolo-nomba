@@ -2,5 +2,5 @@
   "type": "node",
   "build": "npm install && npm run build",
   "start": "npx serve -s dist -l $PORT",
-  "env": "NODE_VERSION=22"
+  "env": { "NODE_VERSION": "26" }
 }
