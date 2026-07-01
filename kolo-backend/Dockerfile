@@ -5,10 +5,10 @@ WORKDIR /app
 RUN apk add --no-cache python3 make g++
 
 COPY package.json package-lock.json* ./
+COPY prisma ./prisma
 RUN npm ci
 
 COPY tsconfig.json ./
-COPY prisma ./prisma
 COPY src ./src
 
 RUN npm run prisma:generate
@@ -25,7 +25,7 @@ RUN addgroup -g 1001 -S appgroup && \
     adduser -S appuser -u 1001 -G appgroup
 
 COPY package.json package-lock.json ./
-RUN npm ci --omit=dev && npm cache clean --force
+RUN npm ci --omit=dev --ignore-scripts && npm cache clean --force
 
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
