@@ -1,6 +1,6 @@
 {
   "type": "node",
   "build": "npm run build",
-  "start": "npx serve -s kolo-frontend/dist -l $PORT",
+  "start": "npx serve -s dist -l $PORT",
   "env": "NODE_VERSION=26"
 }
