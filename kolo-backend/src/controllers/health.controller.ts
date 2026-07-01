@@ -34,8 +34,20 @@ export class HealthController {
 
     const isHealthy = dbStatus === "connected" && redisStatus === "connected";
 
+    if (!isHealthy) {
+      reply.status(503).send({
+        success: false,
+        status: "unhealthy",
+        database: dbStatus,
+        redis: redisStatus,
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime(),
+      });
+      return;
+    }
+
     ResponseUtil.success(reply, {
-      status: isHealthy ? "healthy" : "degraded",
+      status: "healthy",
       database: dbStatus,
       redis: redisStatus,
       timestamp: new Date().toISOString(),

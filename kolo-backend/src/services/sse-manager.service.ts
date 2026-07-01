@@ -63,6 +63,19 @@ export class SSEManager {
     }
   }
 
+  clear(): void {
+    for (const [, clients] of this.clients) {
+      for (const client of clients) {
+        try {
+          client.reply.raw.end();
+        } catch {
+          // already closed
+        }
+      }
+    }
+    this.clients.clear();
+  }
+
   getConnectionCount(): number {
     let count = 0;
     for (const [, clients] of this.clients) {

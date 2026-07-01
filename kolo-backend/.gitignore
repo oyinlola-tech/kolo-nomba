@@ -1,8 +1,19 @@
 node_modules
 # Keep environment variables out of version control
 .env
+.env.local
+.env.*.local
 dist/
 
+# Generated Prisma client
 /src/generated/prisma
 
+# Coverage output
+coverage/
+.vitest/
+
+# Development files
 AGENTS.md
+.DS_Store
+*.log
+logs/

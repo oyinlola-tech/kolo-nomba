@@ -32,23 +32,19 @@ export class ContributionRoute {
       handler: this.controller.listPlans.bind(this.controller),
     });
 
-    // Global contribution plan endpoints
+    // Global contribution plan endpoints (authorization handled by service layer via plan -> group resolution)
     app.get(`${prefix}/contribution-plans/:id`, {
       preHandler: this.authMiddleware.authenticate.bind(this.authMiddleware),
       handler: this.controller.getPlanById.bind(this.controller),
     });
 
     app.patch(`${prefix}/contribution-plans/:id`, {
-      preHandler: [
-        this.authMiddleware.authenticate.bind(this.authMiddleware),
-      ],
+      preHandler: this.authMiddleware.authenticate.bind(this.authMiddleware),
       handler: this.controller.updatePlan.bind(this.controller),
     });
 
     app.delete(`${prefix}/contribution-plans/:id`, {
-      preHandler: [
-        this.authMiddleware.authenticate.bind(this.authMiddleware),
-      ],
+      preHandler: this.authMiddleware.authenticate.bind(this.authMiddleware),
       handler: this.controller.deletePlan.bind(this.controller),
     });
 

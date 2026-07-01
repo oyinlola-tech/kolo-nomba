@@ -3,6 +3,7 @@ import { z } from "zod";
 import { ResponseUtil } from "../utils/response.util";
 import { ValidationError } from "../errors/validation.error";
 import { EnvConfig } from "../config/env.config";
+import { SmtpProvider } from "../integrations/email/smtp.provider";
 import { Logger } from "../logger/core/logger";
 
 const contactSchema = z.object({
@@ -33,6 +34,12 @@ export class ContactController {
     }
 
     const env = EnvConfig.getInstance();
+
+    if (!env.APP_SUPPORT_EMAIL) {
+      ResponseUtil.success(reply, { message: "Message received. We will get back to you within 24 hours." });
+      return;
+    }
+
     this.logger.info("Contact form submission", {
       name: `${parsed.data.firstName} ${parsed.data.lastName}`,
       email: parsed.data.email,
@@ -40,7 +47,6 @@ export class ContactController {
     });
 
     try {
-      const { SmtpProvider } = await import("../integrations/email/smtp.provider");
       const provider = new SmtpProvider();
       await provider.send({
         to: env.APP_SUPPORT_EMAIL,

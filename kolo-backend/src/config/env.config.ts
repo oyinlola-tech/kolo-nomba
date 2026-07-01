@@ -57,6 +57,8 @@ export class EnvConfig {
   public readonly REDIS_DB: number;
   public readonly QUEUE_PREFIX: string;
 
+  public readonly AUTO_MIGRATE: boolean;
+  public readonly PRISMA_POOL_SIZE: number;
   public readonly JOB_ATTEMPTS: number;
   public readonly JOB_BACKOFF_DELAY: number;
   public readonly JOB_TIMEOUT: number;
@@ -144,6 +146,8 @@ export class EnvConfig {
     this.JOB_BACKOFF_DELAY = parseInt(EnvConfig.getEnvOrDefault("JOB_BACKOFF_DELAY", "5000"), 10);
     this.JOB_TIMEOUT = parseInt(EnvConfig.getEnvOrDefault("JOB_TIMEOUT", "30000"), 10);
 
+    this.AUTO_MIGRATE = EnvConfig.getEnvOrDefault("AUTO_MIGRATE", "false") === "true";
+    this.PRISMA_POOL_SIZE = parseInt(EnvConfig.getEnvOrDefault("PRISMA_POOL_SIZE", "10"), 10);
     this.ENCRYPTION_KEY = EnvConfig.getEnvOrDefault("ENCRYPTION_KEY", "");
     this.APP_NAME = EnvConfig.getEnvOrDefault("APP_NAME", "Kolo");
     this.APP_LOGO_URL = EnvConfig.getEnvOrDefault("APP_LOGO_URL", "");

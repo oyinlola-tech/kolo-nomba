@@ -1,0 +1,17 @@
+node_modules
+.git
+.gitignore
+.gitattributes
+Dockerfile
+.dockerignore
+npm-debug.log
+.vscode
+.idea
+coverage
+.vitest
+*.md
+.env
+.env.local
+.env.*.local
+*.tmp
+*.temp

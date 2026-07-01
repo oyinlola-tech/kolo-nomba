@@ -14,8 +14,9 @@ export class PrismaDatabase {
     const poolConfig: { connectionString: string; pool?: { max?: number } } = {
       connectionString: env.DATABASE_URL,
     };
-    if (!env.isDevelopment) {
-      poolConfig.pool = { max: 10 };
+    const poolSize = env.PRISMA_POOL_SIZE;
+    if (poolSize > 0) {
+      poolConfig.pool = { max: poolSize };
     }
     const adapter = new PrismaPg(poolConfig);
     this.client = new PrismaClient({ adapter });
@@ -32,13 +33,24 @@ export class PrismaDatabase {
     return this.client;
   }
 
-  async connect(): Promise<void> {
-    try {
-      await this.client.$connect();
-      this.logger.info("Database connected successfully");
-    } catch (error) {
-      this.logger.fatal("Failed to connect to database", { error: String(error) });
-      throw error;
+  async connect(retries = 3, delayMs = 2000): Promise<void> {
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      try {
+        await this.client.$connect();
+        this.logger.info("Database connected successfully");
+        return;
+      } catch (error) {
+        if (attempt < retries) {
+          this.logger.warn(`Database connection attempt ${attempt}/${retries} failed, retrying...`, {
+            error: String(error),
+            nextRetryMs: delayMs,
+          });
+          await new Promise(resolve => setTimeout(resolve, delayMs));
+        } else {
+          this.logger.fatal("Failed to connect to database after all retries", { error: String(error) });
+          throw error;
+        }
+      }
     }
   }
 

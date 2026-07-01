@@ -3,14 +3,17 @@
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
-    "start:prod": "NODE_ENV=production node dist/server.js",
+    "start:prod": "cross-env NODE_ENV=production node dist/server.js",
     "test": "vitest run",
+    "test:watch": "vitest",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:migrate:prod": "prisma migrate deploy",
     "prisma:seed": "tsx prisma/seed.ts",
-    "db:setup": "prisma migrate deploy && tsx prisma/seed.ts",
-    "postinstall": "prisma generate"
+    "db:setup": "prisma migrate deploy && npx tsx prisma/seed.ts",
+    "postinstall": "prisma generate",
+    "docker:build": "docker build -t kolo-backend .",
+    "docker:up": "docker compose up -d"
   },
   "dependencies": {
     "@fastify/cookie": "^11.0.2",
@@ -46,6 +49,7 @@
     "@types/node": "^26.0.1",
     "@types/nodemailer": "^8.0.1",
     "@types/pdfkit": "^0.17.6",
+    "cross-env": "^10.1.0",
     "eslint": "^10.6.0",
     "eslint-config-prettier": "^10.1.8",
     "nodemon": "^3.1.14",

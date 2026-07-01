@@ -4,6 +4,7 @@ import { DatabaseLoader } from "./database.loader";
 import { MiddlewareLoader } from "./middleware.loader";
 import { RouteLoader } from "./route.loader";
 import { SwaggerLoader } from "./swagger.loader";
+import { MigrationLoader } from "./migration.loader";
 import { JobLoader } from "../jobs/index";
 import { Logger } from "../logger/core/logger";
 
@@ -19,6 +20,9 @@ export class AppLoader {
 
     const loggerLoader = new LoggerLoader();
     loggerLoader.load();
+
+    const migrationLoader = new MigrationLoader();
+    migrationLoader.load();
 
     const databaseLoader = new DatabaseLoader();
     await databaseLoader.load();

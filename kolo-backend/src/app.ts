@@ -4,7 +4,9 @@ import { AppConfig } from "./config/app.config";
 import { AppLoader } from "./loaders/index";
 import { Logger } from "./logger/core/logger";
 import { PrismaDatabase } from "./database/prisma";
+import { RedisClient } from "./database/redis";
 import { QueueManager } from "./jobs/queue-manager";
+import { SSEManager } from "./services/sse-manager.service";
 
 const SHUTDOWN_TIMEOUT_MS = 10_000;
 
@@ -23,6 +25,7 @@ export class Application {
     this.app = Fastify({
       logger: false,
       bodyLimit: 1048576,
+      trustProxy: true,
     });
 
     this.app.register(cookie, {
@@ -97,6 +100,12 @@ export class Application {
     } catch (err) {
       this.logger.error("Error disconnecting database", { error: String(err) });
     }
+    try {
+      await RedisClient.getInstance().disconnect();
+    } catch (err) {
+      this.logger.error("Error disconnecting Redis", { error: String(err) });
+    }
+    SSEManager.getInstance().clear();
     await this.app.close();
     this.logger.info("Server stopped");
   }
