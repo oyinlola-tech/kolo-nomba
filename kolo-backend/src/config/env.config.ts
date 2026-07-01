@@ -111,7 +111,9 @@ export class EnvConfig {
     this.SUPER_ADMIN_LAST_NAME = EnvConfig.getEnvOrDefault("SUPER_ADMIN_LAST_NAME", "Admin");
 
     this.FRONTEND_URL = EnvConfig.getEnvOrDefault("FRONTEND_URL", "http://localhost:5173");
-    this.ADMIN_FRONTEND_URL = EnvConfig.getEnvOrDefault("ADMIN_FRONTEND_URL", "http://localhost:5174");
+    this.ADMIN_FRONTEND_URL = process.env.ADMIN_FRONTEND_URL
+      ? process.env.ADMIN_FRONTEND_URL
+      : this.FRONTEND_URL;
     this.validateFrontendUrls();
 
     this.ENABLE_EMAIL_NOTIFICATIONS = EnvConfig.getEnvOrDefault("ENABLE_EMAIL_NOTIFICATIONS", "true") === "true";
