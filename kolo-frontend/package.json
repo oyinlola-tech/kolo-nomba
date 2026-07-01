@@ -4,7 +4,7 @@
   "version": "0.0.1",
   "type": "module",
   "scripts": {
-    "build": "vite build",
+    "build": "vite build && mkdir -p kolo-frontend && cp -r dist kolo-frontend/",
     "dev": "vite",
     "start": "serve -s dist -l $PORT",
     "typecheck": "tsc --noEmit"
