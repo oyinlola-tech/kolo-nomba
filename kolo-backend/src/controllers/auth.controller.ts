@@ -7,7 +7,7 @@ import { EnvConfig } from "../config/env.config";
 import { Logger } from "../logger/core/logger";
 
 const REFRESH_COOKIE = "refreshToken";
-const COOKIE_PATH = "/api/v1/auth";
+const COOKIE_PATH = "/v1/auth";
 const COOKIE_MAX_AGE = 7 * 24 * 60 * 60;
 
 export class AuthController {

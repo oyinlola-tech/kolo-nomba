@@ -33,9 +33,27 @@ export class MiddlewareLoader {
     if (explicitOrigins.length === 0) {
       explicitOrigins.push("http://localhost:5173", "http://localhost:5174");
     }
-    const corsOptions = { ...baseOptions, origin: explicitOrigins };
 
-    await app.register(cors, corsOptions);
+    app.addHook("onRequest", (request, reply) => {
+      if (request.method === "OPTIONS") {
+        const origin = request.headers.origin;
+        if (origin && explicitOrigins.includes(origin)) {
+          reply.header("Access-Control-Allow-Origin", origin);
+          reply.header("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,OPTIONS");
+          reply.header("Access-Control-Allow-Headers", "Content-Type,Authorization,X-Requested-With,Idempotency-Key");
+          reply.header("Access-Control-Allow-Credentials", "true");
+          reply.header("Access-Control-Max-Age", "86400");
+          reply.status(204).send();
+          return;
+        }
+        if (origin && !explicitOrigins.includes(origin)) {
+          reply.status(204).send();
+          return;
+        }
+      }
+    });
+
+    await app.register(cors, { ...baseOptions, origin: explicitOrigins });
     const scriptSrc = isProduction ? ["'self'"] : ["'self'", "'unsafe-inline'"];
     const styleSrc = isProduction ? ["'self'", "https://fonts.googleapis.com"] : ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"];
 

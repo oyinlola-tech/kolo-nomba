@@ -40,7 +40,7 @@ export class AppConfig {
   }
 
   get apiPrefix(): string {
-    return "/api/v1";
+    return "/v1";
   }
 
   get swaggerPath(): string {
