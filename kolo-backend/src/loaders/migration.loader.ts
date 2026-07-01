@@ -18,17 +18,18 @@ export class MigrationLoader {
 
     try {
       this.logger.info("Running database migrations...");
-      execSync("npx prisma migrate deploy", {
+      const result = execSync("npx prisma migrate deploy", {
         env: { ...process.env, DATABASE_URL: env.DATABASE_URL },
         stdio: "pipe",
         timeout: 60000,
       });
-      this.logger.info("Database migrations completed");
+      this.logger.info("Database migrations completed", { stdout: result.toString() });
     } catch (error) {
-      this.logger.fatal("Database migration failed", {
-        error: error instanceof Error ? error.message : String(error),
-      });
-      throw error;
+      const message = error instanceof Error ? error.message : String(error);
+      const stderr = error instanceof Error && "stderr" in error
+        ? Buffer.from((error as { stderr: Buffer }).stderr).toString()
+        : "";
+      this.logger.error(`Database migration failed: ${message}${stderr ? ` | stderr: ${stderr}` : ""}`);
     }
   }
 }
