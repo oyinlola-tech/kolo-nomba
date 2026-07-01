@@ -70,8 +70,13 @@ export class RouteRegistry {
   register(): void {
     const prefix = this.config.apiPrefix;
 
-    this.app.get(`${prefix}/health`, this.healthController.check.bind(this.healthController));
-    this.app.post(`${prefix}/contact`, this.contactController.submit.bind(this.contactController));
+    this.app.get(`${prefix}/health`, {
+      config: { rateLimit: { max: 10, timeWindow: "10 seconds" } },
+    }, this.healthController.check.bind(this.healthController));
+
+    this.app.post(`${prefix}/contact`, {
+      config: { rateLimit: { max: 3, timeWindow: "15 minutes" } },
+    }, this.contactController.submit.bind(this.contactController));
 
     this.authRoute.register(this.app, prefix);
     this.userRoute.register(this.app, prefix);
