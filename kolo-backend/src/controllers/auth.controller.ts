@@ -52,9 +52,16 @@ export class AuthController {
     } catch {
       throw new ValidationError("Invalid Origin or Referer header");
     }
-    const normalizedAllowed = [this.env.FRONTEND_URL, this.env.ADMIN_FRONTEND_URL].map(
-      (u) => { try { return new URL(u).origin; } catch { return u; } },
-    );
+    const normalizedAllowed: string[] = [];
+    for (const url of [this.env.FRONTEND_URL, this.env.ADMIN_FRONTEND_URL]) {
+      try { normalizedAllowed.push(new URL(url).origin); } catch { normalizedAllowed.push(url); }
+    }
+    if (this.env.CORS_ORIGIN && this.env.CORS_ORIGIN !== "*") {
+      for (const o of this.env.CORS_ORIGIN.split(",")) {
+        const trimmed = o.trim();
+        try { normalizedAllowed.push(new URL(trimmed).origin); } catch { normalizedAllowed.push(trimmed); }
+      }
+    }
     if (!normalizedAllowed.includes(parsedOrigin)) {
       throw new ValidationError("Invalid request origin");
     }

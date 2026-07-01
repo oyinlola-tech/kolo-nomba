@@ -43,10 +43,12 @@ export class MiddlewareLoader {
           reply.header("Access-Control-Allow-Headers", "Content-Type,Authorization,X-Requested-With,Idempotency-Key");
           reply.header("Access-Control-Allow-Credentials", "true");
           reply.header("Access-Control-Max-Age", "86400");
+          reply.header("Vary", "Origin");
           reply.status(204).send();
           return;
         }
         if (origin && !explicitOrigins.includes(origin)) {
+          this.logger.warn("CORS preflight rejected for unknown origin", { origin, allowedOrigins: explicitOrigins });
           reply.status(204).send();
           return;
         }
@@ -84,6 +86,6 @@ export class MiddlewareLoader {
     app.addHook("onRequest", this.requestContext.handle.bind(this.requestContext));
     app.setErrorHandler(this.errorMiddleware.handle.bind(this.errorMiddleware));
 
-    this.logger.info("Middleware registered", { corsOrigins: isProduction ? "restricted" : origins });
+    this.logger.info("Middleware registered", { corsOrigins: origins });
   }
 }
