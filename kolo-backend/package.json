@@ -38,6 +38,9 @@
     "uuid": "^14.0.1",
     "zod": "^4.4.3"
   },
+  "overrides": {
+    "@hono/node-server": "1.19.14"
+  },
   "allowScripts": {
     "prisma@6.19.3": true,
     "@prisma/engines@6.19.3": true,
