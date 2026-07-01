@@ -1,6 +1,6 @@
 {
   "type": "node",
-  "build": "cd kolo-frontend && npm install && npm run build",
+  "build": "npm run build",
   "start": "npx serve -s kolo-frontend/dist -l $PORT",
-  "env": { "NODE_VERSION": "26" }
+  "env": "NODE_VERSION=26"
 }
