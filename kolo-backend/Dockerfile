@@ -6,6 +6,7 @@ RUN apk add --no-cache python3 make g++
 
 COPY package.json package-lock.json* ./
 COPY prisma ./prisma
+COPY prisma.config.ts ./
 RUN npm ci
 
 COPY tsconfig.json ./
@@ -29,6 +30,7 @@ RUN npm ci --omit=dev --ignore-scripts && npm cache clean --force
 
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/prisma.config.ts ./
 COPY --from=builder /app/node_modules ./node_modules
 
 RUN mkdir -p /app/logs && chown -R appuser:appgroup /app
