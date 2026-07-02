@@ -36,12 +36,7 @@ export class MiddlewareLoader {
     this.logger.info("CORS config", { explicitOrigins, nodeEnv: this.config.nodeEnv, frontendUrl: this.config.frontendUrl, isProduction });
 
     await app.register(cors, {
-      origin: (origin, cb) => {
-        const normalized = origin?.replace(/\/+$/, "");
-        const allowed = !origin || explicitOrigins.includes("*") || (normalized ? explicitOrigins.includes(normalized) : false);
-        this.logger.info("CORS check", { origin, normalized, allowed, explicitOrigins, nodeEnv: this.config.nodeEnv, frontendUrl: this.config.frontendUrl });
-        cb(null, allowed);
-      },
+      origin: explicitOrigins,
       credentials: true,
       methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
       allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Idempotency-Key"],

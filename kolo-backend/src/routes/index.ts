@@ -74,6 +74,10 @@ export class RouteRegistry {
       config: { rateLimit: { max: 10, timeWindow: "10 seconds" } },
     }, this.healthController.check.bind(this.healthController));
 
+    this.app.get(`${prefix}/config`, {
+      config: { rateLimit: { max: 10, timeWindow: "10 seconds" } },
+    }, this.healthController.getConfig.bind(this.healthController));
+
     this.app.post(`${prefix}/contact`, {
       config: { rateLimit: { max: 3, timeWindow: "15 minutes" } },
     }, this.contactController.submit.bind(this.contactController));
