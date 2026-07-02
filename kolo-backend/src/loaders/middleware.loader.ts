@@ -36,7 +36,14 @@ export class MiddlewareLoader {
     this.logger.info("CORS config", { explicitOrigins, nodeEnv: this.config.nodeEnv, frontendUrl: this.config.frontendUrl, isProduction });
 
     await app.register(cors, {
-      origin: explicitOrigins,
+      origin: (origin: string | undefined) => {
+        if (!origin) return true;
+        if (explicitOrigins.includes("*")) return true;
+        if (explicitOrigins.includes(origin)) return true;
+        if (origin.endsWith(".vercel.app")) return true;
+        if (origin.startsWith("http://localhost")) return true;
+        return false;
+      },
       credentials: true,
       methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
       allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Idempotency-Key"],
