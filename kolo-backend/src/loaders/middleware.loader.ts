@@ -28,34 +28,25 @@ export class MiddlewareLoader {
       throw new Error("CORS_ORIGIN must be explicitly set in production (cannot be '*')");
     }
 
-    const baseOptions = { credentials: true };
     const explicitOrigins = origins.filter(o => o !== "*");
     if (explicitOrigins.length === 0) {
       explicitOrigins.push("http://localhost:5173", "http://localhost:5174");
     }
 
-    app.addHook("onRequest", (request, reply) => {
-      if (request.method === "OPTIONS") {
-        const origin = request.headers.origin;
-        if (origin && explicitOrigins.includes(origin)) {
-          reply.header("Access-Control-Allow-Origin", origin);
-          reply.header("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,OPTIONS");
-          reply.header("Access-Control-Allow-Headers", "Content-Type,Authorization,X-Requested-With,Idempotency-Key");
-          reply.header("Access-Control-Allow-Credentials", "true");
-          reply.header("Access-Control-Max-Age", "86400");
-          reply.header("Vary", "Origin");
-          reply.status(204).send();
-          return;
+    await app.register(cors, {
+      origin: (origin, cb) => {
+        if (!origin || explicitOrigins.includes(origin)) {
+          cb(null, true);
+        } else {
+          this.logger.warn("CORS rejected for unknown origin", { origin, allowedOrigins: explicitOrigins });
+          cb(null, false);
         }
-        if (origin && !explicitOrigins.includes(origin)) {
-          this.logger.warn("CORS preflight rejected for unknown origin", { origin, allowedOrigins: explicitOrigins });
-          reply.status(204).send();
-          return;
-        }
-      }
+      },
+      credentials: true,
+      methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+      allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Idempotency-Key"],
+      maxAge: 86400,
     });
-
-    await app.register(cors, { ...baseOptions, origin: explicitOrigins });
     const scriptSrc = isProduction ? ["'self'"] : ["'self'", "'unsafe-inline'"];
     const styleSrc = isProduction ? ["'self'", "https://fonts.googleapis.com"] : ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"];
 
