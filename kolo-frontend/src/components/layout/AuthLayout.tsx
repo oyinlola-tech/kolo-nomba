@@ -70,7 +70,7 @@ export function AuthLayout({ children, title, subtitle, icon: Icon, showBack, on
       {/* Right panel */}
       <div className="flex-1 flex flex-col bg-white dark:bg-background min-h-screen">
         {/* mobile header */}
-        <div className="lg:hidden flex items-center justify-between px-5 pt-8 pb-3">
+        <div className="lg:hidden flex items-center justify-between px-5 pt-10 pb-5">
           <div className="flex items-center gap-2">
             {showBack && onBack && (
               <button onClick={onBack} className="p-1 -ml-1 text-gray-500 hover:text-gray-700 dark:hover:text-white transition-colors">
@@ -84,7 +84,7 @@ export function AuthLayout({ children, title, subtitle, icon: Icon, showBack, on
         <div className="hidden lg:flex justify-end px-10 pt-6">
           <ThemeToggle />
         </div>
-        <div className="flex-1 flex items-center justify-center px-5 pb-8 pt-2 lg:pt-0">
+        <div className="flex-1 flex items-start justify-center px-5 pb-8 pt-6 lg:items-center lg:pt-0">
           <div className="w-full max-w-md">
             {showBack && onBack && (
               <button onClick={onBack} className="hidden lg:flex items-center gap-1.5 text-sm text-gray-500 dark:text-muted-foreground hover:text-gray-700 dark:hover:text-white mb-6 transition-colors">

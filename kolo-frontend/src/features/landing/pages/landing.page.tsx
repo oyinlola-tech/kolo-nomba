@@ -22,7 +22,7 @@ export function LandingPage() {
     <div className="min-h-screen bg-white dark:bg-background">
       <nav className="sticky top-0 z-50 bg-white/90 dark:bg-background/90 backdrop-blur-md border-b border-gray-100 dark:border-border">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
+          <div className="flex items-center justify-between h-20 md:h-16">
             <button onClick={() => navigate("/")}>
               <Logo />
             </button>
