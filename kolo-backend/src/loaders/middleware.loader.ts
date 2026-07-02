@@ -41,6 +41,7 @@ export class MiddlewareLoader {
         if (explicitOrigins.includes("*")) return true;
         if (explicitOrigins.includes(origin)) return true;
         if (origin.endsWith(".vercel.app")) return true;
+        if (origin.endsWith(".telente.site")) return true;
         if (origin.startsWith("http://localhost")) return true;
         return false;
       },

@@ -63,7 +63,7 @@ export class AuthController {
       }
     }
     if (!normalizedAllowed.includes(parsedOrigin)) {
-      if (!parsedOrigin.endsWith(".vercel.app") && !parsedOrigin.startsWith("http://localhost")) {
+      if (!parsedOrigin.endsWith(".vercel.app") && !parsedOrigin.endsWith(".telente.site") && !parsedOrigin.startsWith("http://localhost")) {
         throw new ValidationError("Invalid request origin");
       }
     }
