@@ -57,8 +57,7 @@ export class AppConfig {
 
   get allowedOrigins(): string[] {
     const origins: string[] = [this.frontendUrl, this.adminFrontendUrl];
-    if (this.corsOrigin === "*") return ["*"];
-    if (this.corsOrigin) {
+    if (this.corsOrigin && this.corsOrigin !== "*") {
       for (const o of this.corsOrigin.split(",")) {
         origins.push(o.trim());
       }

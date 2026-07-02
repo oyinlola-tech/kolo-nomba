@@ -28,17 +28,17 @@ export class MiddlewareLoader {
       throw new Error("CORS_ORIGIN must be explicitly set in production (cannot be '*')");
     }
 
-    const explicitOrigins = origins.filter(o => o !== "*");
+    const explicitOrigins = origins.includes("*") ? ["*"] : origins;
     if (explicitOrigins.length === 0) {
       explicitOrigins.push("http://localhost:5173", "http://localhost:5174");
     }
 
     await app.register(cors, {
       origin: (origin, cb) => {
-        if (!origin || explicitOrigins.includes(origin)) {
+        if (!origin || explicitOrigins.includes("*") || explicitOrigins.includes(origin)) {
           cb(null, true);
         } else {
-          this.logger.warn("CORS rejected for unknown origin", { origin, allowedOrigins: explicitOrigins });
+          this.logger.warn("CORS rejected for unknown origin", { origin, allowedOrigins: explicitOrigins, nodeEnv: this.config.nodeEnv, frontendUrl: this.config.frontendUrl });
           cb(null, false);
         }
       },
@@ -77,6 +77,11 @@ export class MiddlewareLoader {
     app.addHook("onRequest", this.requestContext.handle.bind(this.requestContext));
     app.setErrorHandler(this.errorMiddleware.handle.bind(this.errorMiddleware));
 
-    this.logger.info("Middleware registered", { corsOrigins: origins });
+    this.logger.info("Middleware registered", {
+      corsOrigins: explicitOrigins,
+      nodeEnv: this.config.nodeEnv,
+      frontendUrl: this.config.frontendUrl,
+      adminFrontendUrl: this.config.adminFrontendUrl,
+    });
   }
 }
