@@ -62,6 +62,6 @@ export class AppConfig {
         origins.push(o.trim());
       }
     }
-    return [...new Set(origins)];
+    return [...new Set(origins.map(o => o.replace(/\/+$/, "")))];
   }
 }

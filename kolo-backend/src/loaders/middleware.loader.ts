@@ -33,14 +33,14 @@ export class MiddlewareLoader {
       explicitOrigins.push("http://localhost:5173", "http://localhost:5174");
     }
 
+    this.logger.info("CORS config", { explicitOrigins, nodeEnv: this.config.nodeEnv, frontendUrl: this.config.frontendUrl, isProduction });
+
     await app.register(cors, {
       origin: (origin, cb) => {
-        if (!origin || explicitOrigins.includes("*") || explicitOrigins.includes(origin)) {
-          cb(null, true);
-        } else {
-          this.logger.warn("CORS rejected for unknown origin", { origin, allowedOrigins: explicitOrigins, nodeEnv: this.config.nodeEnv, frontendUrl: this.config.frontendUrl });
-          cb(null, false);
-        }
+        const normalized = origin?.replace(/\/+$/, "");
+        const allowed = !origin || explicitOrigins.includes("*") || (normalized ? explicitOrigins.includes(normalized) : false);
+        this.logger.info("CORS check", { origin, normalized, allowed, explicitOrigins, nodeEnv: this.config.nodeEnv, frontendUrl: this.config.frontendUrl });
+        cb(null, allowed);
       },
       credentials: true,
       methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
