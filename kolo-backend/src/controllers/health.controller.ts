@@ -14,6 +14,16 @@ export class HealthController {
     this.config = new AppConfig();
   }
 
+  private withTimeout<T>(promise: Promise<T>, timeoutMs = 5000): Promise<T> {
+    let timeoutId: NodeJS.Timeout;
+    return Promise.race([
+      promise,
+      new Promise<T>((_, reject) => {
+        timeoutId = setTimeout(() => reject(new Error(`Health check timed out after ${timeoutMs}ms`)), timeoutMs);
+      }),
+    ]).finally(() => clearTimeout(timeoutId));
+  }
+
   async getConfig(_request: FastifyRequest, reply: FastifyReply): Promise<void> {
     ResponseUtil.success(reply, {
       nodeEnv: this.config.nodeEnv,
@@ -30,7 +40,7 @@ export class HealthController {
     let redisStatus = "disconnected";
     try {
       const db = PrismaDatabase.getInstance().getClient();
-      await db.$queryRaw`SELECT 1`;
+      await this.withTimeout(db.$queryRaw`SELECT 1`);
       dbStatus = "connected";
     } catch (error) {
       this.logger.error("Health check DB failure", { error: String(error) });
@@ -39,8 +49,11 @@ export class HealthController {
     try {
       const redis = RedisClient.getInstance();
       if (redis.isConnected()) {
-        await redis.getClient()?.ping();
-        redisStatus = "connected";
+        const client = redis.getClient();
+        if (client) {
+          await this.withTimeout(client.ping());
+          redisStatus = "connected";
+        }
       }
     } catch (error) {
       this.logger.error("Health check Redis failure", { error: String(error) });
