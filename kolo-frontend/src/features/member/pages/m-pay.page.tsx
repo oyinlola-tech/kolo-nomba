@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import {
   X, Landmark, CreditCard, ShieldCheck, Lock, RefreshCw, Loader2, Copy, CheckCircle,
@@ -35,8 +35,11 @@ function BankTransferInfoDisplay({ info, onBack, paymentId, onConfirmed }: { inf
 
   const isConfirmed = paymentStatus && (paymentStatus.status === "paid" || paymentStatus.status === "success");
 
+  useEffect(() => {
+    if (isConfirmed) onConfirmed();
+  }, [isConfirmed]);
+
   if (isConfirmed) {
-    onConfirmed();
     return (
       <div className="px-5 py-5">
         <div className="flex flex-col items-center justify-center py-16">

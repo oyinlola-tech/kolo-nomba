@@ -104,11 +104,11 @@ export function GACreateGroup({ onDone }: GACreateGroupProps) {
               <p className="text-sm text-gray-500 dark:text-muted-foreground mb-5">Add members to your group. They&apos;ll receive an invite link.</p>
               {form.members.map((m, i) => (
                 <div key={i} className="grid grid-cols-3 gap-3 mb-3">
-                  <input placeholder="Full Name" value={m.name} onChange={e => { const ms = [...form.members]; ms[i].name = e.target.value; setForm(f => ({ ...f, members: ms })); }}
+                  <input placeholder="Full Name" value={m.name} onChange={e => { const ms = form.members.map((x, idx) => idx === i ? { ...x, name: e.target.value } : x); setForm(f => ({ ...f, members: ms })); }}
                     className="col-span-3 sm:col-span-1 px-3 py-2.5 border border-gray-200 dark:border-border rounded-xl text-sm bg-white dark:bg-input-background text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/30" />
-                  <input placeholder="+234 801..." value={m.phone} onChange={e => { const ms = [...form.members]; ms[i].phone = e.target.value; setForm(f => ({ ...f, members: ms })); }}
+                  <input placeholder="+234 801..." value={m.phone} onChange={e => { const ms = form.members.map((x, idx) => idx === i ? { ...x, phone: e.target.value } : x); setForm(f => ({ ...f, members: ms })); }}
                     className="px-3 py-2.5 border border-gray-200 dark:border-border rounded-xl text-sm bg-white dark:bg-input-background text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/30" />
-                  <input placeholder="Email" value={m.email} onChange={e => { const ms = [...form.members]; ms[i].email = e.target.value; setForm(f => ({ ...f, members: ms })); }}
+                  <input placeholder="Email" value={m.email} onChange={e => { const ms = form.members.map((x, idx) => idx === i ? { ...x, email: e.target.value } : x); setForm(f => ({ ...f, members: ms })); }}
                     className="px-3 py-2.5 border border-gray-200 dark:border-border rounded-xl text-sm bg-white dark:bg-input-background text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/30" />
                 </div>
               ))}

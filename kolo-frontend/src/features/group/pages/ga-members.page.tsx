@@ -33,7 +33,7 @@ export function GAMembers() {
   return (
     <div>
       <PageHeader title="Member Management" subtitle={`${memberList.length} members in your group`}>
-        <Button size="sm" onClick={() => { const email = prompt("Enter email to invite:"); if (email) apiClient.post(`/groups/${groupId}/invitations`, { email }); }}>
+        <Button size="sm" onClick={() => { const email = prompt("Enter email to invite:"); if (email) apiClient.post(`/groups/${groupId}/invitations`, { email }).catch(() => {}); }}>
           <UserPlus className="w-4 h-4" />Invite Member
         </Button>
       </PageHeader>
