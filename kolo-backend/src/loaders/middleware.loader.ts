@@ -40,6 +40,7 @@ export class MiddlewareLoader {
         if (!origin) return true;
         if (explicitOrigins.includes("*")) return true;
         if (explicitOrigins.includes(origin)) return true;
+        if (origin === "healthcheck.railway.app") return true;
         if (origin.endsWith(".vercel.app")) return true;
         if (origin.endsWith(".telente.site")) return true;
         if (origin.startsWith("http://localhost")) return true;
@@ -75,6 +76,17 @@ export class MiddlewareLoader {
       keyGenerator: (request) => {
         return request.ip;
       },
+    });
+
+    // Allow Railway healthcheck probes to reach /v1/health without being
+    // blocked by helmet's strict security headers (CSP, COEP, COOP).
+    app.addHook("onSend", (request, reply, payload, done) => {
+      if (request.url === "/v1/health") {
+        reply.removeHeader("content-security-policy");
+        reply.removeHeader("cross-origin-embedder-policy");
+        reply.removeHeader("cross-origin-opener-policy");
+      }
+      done(null, payload);
     });
 
     app.addHook("onRequest", this.requestContext.handle.bind(this.requestContext));
