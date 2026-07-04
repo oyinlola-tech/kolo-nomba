@@ -22,9 +22,10 @@ export class HealthController {
 
   async check(_request: FastifyRequest, reply: FastifyReply): Promise<void> {
     ResponseUtil.success(reply, {
-      status: "healthy",
-      timestamp: new Date().toISOString(),
+      status: "ok",
       uptime: process.uptime(),
+      timestamp: new Date().toISOString(),
+      environment: this.config.nodeEnv,
     });
   }
 }

@@ -10,6 +10,7 @@ export class RouteLoader {
   }
 
   load(app: FastifyInstance): void {
+    this.logger.info("Registering routes");
     const registry = new RouteRegistry(app);
     registry.register();
     this.logger.info("Routes registered");

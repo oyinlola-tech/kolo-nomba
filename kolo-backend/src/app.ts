@@ -49,12 +49,20 @@ export class Application {
   }
 
   async start(): Promise<void> {
+    const host = "0.0.0.0";
+    const port = Number(process.env.PORT ?? this.config.port ?? 3000);
+
+    this.logger.info("Server starting", { host, port, nodeEnv: this.config.nodeEnv });
+
     try {
       await this.loader.load(this.app);
+      this.logger.info("Fastify bootstrap complete");
+      await this.app.ready();
+      this.logger.info("Fastify ready", { host, port, nodeEnv: this.config.nodeEnv });
 
-      await this.app.listen({ port: this.config.port, host: "0.0.0.0" });
-      this.logger.info(`Server running on port ${this.config.port}`);
-      console.log(`[Kolo] Server listening on 0.0.0.0:${this.config.port}`);
+      await this.app.listen({ port, host });
+      this.logger.info("Server listening", { host, port, nodeEnv: this.config.nodeEnv });
+      console.log(`[Kolo] Server listening on ${host}:${port}`);
 
       this.ensurePlatformWallet().catch(err =>
         this.logger.error("Background wallet initialization failed", { error: String(err) })
@@ -67,7 +75,7 @@ export class Application {
     } catch (error: unknown) {
       const err = error as NodeJS.ErrnoException | Error;
       if (err && "code" in err && (err as NodeJS.ErrnoException).code === "EADDRINUSE") {
-        this.logger.fatal(`Port ${this.config.port} is already in use`);
+        this.logger.fatal(`Port ${port} is already in use`);
       } else {
         this.logger.fatal("Failed to start application", { error: String(error) });
       }

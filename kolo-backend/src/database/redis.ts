@@ -18,11 +18,11 @@ export class RedisClient {
     return RedisClient.instance;
   }
 
-  async connect(): Promise<void> {
+  async connect(): Promise<boolean> {
     const env = EnvConfig.getInstance();
     if (!env.REDIS_URL && !env.REDIS_HOST) {
       this.logger.warn("Redis not configured — running without Redis");
-      return;
+      return false;
     }
     try {
       const retryStrategy = (times: number) => {
@@ -59,9 +59,11 @@ export class RedisClient {
       });
       await this.client.connect();
       this.logger.info("Redis connected", { host: env.REDIS_URL || env.REDIS_HOST });
+      return true;
     } catch (error) {
-      this.logger.error("Failed to connect to Redis", { error: String(error) });
+      this.logger.warn("Redis unavailable at startup", { error: String(error) });
       this.client = null;
+      return false;
     }
   }
 

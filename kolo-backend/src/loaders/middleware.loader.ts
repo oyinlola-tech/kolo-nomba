@@ -107,6 +107,13 @@ export class MiddlewareLoader {
 
     app.setErrorHandler(this.errorMiddleware.handle.bind(this.errorMiddleware));
 
+    this.logger.info("Plugins loaded", {
+      plugins: ["cors", "helmet", "rate-limit"],
+      corsOrigins: explicitOrigins,
+      nodeEnv: this.config.nodeEnv,
+      frontendUrl: this.config.frontendUrl,
+      adminFrontendUrl: this.config.adminFrontendUrl,
+    });
     this.logger.info("Middleware registered", {
       corsOrigins: explicitOrigins,
       nodeEnv: this.config.nodeEnv,

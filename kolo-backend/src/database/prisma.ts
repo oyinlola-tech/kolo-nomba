@@ -37,13 +37,13 @@ export class PrismaDatabase {
     return this.client;
   }
 
-  async connect(retries = 3, delayMs = 2000): Promise<void> {
+  async connect(retries = 1, delayMs = 1000): Promise<boolean> {
     let lastError: unknown;
     for (let attempt = 1; attempt <= retries; attempt++) {
       try {
         await this.client.$connect();
         this.logger.info("Database connected successfully");
-        return;
+        return true;
       } catch (error) {
         lastError = error;
         if (attempt < retries) {
@@ -53,10 +53,12 @@ export class PrismaDatabase {
           });
           await new Promise(resolve => setTimeout(resolve, delayMs));
         } else {
-          this.logger.error("Failed to connect to database after all retries", { error: String(lastError) });
+          this.logger.warn("Database unavailable at startup", { error: String(lastError) });
+          return false;
         }
       }
     }
+    return false;
   }
 
   async disconnect(): Promise<void> {

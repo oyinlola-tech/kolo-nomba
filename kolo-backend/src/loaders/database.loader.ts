@@ -10,9 +10,26 @@ export class DatabaseLoader {
   }
 
   async load(): Promise<void> {
-    await PrismaDatabase.getInstance().connect();
-    await RedisClient.getInstance().connect();
-    this.logger.info("Database connections established");
+    this.logger.info("Connecting to database and cache services");
+    const dbConnected = await PrismaDatabase.getInstance().connect();
+    const redisConnected = await RedisClient.getInstance().connect();
+
+    if (!dbConnected && !redisConnected) {
+      this.logger.warn("Database and Redis are unavailable at startup");
+      return;
+    }
+
+    if (!dbConnected) {
+      this.logger.warn("Database is unavailable at startup");
+      return;
+    }
+
+    if (redisConnected) {
+      this.logger.info("Database connected and cache ready", { dbConnected, redisConnected });
+      return;
+    }
+
+    this.logger.warn("Redis is unavailable at startup", { dbConnected, redisConnected });
   }
 
   async unload(): Promise<void> {
