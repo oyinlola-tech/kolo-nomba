@@ -71,11 +71,11 @@ export class AuthService {
     await this.otpService.invalidatePrevious(user.id);
     const code = await this.otpService.create(user.id);
 
-    await QueueManager.getInstance().addJob("email.queue", "send-email", {
+    QueueManager.getInstance().addJob("email.queue", "send-email", {
       userId: user.id,
       template: "accountVerification",
       vars: { firstName: user.firstName, verificationCode: code },
-    });
+    }).catch(err => this.logger.error("Failed to queue verification email", { userId: user.id, error: err }));
 
     await this.eventBus.publish(new UserEvent("verification_required", {
       userId: user.id,
@@ -147,11 +147,11 @@ export class AuthService {
     await this.otpService.invalidatePrevious(user.id);
     const code = await this.otpService.create(user.id);
 
-    await QueueManager.getInstance().addJob("email.queue", "send-email", {
+    QueueManager.getInstance().addJob("email.queue", "send-email", {
       userId: user.id,
       template: "accountVerification",
       vars: { firstName: user.firstName, verificationCode: code },
-    });
+    }).catch(err => this.logger.error("Failed to queue resend OTP email", { userId: user.id, error: err }));
 
     this.logger.info("OTP resent", { userId: user.id });
   }
@@ -218,11 +218,11 @@ export class AuthService {
       await this.otpService.invalidatePrevious(user.id, "LOGIN_CHALLENGE");
       const code = await this.otpService.create(user.id, "LOGIN_CHALLENGE");
 
-      await QueueManager.getInstance().addJob("email.queue", "send-email", {
+      QueueManager.getInstance().addJob("email.queue", "send-email", {
         userId: user.id,
         template: "accountVerification",
         vars: { firstName: user.firstName, verificationCode: code },
-      });
+      }).catch(err => this.logger.error("Failed to queue login challenge email", { userId: user.id, error: err }));
 
       this.logger.info("Login challenge sent", { userId: user.id });
       return { challengeId: user.id, email: user.email };
@@ -426,11 +426,11 @@ export class AuthService {
     await this.otpService.invalidatePrevious(user.id, "PASSWORD_RESET");
     const code = await this.otpService.create(user.id, "PASSWORD_RESET");
 
-    await QueueManager.getInstance().addJob("email.queue", "send-email", {
+    QueueManager.getInstance().addJob("email.queue", "send-email", {
       userId: user.id,
       template: "passwordReset",
       vars: { firstName: user.firstName, verificationCode: code },
-    });
+    }).catch(err => this.logger.error("Failed to queue password reset email", { userId: user.id, error: err }));
 
     await this.eventBus.publish(new GenericEvent("password.reset_requested", {
       userId: user.id,
