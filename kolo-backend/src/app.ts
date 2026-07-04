@@ -31,9 +31,6 @@ export class Application {
     this.app.register(cookie, {
       secret: this.config.cookieSecret,
     });
-
-    process.once("SIGTERM", () => this.shutdown("SIGTERM"));
-    process.once("SIGINT", () => this.shutdown("SIGINT"));
   }
 
   private async ensurePlatformWallet(): Promise<void> {
@@ -56,6 +53,11 @@ export class Application {
       await this.ensurePlatformWallet();
       await this.app.listen({ port: this.config.port, host: "0.0.0.0" });
       this.logger.info(`Server running on port ${this.config.port}`);
+
+      process.removeAllListeners("SIGTERM");
+      process.removeAllListeners("SIGINT");
+      process.on("SIGTERM", () => this.shutdown("SIGTERM"));
+      process.on("SIGINT", () => this.shutdown("SIGINT"));
     } catch (error: unknown) {
       const err = error as NodeJS.ErrnoException | Error;
       if (err && "code" in err && (err as NodeJS.ErrnoException).code === "EADDRINUSE") {
