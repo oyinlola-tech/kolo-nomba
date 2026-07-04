@@ -42,6 +42,7 @@ export class MiddlewareLoader {
         if (explicitOrigins.includes(origin)) return true;
         if (origin.endsWith(".vercel.app")) return true;
         if (origin.endsWith(".telente.site")) return true;
+        if (origin === "healthcheck.railway.app") return true;
         if (origin.startsWith("http://localhost")) return true;
         return false;
       },
@@ -89,6 +90,15 @@ export class MiddlewareLoader {
           durationMs: duration,
           requestId: request.requestId,
         });
+      }
+      done();
+    });
+
+    app.addHook("onSend", (request, reply, _payload, done) => {
+      if (request.url === "/v1/health") {
+        reply.header("content-security-policy", undefined);
+        reply.header("cross-origin-embedder-policy", undefined);
+        reply.header("cross-origin-opener-policy", undefined);
       }
       done();
     });
