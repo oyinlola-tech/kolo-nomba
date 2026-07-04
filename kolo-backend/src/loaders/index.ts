@@ -8,6 +8,7 @@ import { MigrationLoader } from "./migration.loader";
 import { JobLoader } from "../jobs/index";
 import { EventLoader } from "./event-loader";
 import { Logger } from "../logger/core/logger";
+import { HealthController } from "../controllers/health.controller";
 
 export class AppLoader {
   private readonly logger: Logger;
@@ -27,6 +28,12 @@ export class AppLoader {
 
     const databaseLoader = new DatabaseLoader();
     await databaseLoader.load();
+
+    // Register healthcheck BEFORE middleware so it bypasses CORS/helmet
+    const healthController = new HealthController();
+    app.get("/v1/health", async (request, reply) => {
+      await healthController.check(request, reply);
+    });
 
     const middlewareLoader = new MiddlewareLoader();
     await middlewareLoader.load(app);
