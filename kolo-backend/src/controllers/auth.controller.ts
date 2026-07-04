@@ -1,7 +1,7 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
 import { AuthService } from "../services/auth.service";
 import { ResponseUtil } from "../utils/response.util";
-import { registerSchema, loginSchema, verifyOtpSchema, resendOtpSchema, forgotPasswordSchema, resetPasswordSchema } from "../validators/auth.validator";
+import { registerSchema, loginSchema, verifyOtpSchema, verifyLoginOtpSchema, resendOtpSchema, forgotPasswordSchema, resetPasswordSchema } from "../validators/auth.validator";
 import { ValidationError } from "../errors/validation.error";
 import { EnvConfig } from "../config/env.config";
 import { Logger } from "../logger/core/logger";
@@ -176,7 +176,7 @@ export class AuthController {
   }
 
   async verifyLoginOtp(request: FastifyRequest, reply: FastifyReply): Promise<void> {
-    const parsed = verifyOtpSchema.safeParse(request.body);
+    const parsed = verifyLoginOtpSchema.safeParse(request.body);
     if (!parsed.success) {
       const details: Record<string, string[]> = {};
       for (const issue of parsed.error.issues) {
@@ -190,7 +190,7 @@ export class AuthController {
     const ipAddress = request.ip;
     const userAgent = request.headers["user-agent"];
 
-    const result = await this.authService.verifyLoginOtp(parsed.data.userId, parsed.data.code, ipAddress, userAgent);
+    const result = await this.authService.verifyLoginOtp(parsed.data.challengeId, parsed.data.code, ipAddress, userAgent);
     this.setRefreshCookie(reply, result.refreshToken);
     ResponseUtil.success(reply, {
       user: result.user,

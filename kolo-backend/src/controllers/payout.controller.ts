@@ -78,14 +78,14 @@ export class PayoutController {
   }
 
   async retryFailedTransfer(request: FastifyRequest, reply: FastifyReply): Promise<void> {
-    const { recipientId } = request.params as { recipientId: string };
-    const result = await this.payoutService.retryFailedTransfer(recipientId, request.userId);
+    const { id } = request.params as { id: string };
+    const result = await this.payoutService.retryFailedTransfer(id, request.userId);
     ResponseUtil.success(reply, result);
   }
 
   async getReceipt(request: FastifyRequest, reply: FastifyReply): Promise<void> {
-    const { recipientId } = request.params as { recipientId: string };
-    const result = await this.payoutService.generateTransferReceipt(recipientId, request.userId);
+    const { id } = request.params as { id: string };
+    const result = await this.payoutService.generateTransferReceipt(id, request.userId);
     ResponseUtil.success(reply, result);
   }
 

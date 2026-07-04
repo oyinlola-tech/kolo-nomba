@@ -19,6 +19,11 @@ export const verifyOtpSchema = z.object({
   code: z.string().length(6, "Verification code must be 6 digits"),
 });
 
+export const verifyLoginOtpSchema = z.object({
+  challengeId: z.string().uuid("Invalid challenge ID"),
+  code: z.string().length(6, "Verification code must be 6 digits"),
+});
+
 export const resendOtpSchema = z.object({
   userId: z.string().uuid("Invalid user ID"),
 });

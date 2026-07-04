@@ -27,8 +27,8 @@ export class PayoutRoute {
     app.post(`${prefix}/payouts/:id/process`, { preHandler: auth }, this.controller.process.bind(this.controller));
 
     // Transfer retry and receipts
-    app.post(`${prefix}/payouts/recipients/:recipientId/retry`, { preHandler: auth }, this.controller.retryFailedTransfer.bind(this.controller));
-    app.get(`${prefix}/payouts/recipients/:recipientId/receipt`, { preHandler: auth }, this.controller.getReceipt.bind(this.controller));
+    app.post(`${prefix}/payouts/:id/retry`, { preHandler: auth }, this.controller.retryFailedTransfer.bind(this.controller));
+    app.get(`${prefix}/payouts/:id/receipt`, { preHandler: auth }, this.controller.getReceipt.bind(this.controller));
 
     // Payout schedules
     app.post(`${prefix}/groups/:groupId/payout-schedules`, { preHandler: auth }, this.controller.createSchedule.bind(this.controller));
