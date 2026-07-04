@@ -30,7 +30,11 @@ export class AppLoader {
     await databaseLoader.load();
 
     // Register healthcheck BEFORE middleware so it bypasses CORS/helmet
+    // Railway probes /api/v1/health (external) and Docker probes /v1/health (internal)
     const healthController = new HealthController();
+    app.get("/api/v1/health", async (request, reply) => {
+      await healthController.check(request, reply);
+    });
     app.get("/v1/health", async (request, reply) => {
       await healthController.check(request, reply);
     });
