@@ -40,7 +40,7 @@ export class MiddlewareLoader {
         if (!origin) return true;
         if (explicitOrigins.includes("*")) return true;
         if (explicitOrigins.includes(origin)) return true;
-        if (origin === "healthcheck.railway.app") return true;
+        if (origin.endsWith("healthcheck.railway.app")) return true;
         if (origin.endsWith(".vercel.app")) return true;
         if (origin.endsWith(".telente.site")) return true;
         if (origin.startsWith("http://localhost")) return true;
