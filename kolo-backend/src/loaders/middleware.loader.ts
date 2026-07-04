@@ -68,7 +68,7 @@ export class MiddlewareLoader {
         },
       },
       crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" },
-      crossOriginEmbedderPolicy: { policy: "require-corp" },
+      crossOriginEmbedderPolicy: false,
     });
     await app.register(rateLimit, {
       max: this.config.rateLimitMax,
@@ -79,11 +79,11 @@ export class MiddlewareLoader {
     });
 
     // Allow Railway healthcheck probes to reach /v1/health without being
-    // blocked by helmet's strict security headers (CSP, COEP, COOP).
+    // blocked by helmet's strict security headers (CSP, COOP).
     app.addHook("onSend", (request, reply, payload, done) => {
-      if (request.url === "/v1/health" || request.url === "/api/v1/health") {
+      const url = request.url.split("?")[0];
+      if (url === "/v1/health" || url === "/api/v1/health" || url.startsWith("/v1/auth/")) {
         reply.removeHeader("content-security-policy");
-        reply.removeHeader("cross-origin-embedder-policy");
         reply.removeHeader("cross-origin-opener-policy");
       }
       done(null, payload);
