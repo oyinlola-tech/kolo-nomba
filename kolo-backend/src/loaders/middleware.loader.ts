@@ -81,7 +81,7 @@ export class MiddlewareLoader {
     // Allow Railway healthcheck probes to reach /v1/health without being
     // blocked by helmet's strict security headers (CSP, COEP, COOP).
     app.addHook("onSend", (request, reply, payload, done) => {
-      if (request.url === "/v1/health") {
+      if (request.url === "/v1/health" || request.url === "/api/v1/health") {
         reply.removeHeader("content-security-policy");
         reply.removeHeader("cross-origin-embedder-policy");
         reply.removeHeader("cross-origin-opener-policy");

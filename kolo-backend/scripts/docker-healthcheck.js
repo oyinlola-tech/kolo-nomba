@@ -2,7 +2,7 @@ const http = require('http');
 
 const port = process.env.PORT || 3000;
 const host = process.env.HEALTHCHECK_HOST || '127.0.0.1';
-const path = process.env.HEALTHCHECK_PATH || '/v1/health';
+const path = process.env.HEALTHCHECK_PATH || '/api/v1/health';
 const timeoutMs = Number(process.env.HEALTHCHECK_TIMEOUT_MS || 3000);
 
 const req = http.request(
