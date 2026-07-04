@@ -21,11 +21,7 @@ export class HealthController {
   }
 
   async check(_request: FastifyRequest, reply: FastifyReply): Promise<void> {
-    ResponseUtil.success(reply, {
-      status: "ok",
-      uptime: process.uptime(),
-      timestamp: new Date().toISOString(),
-      environment: this.config.nodeEnv,
-    });
+    console.log("Health endpoint called");
+    reply.code(200).send({ status: "ok" });
   }
 }
