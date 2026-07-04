@@ -70,10 +70,8 @@ export class RouteRegistry {
   register(): void {
     const prefix = this.config.apiPrefix;
 
-    this.app.get(`${prefix}/health`, {
-      config: { rateLimit: { max: 10, timeWindow: "10 seconds" } },
-    }, this.healthController.check.bind(this.healthController));
-
+    // Health route is registered early in AppLoader to bypass middleware
+    // Register /v1/config here instead
     this.app.get(`${prefix}/config`, {
       config: { rateLimit: { max: 10, timeWindow: "10 seconds" } },
     }, this.healthController.getConfig.bind(this.healthController));
@@ -102,3 +100,4 @@ export class RouteRegistry {
     this.logger.info("All routes registered", { prefix });
   }
 }
+
