@@ -78,7 +78,7 @@ export function RegisterPage() {
 
       {mode === "member" ? (
         <>
-          <div className="text-xs text-gray-400 dark:text-gray-600 font-semibold tracking-wider mb-5">STEP 1 OF 2 \u2014 Personal Details</div>
+          <div className="text-xs text-gray-400 dark:text-gray-600 font-semibold tracking-wider mb-5">STEP 1 OF 2 Personal Details</div>
           <Input label="First Name" placeholder="e.g. Jane" value={firstName} onChange={setFirstName} icon={User} required />
           <Input label="Last Name" placeholder="e.g. Doe" value={lastName} onChange={setLastName} icon={User} required />
           <Input label="Email Address" type="email" placeholder="you@example.com" value={email} onChange={setEmail} icon={Mail} required />
@@ -87,7 +87,7 @@ export function RegisterPage() {
         </>
       ) : (
         <>
-          <div className="text-xs text-gray-400 dark:text-gray-600 font-semibold tracking-wider mb-5">STEP 1 OF 3 \u2014 Admin Details</div>
+          <div className="text-xs text-gray-400 dark:text-gray-600 font-semibold tracking-wider mb-5">STEP 1 OF 3 Admin Details</div>
           <Input label="Full Name" placeholder="e.g. Jane Doe" value={firstName} onChange={setFirstName} icon={User} required />
           <Input label="Email Address" type="email" placeholder="you@example.com" value={email} onChange={setEmail} icon={Mail} required />
           <Input label="Phone Number" placeholder="+1 (000) 000-0000" value={phone} onChange={setPhone} icon={Phone} required />

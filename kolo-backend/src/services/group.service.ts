@@ -52,13 +52,12 @@ export class GroupService {
       throw new AuthError("Group not found");
     }
 
-    const membership = await this.memberRepository.findByGroupAndUser(groupId, userId);
+    const membership = group.members.find(m => m.userId === userId);
     if (!membership || membership.status !== "ACTIVE") {
       throw new ForbiddenError("You are not a member of this group");
     }
 
-    const members = await this.memberRepository.findActiveByGroup(groupId);
-    const memberResponses: GroupMemberResponse[] = members.map(m => ({
+    const memberResponses: GroupMemberResponse[] = group.members.map(m => ({
       id: m.id,
       userId: m.userId,
       firstName: m.user.firstName,

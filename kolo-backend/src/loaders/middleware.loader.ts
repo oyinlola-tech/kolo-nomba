@@ -78,6 +78,21 @@ export class MiddlewareLoader {
     });
 
     app.addHook("onRequest", this.requestContext.handle.bind(this.requestContext));
+
+    app.addHook("onResponse", (request, reply, done) => {
+      const duration = Date.now() - (request.startTime ?? Date.now());
+      if (duration > 1000) {
+        this.logger.warn("Slow request", {
+          method: request.method,
+          url: request.url,
+          statusCode: reply.statusCode,
+          durationMs: duration,
+          requestId: request.requestId,
+        });
+      }
+      done();
+    });
+
     app.setErrorHandler(this.errorMiddleware.handle.bind(this.errorMiddleware));
 
     this.logger.info("Middleware registered", {

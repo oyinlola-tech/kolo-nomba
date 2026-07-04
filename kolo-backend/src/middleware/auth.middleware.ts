@@ -23,15 +23,16 @@ export class AuthMiddleware {
   private async isTokenBlacklisted(token: string): Promise<boolean> {
     try {
       const redis = RedisClient.getInstance().getClient();
-      if (!redis) {
-        this.logger.warn("Redis unavailable for token blacklist check");
+      if (!redis || redis.status !== "ready") {
         return false;
       }
       const hash = JwtUtil.hashToken(token);
-      const result = await redis.get(`blacklist:${hash}`);
+      const result = await Promise.race([
+        redis.get(`blacklist:${hash}`),
+        new Promise<null>(resolve => setTimeout(() => resolve(null), 500)),
+      ]);
       return result !== null;
-    } catch (error) {
-      this.logger.error("Redis blacklist check failed", { error: String(error) });
+    } catch {
       return false;
     }
   }

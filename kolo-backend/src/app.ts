@@ -26,6 +26,7 @@ export class Application {
       logger: false,
       bodyLimit: 1048576,
       trustProxy: true,
+      requestTimeout: 30_000,
     });
 
     this.app.register(cookie, {
