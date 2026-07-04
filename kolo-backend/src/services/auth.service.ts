@@ -5,7 +5,7 @@ import { PasswordValidationService } from "../services/password.service";
 import { VirtualAccountService } from "../services/virtual-account.service";
 import { AuditService } from "./audit.service";
 import { OtpService } from "./otp.service";
-import { EmailService } from "./email.service";
+import { QueueManager } from "../jobs/queue-manager";
 import { EventBus } from "../events/core/event-bus";
 import { UserEvent, GenericEvent } from "../events/core/event";
 import { HashUtil } from "../utils/hash.util";
@@ -28,7 +28,6 @@ export class AuthService {
   private readonly virtualAccountRepository: VirtualAccountRepository;
   private readonly auditService: AuditService;
   private readonly otpService: OtpService;
-  private readonly emailService: EmailService;
   private readonly eventBus: EventBus;
   private readonly logger: Logger;
 
@@ -39,7 +38,6 @@ export class AuthService {
     this.virtualAccountRepository = new VirtualAccountRepository();
     this.auditService = new AuditService();
     this.otpService = new OtpService();
-    this.emailService = new EmailService();
     this.eventBus = EventBus.getInstance();
     this.logger = new Logger("auth-service");
   }
@@ -73,13 +71,10 @@ export class AuthService {
     await this.otpService.invalidatePrevious(user.id);
     const code = await this.otpService.create(user.id);
 
-    await this.emailService.sendNotificationEmail({
+    await QueueManager.getInstance().addJob("email.queue", "send-email", {
       userId: user.id,
       template: "accountVerification",
-      vars: {
-        firstName: user.firstName,
-        verificationCode: code,
-      },
+      vars: { firstName: user.firstName, verificationCode: code },
     });
 
     await this.eventBus.publish(new UserEvent("verification_required", {
@@ -152,13 +147,10 @@ export class AuthService {
     await this.otpService.invalidatePrevious(user.id);
     const code = await this.otpService.create(user.id);
 
-    await this.emailService.sendNotificationEmail({
+    await QueueManager.getInstance().addJob("email.queue", "send-email", {
       userId: user.id,
       template: "accountVerification",
-      vars: {
-        firstName: user.firstName,
-        verificationCode: code,
-      },
+      vars: { firstName: user.firstName, verificationCode: code },
     });
 
     this.logger.info("OTP resent", { userId: user.id });
@@ -226,13 +218,10 @@ export class AuthService {
       await this.otpService.invalidatePrevious(user.id, "LOGIN_CHALLENGE");
       const code = await this.otpService.create(user.id, "LOGIN_CHALLENGE");
 
-      await this.emailService.sendNotificationEmail({
+      await QueueManager.getInstance().addJob("email.queue", "send-email", {
         userId: user.id,
         template: "accountVerification",
-        vars: {
-          firstName: user.firstName,
-          verificationCode: code,
-        },
+        vars: { firstName: user.firstName, verificationCode: code },
       });
 
       this.logger.info("Login challenge sent", { userId: user.id });
@@ -437,13 +426,10 @@ export class AuthService {
     await this.otpService.invalidatePrevious(user.id, "PASSWORD_RESET");
     const code = await this.otpService.create(user.id, "PASSWORD_RESET");
 
-    await this.emailService.sendNotificationEmail({
+    await QueueManager.getInstance().addJob("email.queue", "send-email", {
       userId: user.id,
       template: "passwordReset",
-      vars: {
-        firstName: user.firstName,
-        verificationCode: code,
-      },
+      vars: { firstName: user.firstName, verificationCode: code },
     });
 
     await this.eventBus.publish(new GenericEvent("password.reset_requested", {
