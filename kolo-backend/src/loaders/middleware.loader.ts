@@ -95,7 +95,7 @@ export class MiddlewareLoader {
     });
 
     app.addHook("onSend", (request, reply, _payload, done) => {
-      if (request.url === "/v1/health") {
+      if (request.url.startsWith("/v1/health")) {
         reply.header("content-security-policy", undefined);
         reply.header("cross-origin-embedder-policy", undefined);
         reply.header("cross-origin-opener-policy", undefined);
