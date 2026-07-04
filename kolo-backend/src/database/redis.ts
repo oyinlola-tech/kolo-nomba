@@ -25,12 +25,17 @@ export class RedisClient {
       return;
     }
     try {
+      const retryStrategy = (times: number) => {
+        if (times > 10) return null;
+        return Math.min(times * 100, 3000);
+      };
+
       if (env.REDIS_URL) {
         this.client = new IORedis(env.REDIS_URL, {
           maxRetriesPerRequest: null,
           enableReadyCheck: false,
           lazyConnect: true,
-          retryStrategy: (times: number) => Math.min(times * 100, 3000),
+          retryStrategy,
         });
       } else {
         const redisOpts: Record<string, unknown> = {
@@ -40,7 +45,7 @@ export class RedisClient {
           maxRetriesPerRequest: null,
           enableReadyCheck: false,
           lazyConnect: true,
-          retryStrategy: (times: number) => Math.min(times * 100, 3000),
+          retryStrategy,
         };
         if (env.REDIS_PASSWORD) {
           redisOpts.password = env.REDIS_PASSWORD;
