@@ -88,7 +88,7 @@ export class ProcessPayoutTransferProcessor implements JobProcessor {
         }, { delay: 60000 });
       }
 
-      EventBus.getInstance().publish(new PayoutEvent("payout.transfer_processed", {
+      await EventBus.getInstance().publish(new PayoutEvent("payout.transfer_processed", {
         payoutId,
         recipientId,
         status: result.status,
@@ -117,7 +117,7 @@ export class ProcessPayoutTransferProcessor implements JobProcessor {
         failureReason: errMsg,
       });
 
-      EventBus.getInstance().publish(new PayoutEvent("payout.transfer_failed", {
+      await EventBus.getInstance().publish(new PayoutEvent("payout.transfer_failed", {
         payoutId,
         recipientId,
         error: errMsg,
@@ -168,7 +168,7 @@ export class CheckTransferStatusProcessor implements JobProcessor {
     if (status.status === "SUCCESSFUL") {
       await this.recipientRepo.updateStatus(String(recipientId), "SUCCESSFUL", status.providerReference);
 
-      EventBus.getInstance().publish(new PayoutEvent("payout.transfer_completed", {
+      await EventBus.getInstance().publish(new PayoutEvent("payout.transfer_completed", {
         recipientId,
         transferReference,
       }));
@@ -248,7 +248,7 @@ export class GeneratePayoutReceiptProcessor implements JobProcessor {
 
     const receipt = await this.payoutService.generateTransferReceipt(String(recipientId));
 
-    EventBus.getInstance().publish(new PayoutEvent("payout.receipt_generated", {
+    await EventBus.getInstance().publish(new PayoutEvent("payout.receipt_generated", {
       recipientId,
       receiptNumber: receipt.receiptNumber,
       amount: receipt.amount,

@@ -83,7 +83,7 @@ export class EnvConfig {
     this.DATABASE_URL = EnvConfig.getEnvOrThrow("DATABASE_URL");
     this.JWT_SECRET = EnvConfig.getEnvOrThrow("JWT_SECRET");
     this.JWT_REFRESH_SECRET = EnvConfig.getEnvOrThrow("JWT_REFRESH_SECRET");
-    this.PORT = parseInt(EnvConfig.getEnvOrThrow("PORT"), 10);
+    this.PORT = parseInt(EnvConfig.getEnvOrDefault("PORT", "3000"), 10);
     this.NODE_ENV = EnvConfig.getEnvOrDefault("NODE_ENV", "development");
     this.CORS_ORIGIN = EnvConfig.getEnvOrDefault("CORS_ORIGIN", "*");
     this.RATE_LIMIT_MAX = parseInt(EnvConfig.getEnvOrDefault("RATE_LIMIT_MAX", "100"), 10);

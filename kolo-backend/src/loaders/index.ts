@@ -6,6 +6,7 @@ import { RouteLoader } from "./route.loader";
 import { SwaggerLoader } from "./swagger.loader";
 import { MigrationLoader } from "./migration.loader";
 import { JobLoader } from "../jobs/index";
+import { EventLoader } from "./event-loader";
 import { Logger } from "../logger/core/logger";
 
 export class AppLoader {
@@ -41,6 +42,13 @@ export class AppLoader {
       await jobLoader.load();
     } catch (error) {
       this.logger.warn("Background jobs not available", { error: error instanceof Error ? error.message : String(error) });
+    }
+
+    try {
+      const eventLoader = new EventLoader();
+      eventLoader.load();
+    } catch (error) {
+      this.logger.warn("Event handlers not available", { error: error instanceof Error ? error.message : String(error) });
     }
 
     this.logger.info("Application loaded successfully");

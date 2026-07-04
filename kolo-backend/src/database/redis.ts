@@ -35,6 +35,7 @@ export class RedisClient {
           maxRetriesPerRequest: null,
           enableReadyCheck: false,
           lazyConnect: true,
+          connectTimeout: 10000,
           retryStrategy,
         });
       } else {
@@ -45,6 +46,7 @@ export class RedisClient {
           maxRetriesPerRequest: null,
           enableReadyCheck: false,
           lazyConnect: true,
+          connectTimeout: 10000,
           retryStrategy,
         };
         if (env.REDIS_PASSWORD) {
