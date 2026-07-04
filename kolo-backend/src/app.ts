@@ -54,6 +54,8 @@ export class Application {
       await this.app.listen({ port: this.config.port, host: "0.0.0.0" });
       this.logger.info(`Server running on port ${this.config.port}`);
 
+      process.removeAllListeners("SIGTERM");
+      process.removeAllListeners("SIGINT");
       process.on("SIGTERM", () => this.shutdown("SIGTERM"));
       process.on("SIGINT", () => this.shutdown("SIGINT"));
     } catch (error: unknown) {
