@@ -19,13 +19,12 @@ export class HealthController {
       isProduction: this.config.isProduction,
     });
   }
+}
 
-  async check(_request: FastifyRequest, reply: FastifyReply): Promise<void> {
-    console.log("Health endpoint called");
-    return reply.status(200).send({
-      status: "ok",
-      uptime: process.uptime(),
-      timestamp: new Date().toISOString(),
-    });
-  }
+export function healthCheck(_request: FastifyRequest, reply: FastifyReply): void {
+  reply.status(200).send({
+    status: "ok",
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString(),
+  });
 }

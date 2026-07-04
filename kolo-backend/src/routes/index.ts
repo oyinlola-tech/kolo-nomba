@@ -70,9 +70,6 @@ export class RouteRegistry {
   register(): void {
     const prefix = this.config.apiPrefix;
 
-    this.app.get("/api/v1/health", this.healthController.check.bind(this.healthController));
-    this.app.get("/v1/health", this.healthController.check.bind(this.healthController));
-
     this.app.get(`${prefix}/config`, {
       config: { rateLimit: { max: 10, timeWindow: "10 seconds" } },
     }, this.healthController.getConfig.bind(this.healthController));

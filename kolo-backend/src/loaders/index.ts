@@ -9,6 +9,7 @@ import { JobLoader } from "../jobs/index";
 import { EventLoader } from "./event-loader";
 import { Logger } from "../logger/core/logger";
 import { AppConfig } from "../config/app.config";
+import { healthCheck } from "../controllers/health.controller";
 
 export class AppLoader {
   private readonly logger: Logger;
@@ -33,6 +34,10 @@ export class AppLoader {
 
     const migrationLoader = new MigrationLoader();
     migrationLoader.load();
+
+    // Register health routes BEFORE middleware so they bypass CORS, helmet, rate-limit
+    app.get("/api/v1/health", healthCheck);
+    app.get("/v1/health", healthCheck);
 
     const middlewareLoader = new MiddlewareLoader();
     await middlewareLoader.load(app);
