@@ -51,9 +51,13 @@ export class Application {
   async start(): Promise<void> {
     try {
       await this.loader.load(this.app);
-      await this.ensurePlatformWallet();
+
       await this.app.listen({ port: this.config.port, host: "0.0.0.0" });
       this.logger.info(`Server running on port ${this.config.port}`);
+
+      this.ensurePlatformWallet().catch(err =>
+        this.logger.error("Background wallet initialization failed", { error: String(err) })
+      );
 
       process.removeAllListeners("SIGTERM");
       process.removeAllListeners("SIGINT");
