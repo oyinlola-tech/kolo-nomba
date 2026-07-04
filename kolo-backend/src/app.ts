@@ -54,6 +54,7 @@ export class Application {
 
       await this.app.listen({ port: this.config.port, host: "0.0.0.0" });
       this.logger.info(`Server running on port ${this.config.port}`);
+      console.log(`[Kolo] Server listening on 0.0.0.0:${this.config.port}`);
 
       this.ensurePlatformWallet().catch(err =>
         this.logger.error("Background wallet initialization failed", { error: String(err) })

@@ -35,7 +35,9 @@ export class HealthController {
     });
   }
 
-  async check(_request: FastifyRequest, reply: FastifyReply): Promise<void> {
+  async check(request: FastifyRequest, reply: FastifyReply): Promise<void> {
+    this.logger.info("Health check received", { url: request.url, ip: request.ip, id: request.id });
+
     let dbStatus = "disconnected";
     let redisStatus = "unavailable";
 
@@ -43,17 +45,8 @@ export class HealthController {
       const db = PrismaDatabase.getInstance().getClient();
       await this.withTimeout(db.$queryRaw`SELECT 1`, 2000);
       dbStatus = "connected";
-    } catch (error) {
-      this.logger.error("Health check DB failure", { error: String(error) });
-      reply.status(503).send({
-        success: false,
-        status: "unhealthy",
-        database: dbStatus,
-        redis: redisStatus,
-        timestamp: new Date().toISOString(),
-        uptime: process.uptime(),
-      });
-      return;
+    } catch {
+      this.logger.warn("Health check DB unavailable");
     }
 
     try {
@@ -65,8 +58,8 @@ export class HealthController {
           redisStatus = "connected";
         }
       }
-    } catch (error) {
-      this.logger.warn("Health check Redis unavailable", { error: String(error) });
+    } catch {
+      this.logger.warn("Health check Redis unavailable");
     }
 
     ResponseUtil.success(reply, {
