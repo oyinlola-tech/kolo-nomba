@@ -50,6 +50,8 @@ export class MiddlewareLoader {
       methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
       allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Idempotency-Key"],
       maxAge: 86400,
+      preflightContinue: true,
+      strictPreflight: false,
     });
     const scriptSrc = isProduction ? ["'self'"] : ["'self'", "'unsafe-inline'"];
     const styleSrc = isProduction ? ["'self'", "https://fonts.googleapis.com"] : ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"];
