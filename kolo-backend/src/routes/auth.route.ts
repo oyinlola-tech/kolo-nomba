@@ -1,4 +1,4 @@
-import type { FastifyInstance } from "fastify";
+import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { AuthController } from "../controllers/auth.controller";
 import { AuthMiddleware } from "../middleware/auth.middleware";
 
@@ -55,6 +55,12 @@ export class AuthRoute {
     app.post(`${prefix}/auth/reset-password`, {
       config: { rateLimit: { max: 5, timeWindow: "15 minutes" } },
       handler: this.controller.resetPassword.bind(this.controller),
+    });
+
+    app.options(`${prefix}/auth/*`, {
+      config: { rateLimit: { max: 30, timeWindow: "1 minute" } },
+    }, async (_request: FastifyRequest, reply: FastifyReply) => {
+      reply.status(204).send();
     });
   }
 }
