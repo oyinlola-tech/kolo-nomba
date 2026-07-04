@@ -1,6 +1,5 @@
 import "dotenv/config";
 import { Application } from "./app";
-import { Logger } from "./logger/core/logger";
 
 async function main(): Promise<void> {
   const application = new Application();
@@ -8,7 +7,7 @@ async function main(): Promise<void> {
 }
 
 main().catch((error) => {
-  const logger = new Logger("startup");
-  logger.fatal("Fatal startup error", { error: String(error) });
+  console.error("FATAL: Startup error:", error instanceof Error ? error.message : String(error));
+  console.error(error instanceof Error ? error.stack : "");
   process.exit(1);
 });
