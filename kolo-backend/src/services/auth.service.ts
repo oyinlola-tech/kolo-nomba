@@ -75,7 +75,7 @@ export class AuthService {
       userId: user.id,
       template: "accountVerification",
       vars: { firstName: user.firstName, verificationCode: code },
-    }).catch(err => this.logger.error("Failed to queue verification email", { userId: user.id, error: err }));
+    }).catch(err => this.logger.error("Failed to queue verification email", { userId: user.id, error: String(err) }));
 
     await this.eventBus.publish(new UserEvent("verification_required", {
       userId: user.id,
@@ -109,8 +109,8 @@ export class AuthService {
 
     await this.userRepository.updateStatus(user.id, "ACTIVE");
 
-    this.provisionVirtualAccount(user).catch(err =>
-      this.logger.error("Failed to provision virtual account", { userId: user.id, error: err })
+    this.provisionVirtualAccountWithTimeout(user).catch(err =>
+      this.logger.error("Failed to provision virtual account", { userId: user.id, error: String(err) })
     );
 
     const tokens = await this.generateTokens(user.id, user.role);
@@ -151,7 +151,7 @@ export class AuthService {
       userId: user.id,
       template: "accountVerification",
       vars: { firstName: user.firstName, verificationCode: code },
-    }).catch(err => this.logger.error("Failed to queue resend OTP email", { userId: user.id, error: err }));
+    }).catch(err => this.logger.error("Failed to queue resend OTP email", { userId: user.id, error: String(err) }));
 
     this.logger.info("OTP resent", { userId: user.id });
   }
@@ -222,7 +222,7 @@ export class AuthService {
         userId: user.id,
         template: "accountVerification",
         vars: { firstName: user.firstName, verificationCode: code },
-      }).catch(err => this.logger.error("Failed to queue login challenge email", { userId: user.id, error: err }));
+      }).catch(err => this.logger.error("Failed to queue login challenge email", { userId: user.id, error: String(err) }));
 
       this.logger.info("Login challenge sent", { userId: user.id });
       return { challengeId: user.id, email: user.email };
@@ -430,7 +430,7 @@ export class AuthService {
       userId: user.id,
       template: "passwordReset",
       vars: { firstName: user.firstName, verificationCode: code },
-    }).catch(err => this.logger.error("Failed to queue password reset email", { userId: user.id, error: err }));
+    }).catch(err => this.logger.error("Failed to queue password reset email", { userId: user.id, error: String(err) }));
 
     await this.eventBus.publish(new GenericEvent("password.reset_requested", {
       userId: user.id,
@@ -472,13 +472,25 @@ export class AuthService {
     this.logger.info("Password reset successfully", { userId: user.id });
   }
 
-  private async provisionVirtualAccount(user: { id: string; firstName: string; lastName: string }): Promise<void> {
-    const vaService = new VirtualAccountService();
-    await vaService.createVirtualAccount({
-      accountName: `${user.firstName} ${user.lastName}`,
-      ownerType: "USER",
-      ownerId: user.id,
-    });
+  private async provisionVirtualAccountWithTimeout(user: { id: string; firstName: string; lastName: string }): Promise<void> {
+    const timeoutPromise = new Promise<void>((_, reject) =>
+      setTimeout(() => reject(new Error("Virtual account provisioning timeout")), 5000)
+    );
+
+    try {
+      const vaService = new VirtualAccountService();
+      await Promise.race([
+        vaService.createVirtualAccount({
+          accountName: `${user.firstName} ${user.lastName}`,
+          ownerType: "USER",
+          ownerId: user.id,
+        }),
+        timeoutPromise,
+      ]);
+    } catch (error) {
+      this.logger.error("Virtual account provisioning failed", { userId: user.id, error: String(error) });
+      throw error;
+    }
   }
 
   async createCooperativeAfterRegistration(userId: string, coopName: string): Promise<void> {

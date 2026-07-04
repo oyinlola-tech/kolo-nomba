@@ -14,7 +14,7 @@ export class HealthController {
     this.config = new AppConfig();
   }
 
-  private withTimeout<T>(promise: Promise<T>, timeoutMs = 5000): Promise<T> {
+  private withTimeout<T>(promise: Promise<T>, timeoutMs = 2000): Promise<T> {
     let timeoutId: NodeJS.Timeout;
     return Promise.race([
       promise,
@@ -37,31 +37,14 @@ export class HealthController {
 
   async check(_request: FastifyRequest, reply: FastifyReply): Promise<void> {
     let dbStatus = "disconnected";
-    let redisStatus = "disconnected";
+    let redisStatus = "unavailable";
+
     try {
       const db = PrismaDatabase.getInstance().getClient();
-      await this.withTimeout(db.$queryRaw`SELECT 1`);
+      await this.withTimeout(db.$queryRaw`SELECT 1`, 2000);
       dbStatus = "connected";
     } catch (error) {
       this.logger.error("Health check DB failure", { error: String(error) });
-    }
-
-    try {
-      const redis = RedisClient.getInstance();
-      if (redis.isConnected()) {
-        const client = redis.getClient();
-        if (client) {
-          await this.withTimeout(client.ping());
-          redisStatus = "connected";
-        }
-      }
-    } catch (error) {
-      this.logger.error("Health check Redis failure", { error: String(error) });
-    }
-
-    const isHealthy = dbStatus === "connected" && redisStatus === "connected";
-
-    if (!isHealthy) {
       reply.status(503).send({
         success: false,
         status: "unhealthy",
@@ -73,6 +56,19 @@ export class HealthController {
       return;
     }
 
+    try {
+      const redis = RedisClient.getInstance();
+      if (redis.isConnected()) {
+        const client = redis.getClient();
+        if (client) {
+          await this.withTimeout(client.ping(), 2000);
+          redisStatus = "connected";
+        }
+      }
+    } catch (error) {
+      this.logger.warn("Health check Redis unavailable", { error: String(error) });
+    }
+
     ResponseUtil.success(reply, {
       status: "healthy",
       database: dbStatus,
@@ -81,5 +77,4 @@ export class HealthController {
       uptime: process.uptime(),
     });
   }
-
 }

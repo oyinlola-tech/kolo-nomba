@@ -11,12 +11,16 @@ export class PrismaDatabase {
   private constructor() {
     this.logger = new Logger("database");
     const env = EnvConfig.getInstance();
-    const poolConfig: { connectionString: string; pool?: { max?: number } } = {
+    const poolConfig: { connectionString: string; pool?: { max?: number; timeout?: number; idleTimeout?: number } } = {
       connectionString: env.DATABASE_URL,
     };
     const poolSize = env.PRISMA_POOL_SIZE;
     if (poolSize > 0) {
-      poolConfig.pool = { max: poolSize };
+      poolConfig.pool = {
+        max: poolSize,
+        timeout: 30000,
+        idleTimeout: 30000,
+      };
     }
     const adapter = new PrismaPg(poolConfig);
     this.client = new PrismaClient({ adapter });

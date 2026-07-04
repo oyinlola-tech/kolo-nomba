@@ -149,7 +149,7 @@ export class EnvConfig {
     this.JOB_TIMEOUT = parseInt(EnvConfig.getEnvOrDefault("JOB_TIMEOUT", "30000"), 10);
 
     this.AUTO_MIGRATE = EnvConfig.getEnvOrDefault("AUTO_MIGRATE", "false") === "true";
-    this.PRISMA_POOL_SIZE = parseInt(EnvConfig.getEnvOrDefault("PRISMA_POOL_SIZE", "20"), 10);
+    this.PRISMA_POOL_SIZE = parseInt(EnvConfig.getEnvOrDefault("PRISMA_POOL_SIZE", "25"), 10);
     this.ENCRYPTION_KEY = EnvConfig.getEnvOrDefault("ENCRYPTION_KEY", "");
     this.APP_NAME = EnvConfig.getEnvOrDefault("APP_NAME", "Kolo");
     this.APP_LOGO_URL = EnvConfig.getEnvOrDefault("APP_LOGO_URL", "");
