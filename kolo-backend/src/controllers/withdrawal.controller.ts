@@ -25,9 +25,11 @@ export class WithdrawalController {
 
     const result = await this.withdrawalService.createWithdrawal(
       request.userId!,
-      parsed.data.walletId,
+      parsed.data.groupId,
       parsed.data.amount,
       parsed.data.destination,
+      parsed.data.destinationBank,
+      parsed.data.accountName,
     );
     ResponseUtil.created(reply, result);
   }

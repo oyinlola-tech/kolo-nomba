@@ -673,15 +673,17 @@ model PayoutRecipientAccount {
 }
 
 model WithdrawalRequest {
-  id          String           @id @default(uuid())
-  userId      String
-  user        User             @relation(fields: [userId], references: [id])
-  walletId    String
-  amount      Int
-  destination String?
-  status      WithdrawalStatus @default(PENDING)
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
+  id              String           @id @default(uuid())
+  userId          String
+  user            User             @relation(fields: [userId], references: [id])
+  walletId        String
+  amount          Int
+  destination     String?
+  destinationBank String?
+  accountName     String?
+  status          WithdrawalStatus @default(PENDING)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
 
   @@index([userId, status])
   @@index([walletId])

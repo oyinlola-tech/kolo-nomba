@@ -100,6 +100,8 @@ export interface Withdrawal {
   walletId: string;
   amount: number;
   destination?: string;
+  destinationBank?: string;
+  accountName?: string;
   status: EntityStatus;
   createdAt: string;
   requesterName?: string;

@@ -21,6 +21,8 @@ export class WithdrawalRepository {
     walletId: string;
     amount: number;
     destination?: string;
+    destinationBank?: string;
+    accountName?: string;
   }) {
     return this.db.withdrawalRequest.create({ data: data as never });
   }

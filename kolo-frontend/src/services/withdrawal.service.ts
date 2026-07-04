@@ -15,7 +15,7 @@ export async function rejectWithdrawal(id: string): Promise<void> {
   await apiClient.post(`/withdrawals/${id}/reject`);
 }
 
-export async function createWithdrawal(payload: { groupId: string; amount: number; destination?: string }): Promise<Withdrawal> {
+export async function createWithdrawal(payload: { groupId: string; amount: number; destination?: string; destinationBank: string; accountName: string }): Promise<Withdrawal> {
   const { data } = await apiClient.post<{ data: Withdrawal }>("/withdrawals", payload);
   return data.data;
 }

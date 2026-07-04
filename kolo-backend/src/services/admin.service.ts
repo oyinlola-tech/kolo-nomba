@@ -196,13 +196,17 @@ export class AdminService {
   }
 
   async getWithdrawals(page: number, limit: number): Promise<PaginatedResponse<{
-    id: string; userId: string; walletId: string; amount: number; status: string; createdAt: string;
+    id: string; userId: string; walletId: string; amount: number; destination: string | null;
+    destinationBank: string | null; accountName: string | null; status: string; createdAt: string;
   }>> {
     const { data, total } = await this.adminRepository.getWithdrawals(page, limit);
     return {
       data: data.map(w => ({
         id: w.id, userId: w.userId, walletId: w.walletId,
-        amount: w.amount, status: w.status, createdAt: w.createdAt.toISOString(),
+        amount: w.amount, destination: w.destination,
+        destinationBank: (w as { destinationBank?: string | null }).destinationBank ?? null,
+        accountName: (w as { accountName?: string | null }).accountName ?? null,
+        status: w.status, createdAt: w.createdAt.toISOString(),
       })),
       meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
     };

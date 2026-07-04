@@ -1,4 +1,5 @@
 import { WithdrawalRepository } from "../repositories/withdrawal.repository";
+import { GroupMemberRepository } from "../repositories/group-member.repository";
 import { WalletService } from "./wallet.service";
 import { TransferService } from "./transfer.service";
 import { AuditService } from "./audit.service";
@@ -8,55 +9,49 @@ import type { WithdrawalResponse } from "../dto/payout.dto";
 
 export class WithdrawalService {
   private readonly withdrawalRepository: WithdrawalRepository;
+  private readonly groupMemberRepository: GroupMemberRepository;
   private readonly walletService: WalletService;
   private readonly transferService: TransferService;
   private readonly auditService: AuditService;
 
   constructor() {
     this.withdrawalRepository = new WithdrawalRepository();
+    this.groupMemberRepository = new GroupMemberRepository();
     this.walletService = new WalletService();
     this.transferService = new TransferService();
     this.auditService = new AuditService();
   }
 
-  async createWithdrawal(userId: string, walletId: string, amount: number, destination?: string): Promise<WithdrawalResponse> {
-    const wallet = await this.walletService.getWallet(walletId);
-    if (wallet.ownerId !== userId) {
-      throw new AuthError("You do not own this wallet");
+  async createWithdrawal(
+    userId: string,
+    groupId: string,
+    amount: number,
+    destination?: string,
+    destinationBank?: string,
+    accountName?: string,
+  ): Promise<WithdrawalResponse> {
+    const membership = await this.groupMemberRepository.findByGroupAndUser(groupId, userId);
+    if (!membership) {
+      throw new AuthError("You are not a member of this group");
     }
+
+    const wallet = await this.walletService.getOrCreateWallet("GROUP", groupId);
     if (wallet.balance < amount) {
-      throw new ValidationError("Insufficient wallet balance");
+      throw new ValidationError("Insufficient group wallet balance");
     }
 
     const withdrawal = await this.withdrawalRepository.create({
       userId,
-      walletId,
+      walletId: wallet.id,
       amount,
       destination,
+      destinationBank,
+      accountName,
     });
 
-    try {
-      await this.walletService.debit(walletId, amount, `Withdrawal: ${withdrawal.id}`);
-
-      await this.transferService.initiateTransfer({
-        amount,
-        currency: "NGN",
-        reference: `WD-${withdrawal.id.slice(0, 8)}`,
-        destinationAccount: destination ?? "",
-        destinationBank: "",
-        accountName: "",
-      });
-
-      await this.withdrawalRepository.updateStatus(withdrawal.id, "COMPLETED");
-    } catch {
-      await this.walletService.credit(walletId, amount, `Withdrawal reversal: ${withdrawal.id}`);
-      await this.withdrawalRepository.updateStatus(withdrawal.id, "FAILED");
-      throw new Error("Withdrawal processing failed. Please try again.");
-    }
-
-    await this.auditService.log("WITHDRAWAL_COMPLETED", {
+    await this.auditService.log("WITHDRAWAL_REQUESTED", {
       userId,
-      metadata: { withdrawalId: withdrawal.id, walletId, amount },
+      metadata: { withdrawalId: withdrawal.id, walletId: wallet.id, amount },
     });
 
     return this.getWithdrawalResponse(withdrawal.id);
@@ -70,6 +65,8 @@ export class WithdrawalService {
       walletId: w.walletId,
       amount: w.amount,
       destination: w.destination,
+      destinationBank: (w as { destinationBank?: string | null }).destinationBank ?? null,
+      accountName: (w as { accountName?: string | null }).accountName ?? null,
       status: w.status,
       createdAt: w.createdAt.toISOString(),
     }));
@@ -88,6 +85,28 @@ export class WithdrawalService {
     if (withdrawal.status !== "PENDING") throw new ValidationError("Withdrawal is not pending");
 
     await this.withdrawalRepository.updateStatus(id, "PROCESSING");
+
+    try {
+      await this.walletService.debit(withdrawal.walletId, withdrawal.amount, `Withdrawal: ${withdrawal.id}`);
+
+      const result = await this.transferService.initiateTransfer({
+        amount: withdrawal.amount,
+        currency: "NGN",
+        reference: `WD-${withdrawal.id.slice(0, 8)}`,
+        destinationAccount: withdrawal.destination ?? "",
+        destinationBank: (withdrawal as { destinationBank?: string | null }).destinationBank ?? "",
+        accountName: (withdrawal as { accountName?: string | null }).accountName ?? "",
+      });
+
+      await this.withdrawalRepository.updateStatus(id, result.status === "SUCCESSFUL" ? "COMPLETED" : "FAILED");
+
+      if (result.status !== "SUCCESSFUL") {
+        await this.walletService.credit(withdrawal.walletId, withdrawal.amount, `Withdrawal reversal: ${withdrawal.id}`);
+      }
+    } catch (error) {
+      await this.walletService.credit(withdrawal.walletId, withdrawal.amount, `Withdrawal reversal: ${withdrawal.id}`);
+      await this.withdrawalRepository.updateStatus(id, "FAILED");
+    }
 
     await this.auditService.log("WITHDRAWAL_APPROVED", {
       userId: adminId,
@@ -121,6 +140,8 @@ export class WithdrawalService {
       walletId: withdrawal.walletId,
       amount: withdrawal.amount,
       destination: withdrawal.destination,
+      destinationBank: (withdrawal as { destinationBank?: string | null }).destinationBank ?? null,
+      accountName: (withdrawal as { accountName?: string | null }).accountName ?? null,
       status: withdrawal.status,
       createdAt: withdrawal.createdAt.toISOString(),
     };

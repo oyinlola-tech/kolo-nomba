@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router";
-import { ArrowLeft, Wallet, Loader2 } from "lucide-react";
+import { ArrowLeft, Wallet, Landmark, User, Loader2 } from "lucide-react";
 import { Card } from "../../../components/shared/Card";
 import { Button } from "../../../components/shared/Button";
 import { Input } from "../../../components/shared/Input";
@@ -14,6 +14,8 @@ export function MWithdraw() {
   const navigate = useNavigate();
   const [amount, setAmount] = useState("");
   const [destination, setDestination] = useState("");
+  const [destinationBank, setDestinationBank] = useState("");
+  const [accountName, setAccountName] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const queryClient = useQueryClient();
@@ -22,7 +24,13 @@ export function MWithdraw() {
     setError("");
     setLoading(true);
     try {
-      await createWithdrawal({ groupId: id!, amount: Number(amount) || 0, destination: destination.trim() });
+      await createWithdrawal({
+        groupId: id!,
+        amount: Number(amount) || 0,
+        destination: destination.trim(),
+        destinationBank: destinationBank.trim(),
+        accountName: accountName.trim(),
+      });
       queryClient.invalidateQueries({ queryKey: ["withdrawals"] });
       navigate(`/member/group/${id}`);
     } catch (err: unknown) {
@@ -42,9 +50,11 @@ export function MWithdraw() {
       <PageHeader title="Request Withdrawal" subtitle="Request funds from this group." />
       <Card className="p-5 max-w-xl space-y-4">
         <Input label="Amount" type="number" placeholder="₦0.00" value={amount} onChange={setAmount} icon={Wallet} />
-        <Input label="Destination Account" placeholder="GTBank •••• 2841" value={destination} onChange={setDestination} />
+        <Input label="Account Number" placeholder="0123456789" value={destination} onChange={setDestination} icon={Landmark} />
+        <Input label="Bank Code" placeholder="011 (First Bank)" value={destinationBank} onChange={setDestinationBank} icon={Landmark} />
+        <Input label="Account Name" placeholder="John Doe" value={accountName} onChange={setAccountName} icon={User} />
         {error && <p className="text-xs text-red-500">{error}</p>}
-        <Button full onClick={handleSubmit} disabled={loading || !amount}>
+        <Button full onClick={handleSubmit} disabled={loading || !amount || !destination || !destinationBank || !accountName}>
           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
           {loading ? "Submitting…" : "Request Withdrawal"}
         </Button>

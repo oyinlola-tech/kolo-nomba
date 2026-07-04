@@ -80,9 +80,11 @@ export interface PayoutRecipientAccountResponse {
 }
 
 export interface WithdrawalRequestDto {
-  walletId: string;
+  groupId: string;
   amount: number;
   destination?: string;
+  destinationBank?: string;
+  accountName?: string;
 }
 
 export interface WithdrawalResponse {
@@ -91,6 +93,8 @@ export interface WithdrawalResponse {
   walletId: string;
   amount: number;
   destination: string | null;
+  destinationBank: string | null;
+  accountName: string | null;
   status: string;
   createdAt: string;
 }
