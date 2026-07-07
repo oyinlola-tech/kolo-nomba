@@ -6,6 +6,7 @@ import { Input } from "../../../components/shared/Input";
 import { Button } from "../../../components/shared/Button";
 import { FormError } from "../../../components/shared/FormError";
 import { useAuth } from "../../../hooks/use-auth";
+import { parseApiError } from "../../../utils/error";
 import type { UserRole } from "../../../types/auth.types";
 
 export function LoginPage() {
@@ -13,18 +14,18 @@ export function LoginPage() {
   const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<{ message: string; fieldErrors?: Record<string, string> } | null>(null);
   const clearError = useCallback(() => setError(null), []);
 
   const handleLogin = async () => {
-    setError("");
+    setError(null);
     const trimmedEmail = email.trim();
     if (!trimmedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
-      setError("Please enter a valid email address");
+      setError({ message: "Please enter a valid email address", fieldErrors: { email: "Enter a valid email address" } });
       return;
     }
     if (!password) {
-      setError("Password is required");
+      setError({ message: "Password is required", fieldErrors: { password: "Enter your password" } });
       return;
     }
     login.mutate(
@@ -45,8 +46,9 @@ export function LoginPage() {
             navigate("/member/home");
           }
         },
-        onError: (err: Error) => {
-          setError(err.message || "Invalid email or password");
+        onError: (err) => {
+          const parsed = parseApiError(err, "Invalid email or password");
+          setError(parsed);
         },
       },
     );
@@ -57,7 +59,9 @@ export function LoginPage() {
       title="Welcome back"
       subtitle="Enter your details to access your account."
     >
-      {error && <FormError message={error} onDismiss={clearError} />}
+      {error && (
+        <FormError message={error.message} fieldErrors={error.fieldErrors} onDismiss={clearError} />
+      )}
 
       <Input label="Email Address" type="email" placeholder="you@example.com" value={email} onChange={setEmail} icon={Mail} required />
       <Input label="Password" type="password" placeholder="Enter your password" value={password} onChange={setPassword} icon={Lock} required />

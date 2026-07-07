@@ -4,7 +4,7 @@ import { User, Mail, Phone, Lock, Building2, Users, RefreshCw, ArrowRight } from
 import { AuthLayout } from "../../../components/layout/AuthLayout";
 import { Input } from "../../../components/shared/Input";
 import { Button } from "../../../components/shared/Button";
-import { FormError, parseFieldErrors } from "../../../components/shared/FormError";
+import { FormError } from "../../../components/shared/FormError";
 import { parseApiError } from "../../../utils/error";
 import * as authService from "../../../services/auth.service";
 

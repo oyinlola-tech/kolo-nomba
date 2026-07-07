@@ -14,6 +14,7 @@ export class JobScheduler {
     await this.scheduleAnalyticsUpdates();
     await this.scheduleOverdueChecks();
     await this.scheduleCycleGeneration();
+    await this.schedulePendingUserCleanup();
     await this.schedulePaymentChecks();
     await this.schedulePayoutStatusChecks();
     await this.scheduleSessionCleanup();
@@ -96,5 +97,16 @@ export class JobScheduler {
       { jobId: "daily-cycle-generation" },
     );
     this.logger.info("Scheduled daily cycle generation");
+  }
+
+  private async schedulePendingUserCleanup(): Promise<void> {
+    await this.queueManager.addRepeatableJob(
+      "cleanup.queue",
+      "CLEANUP_PENDING_USERS",
+      {},
+      "0 3 * * *",
+      { jobId: "daily-pending-user-cleanup" },
+    );
+    this.logger.info("Scheduled daily pending user cleanup at 3 AM");
   }
 }

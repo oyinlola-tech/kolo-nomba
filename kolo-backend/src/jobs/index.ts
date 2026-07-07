@@ -10,7 +10,7 @@ import { ProcessPayoutTransferProcessor, CheckTransferStatusProcessor, RetryFail
 import { SyncTransactionsProcessor, MatchTransactionsProcessor, GenerateReconciliationReportProcessor } from "./processors/reconciliation.processor";
 import { GenerateUserReportProcessor, GenerateGroupReportProcessor, GenerateTransactionReportProcessor, GenerateRevenueReportProcessor } from "./processors/report.processor";
 import { UpdatePlatformMetricsProcessor, CalculateDailyStatsProcessor } from "./processors/analytics.processor";
-import { AnalyzeSecurityEventsProcessor, CleanupExpiredSessionsProcessor } from "./processors/security.processor";
+import { AnalyzeSecurityEventsProcessor, CleanupExpiredSessionsProcessor, CleanupPendingUsersProcessor } from "./processors/security.processor";
 import { Logger } from "../logger/core/logger";
 
 export class JobLoader {
@@ -59,6 +59,7 @@ export class JobLoader {
     this.queueManager.createQueue("security.queue");
 
     // Register additional processors for retry variants
+    this.queueManager.createQueue("cleanup.queue");
     this.queueManager.registerProcessor("payment.queue.retry", new RetryFailedPaymentProcessor());
     this.queueManager.registerProcessor("payout.queue.retry", new RetryFailedTransferProcessor());
     this.queueManager.registerProcessor("payout.queue.status", new CheckTransferStatusProcessor());
@@ -72,6 +73,7 @@ export class JobLoader {
     this.queueManager.registerProcessor("report.queue.revenue", new GenerateRevenueReportProcessor());
     this.queueManager.registerProcessor("analytics.queue.daily", new CalculateDailyStatsProcessor());
     this.queueManager.registerProcessor("security.queue.cleanup", new CleanupExpiredSessionsProcessor());
+    this.queueManager.registerProcessor("cleanup.queue", new CleanupPendingUsersProcessor());
     this.queueManager.registerProcessor("contribution.queue.generate", new GenerateCyclesProcessor());
 
     // Create workers for main queues
@@ -89,6 +91,7 @@ export class JobLoader {
     this.queueManager.createWorker("report.queue");
     this.queueManager.createWorker("analytics.queue");
     this.queueManager.createWorker("security.queue");
+    this.queueManager.createWorker("cleanup.queue");
 
     // Register scheduled jobs
     await this.scheduler.registerSchedules();

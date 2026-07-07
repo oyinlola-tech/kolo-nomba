@@ -5,8 +5,9 @@ import { Button } from "../../../components/shared/Button";
 import { AuthLayout } from "../../../components/layout/AuthLayout";
 import { setAccessToken } from "../../../api/client";
 import { useAppStore } from "../../../app/store";
+import { FormError } from "../../../components/shared/FormError";
 import * as authService from "../../../services/auth.service";
-import { extractApiError } from "../../../utils/error";
+import { parseApiError } from "../../../utils/error";
 import type { UserRole } from "../../../types/auth.types";
 
 const RETRY_COOLDOWN = 60;
@@ -20,7 +21,7 @@ export function VerifyOTPPage() {
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState<{ message: string; fieldErrors?: Record<string, string> } | null>(null);
   const [countdown, setCountdown] = useState(RETRY_COOLDOWN);
   const setSession = useAppStore((state) => state.setSession);
 
@@ -43,7 +44,7 @@ export function VerifyOTPPage() {
   };
 
   const handleVerify = async () => {
-    setError("");
+    setError(null);
     setLoading(true);
     try {
       const result = mode === "login"
@@ -56,7 +57,7 @@ export function VerifyOTPPage() {
       const target = role === "SUPER_ADMIN" ? "/ajo/admin/dashboard" : role === "GROUP_ADMIN" ? "/group/admin/dashboard" : "/member/home";
       navigate(target, { replace: true });
     } catch (err: unknown) {
-      setError(extractApiError(err, "Verification failed"));
+      setError(parseApiError(err, "Verification failed"));
     } finally {
       setLoading(false);
     }
@@ -64,11 +65,11 @@ export function VerifyOTPPage() {
 
   const handleResend = async () => {
     setResending(true);
-    setError("");
+    setError(null);
     try {
       await authService.resendOtp(userId);
     } catch (err: unknown) {
-      setError(extractApiError(err, "Failed to resend code"));
+      setError(parseApiError(err, "Failed to resend code"));
     } finally {
       setResending(false);
     }
@@ -78,9 +79,7 @@ export function VerifyOTPPage() {
     <AuthLayout title={mode === "login" ? "Verify login" : "Verify your email"} subtitle={`We sent a 6-digit code to ${email ? email.replace(/(.{3}).+(@.+)/, "$1•••$2") : "your email"}`}
       icon={ShieldCheck} showBack onBack={() => navigate(mode === "login" ? "/login" : "/register")}>
       {error && (
-        <div className="mb-4 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm">
-          {error}
-        </div>
+        <FormError message={error.message} fieldErrors={error.fieldErrors} />
       )}
       <div className="flex gap-2.5 justify-center mb-6">
         {otp.map((d, i) => (
