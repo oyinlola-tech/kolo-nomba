@@ -17,7 +17,7 @@ export class AppLoader {
     this.logger = new Logger("app-loader");
   }
 
-  async loadMinimal(app: FastifyInstance): Promise<void> {
+  async loadMinimal(_app: FastifyInstance): Promise<void> {
     const config = new AppConfig();
     this.logger.info("Starting minimal application load...");
     this.logger.info("Environment loaded", {
@@ -31,59 +31,59 @@ export class AppLoader {
     const loggerLoader = new LoggerLoader();
     loggerLoader.load();
 
+    this.logger.info("Core application loaded — server will start listening immediately");
+  }
+
+  async loadRemaining(app: FastifyInstance): Promise<void> {
+    this.logger.info("Starting background initialization...");
+
     try {
       const middlewareLoader = new MiddlewareLoader();
       await middlewareLoader.load(app);
     } catch (error) {
-      this.logger.warn(`Middleware setup failed: ${error instanceof Error ? error.message : String(error)}`);
+      this.logger.warn("Middleware setup failed", { error: error instanceof Error ? error.message : String(error) });
     }
 
     try {
       const routeLoader = new RouteLoader();
       routeLoader.load(app);
     } catch (error) {
-      this.logger.warn(`Route registration failed: ${error instanceof Error ? error.message : String(error)}`);
+      this.logger.warn("Route registration failed", { error: error instanceof Error ? error.message : String(error) });
     }
 
     try {
       const swaggerLoader = new SwaggerLoader();
       await swaggerLoader.load(app);
     } catch (error) {
-      this.logger.warn(`Swagger not available: ${error instanceof Error ? error.message : String(error)}`);
+      this.logger.warn("Swagger documentation not available", { error: error instanceof Error ? error.message : String(error) });
     }
-
-    this.logger.info("Core application loaded — will start listening now");
-  }
-
-  async loadRemaining(_app: FastifyInstance): Promise<void> {
-    this.logger.info("Starting background initialization...");
 
     try {
       const migrationLoader = new MigrationLoader();
       await migrationLoader.load();
     } catch (error) {
-      this.logger.warn(`Migration failed: ${error instanceof Error ? error.message : String(error)}`);
+      this.logger.warn("Migration not available", { error: error instanceof Error ? error.message : String(error) });
     }
 
     try {
       const databaseLoader = new DatabaseLoader();
       await databaseLoader.load();
     } catch (error) {
-      this.logger.warn(`Database bootstrap failed: ${error instanceof Error ? error.message : String(error)}`);
+      this.logger.warn("Database bootstrap unavailable at startup", { error: error instanceof Error ? error.message : String(error) });
     }
 
     try {
       const jobLoader = new JobLoader();
       await jobLoader.load();
     } catch (error) {
-      this.logger.warn(`Background jobs failed: ${error instanceof Error ? error.message : String(error)}`);
+      this.logger.warn("Background jobs not available", { error: error instanceof Error ? error.message : String(error) });
     }
 
     try {
       const eventLoader = new EventLoader();
       eventLoader.load();
     } catch (error) {
-      this.logger.warn(`Event handlers failed: ${error instanceof Error ? error.message : String(error)}`);
+      this.logger.warn("Event handlers not available", { error: error instanceof Error ? error.message : String(error) });
     }
 
     this.logger.info("Background initialization complete");
