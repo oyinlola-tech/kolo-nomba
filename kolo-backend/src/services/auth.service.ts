@@ -4,6 +4,7 @@ import { VirtualAccountRepository } from "../repositories/virtual-account.reposi
 import { PasswordValidationService } from "../services/password.service";
 import { VirtualAccountService } from "../services/virtual-account.service";
 import { AuditService } from "./audit.service";
+import { EmailService } from "./email.service";
 import { OtpService } from "./otp.service";
 import { QueueManager } from "../jobs/queue-manager";
 import { EventBus } from "../events/core/event-bus";
@@ -223,6 +224,12 @@ export class AuthService {
         template: "accountVerification",
         vars: { firstName: user.firstName, verificationCode: code },
       }).catch(err => this.logger.error("Failed to queue login challenge email", { userId: user.id, error: String(err) }));
+
+      new EmailService().sendNotificationEmail({
+        userId: user.id,
+        template: "accountVerification",
+        vars: { firstName: user.firstName, verificationCode: code },
+      }).catch(err => this.logger.error("Failed to send login challenge email directly", { userId: user.id, error: String(err) }));
 
       this.logger.info("Login challenge sent", { userId: user.id, code });
       return { challengeId: user.id, email: user.email };
