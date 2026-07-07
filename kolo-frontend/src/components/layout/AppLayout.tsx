@@ -1,7 +1,8 @@
 import { useState, type ReactNode, type ElementType } from "react";
-import { Menu, Search, Bell } from "lucide-react";
+import { Menu, Search } from "lucide-react";
 import { ThemeToggle } from "../shared/ThemeToggle";
 import { SidebarLink } from "./SidebarLink";
+import { NotificationBell } from "./NotificationBell";
 import { Avatar } from "../shared/Avatar";
 
 export interface NavItem {
@@ -83,10 +84,7 @@ export function AppLayout({
           </div>
           <div className="ml-auto flex items-center gap-2">
             <ThemeToggle />
-            <button className="relative p-2 rounded-xl text-gray-500 hover:bg-gray-100 dark:hover:bg-white/5">
-              <Bell className="w-4 h-4" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />
-            </button>
+            <NotificationBell />
             <Avatar name={avatarName} size="sm" />
           </div>
         </header>

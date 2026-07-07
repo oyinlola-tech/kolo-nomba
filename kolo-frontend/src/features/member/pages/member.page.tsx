@@ -1,7 +1,8 @@
 import { useNavigate, useLocation, Outlet } from "react-router";
-import { Home, Receipt, Building2, Bell, User, Search } from "lucide-react";
+import { Home, Receipt, Building2, User, Search } from "lucide-react";
 import { ThemeToggle } from "../../../components/shared/ThemeToggle";
 import { Logo } from "../../../components/shared/Logo";
+import { NotificationBell } from "../../../components/layout/NotificationBell";
 import { Avatar } from "../../../components/shared/Avatar";
 import { useAuth } from "../../../hooks/use-auth";
 import { useRealtimeNotifications } from "../../../hooks/use-realtime";
@@ -81,10 +82,7 @@ export function MemberApp() {
           <div className="flex items-center gap-1.5">
             <span className="hidden md:inline text-xs text-gray-500 dark:text-muted-foreground mr-2">{userName}</span>
             <ThemeToggle />
-            <button className="relative p-1.5 lg:p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-white/5" onClick={() => navigate("notifications")}>
-              <Bell className="w-4 h-4 lg:w-5 lg:h-5" />
-              <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-red-500 rounded-full" />
-            </button>
+            <NotificationBell onNavigate={() => navigate("notifications")} />
             <div className="hidden lg:block">
               <Avatar name={userName} size="sm" />
             </div>
