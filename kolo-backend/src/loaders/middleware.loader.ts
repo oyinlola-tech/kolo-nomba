@@ -50,7 +50,7 @@ export class MiddlewareLoader {
       methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
       allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Idempotency-Key"],
       maxAge: 86400,
-      preflightContinue: true,
+      preflightContinue: false,
       strictPreflight: false,
     });
     const scriptSrc = isProduction ? ["'self'"] : ["'self'", "'unsafe-inline'"];
