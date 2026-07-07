@@ -224,7 +224,7 @@ export class AuthService {
         vars: { firstName: user.firstName, verificationCode: code },
       }).catch(err => this.logger.error("Failed to queue login challenge email", { userId: user.id, error: String(err) }));
 
-      this.logger.info("Login challenge sent", { userId: user.id });
+      this.logger.info("Login challenge sent", { userId: user.id, code });
       return { challengeId: user.id, email: user.email };
     }
 
