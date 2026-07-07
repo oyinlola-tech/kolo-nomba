@@ -12,3 +12,4 @@ export { EmptyState } from "./EmptyState";
 export { ThemeToggle } from "./ThemeToggle";
 export { Logo } from "./Logo";
 export { ErrorBoundary } from "./ErrorBoundary";
+export { FormError } from "./FormError";

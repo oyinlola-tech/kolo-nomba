@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useNavigate } from "react-router";
 import { Mail, Lock, RefreshCw } from "lucide-react";
 import { AuthLayout } from "../../../components/layout/AuthLayout";
 import { Input } from "../../../components/shared/Input";
 import { Button } from "../../../components/shared/Button";
+import { FormError } from "../../../components/shared/FormError";
 import { useAuth } from "../../../hooks/use-auth";
 import type { UserRole } from "../../../types/auth.types";
 
@@ -12,7 +13,8 @@ export function LoginPage() {
   const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const clearError = useCallback(() => setError(null), []);
 
   const handleLogin = async () => {
     setError("");
@@ -55,11 +57,7 @@ export function LoginPage() {
       title="Welcome back"
       subtitle="Enter your details to access your account."
     >
-      {error && (
-        <div className="mb-4 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm">
-          {error}
-        </div>
-      )}
+      {error && <FormError message={error} onDismiss={clearError} />}
 
       <Input label="Email Address" type="email" placeholder="you@example.com" value={email} onChange={setEmail} icon={Mail} required />
       <Input label="Password" type="password" placeholder="Enter your password" value={password} onChange={setPassword} icon={Lock} required />
