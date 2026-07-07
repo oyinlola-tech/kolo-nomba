@@ -29,8 +29,12 @@ export function LoginPage() {
       { email: trimmedEmail, password },
       {
         onSuccess: (result) => {
-        const allowed: UserRole[] = ["SUPER_ADMIN", "GROUP_ADMIN", "MEMBER"];
-        const role = allowed.includes(result.user?.role ?? "MEMBER") ? result.user!.role : "MEMBER";
+          if ("challengeId" in result) {
+            navigate(`/verify-login?userId=${result.challengeId}&email=${encodeURIComponent(trimmedEmail)}`);
+            return;
+          }
+          const allowed: UserRole[] = ["SUPER_ADMIN", "GROUP_ADMIN", "MEMBER"];
+          const role = allowed.includes(result.user?.role ?? "MEMBER") ? result.user!.role : "MEMBER";
           if (role === "SUPER_ADMIN") {
             navigate("/ajo/admin/dashboard");
           } else if (role === "GROUP_ADMIN") {

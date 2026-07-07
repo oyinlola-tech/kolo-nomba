@@ -14,6 +14,7 @@ export function useAuth() {
   const loginMutation = useMutation({
     mutationFn: (payload: LoginPayload) => authService.login(payload),
     onSuccess: (result) => {
+      if ("challengeId" in result) return;
       setSession(result.user, result.accessToken);
       queryClient.invalidateQueries({ queryKey: ["auth", "profile"] });
     },

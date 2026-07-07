@@ -15,11 +15,19 @@ export interface RegisterPayload {
   coopName?: string;
 }
 
-export interface LoginResponse {
+export interface LoginSuccess {
   user: AuthUser;
   accessToken: string;
   role: UserRole;
 }
+
+export interface LoginChallenge {
+  challengeId: string;
+  email: string;
+  type: "login_challenge";
+}
+
+export type LoginResponse = LoginSuccess | LoginChallenge;
 
 export interface RegisterResponse {
   userId: string;
