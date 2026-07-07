@@ -1,3 +1,4 @@
+import dns from "dns";
 import nodemailer from "nodemailer";
 import type { EmailProvider, SendEmailOptions, EmailProviderResult } from "./email-provider.interface";
 import { EnvConfig } from "../../config/env.config";
@@ -10,6 +11,7 @@ export class SmtpProvider implements EmailProvider {
   private readonly logger: Logger;
 
   constructor() {
+    dns.setDefaultResultOrder("ipv4first");
     this.logger = new Logger("smtp-provider");
     const env = EnvConfig.getInstance();
 
