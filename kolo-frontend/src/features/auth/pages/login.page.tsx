@@ -16,8 +16,17 @@ export function LoginPage() {
 
   const handleLogin = async () => {
     setError("");
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      setError("Please enter a valid email address");
+      return;
+    }
+    if (!password) {
+      setError("Password is required");
+      return;
+    }
     login.mutate(
-      { email, password },
+      { email: trimmedEmail, password },
       {
         onSuccess: (result) => {
         const allowed: UserRole[] = ["SUPER_ADMIN", "GROUP_ADMIN", "MEMBER"];
