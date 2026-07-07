@@ -30,7 +30,7 @@ export function LoginPage() {
       {
         onSuccess: (result) => {
           if ("challengeId" in result) {
-            navigate(`/verify-login?userId=${result.challengeId}&email=${encodeURIComponent(trimmedEmail)}`);
+            navigate(`/verify-otp?userId=${result.challengeId}&email=${encodeURIComponent(trimmedEmail)}&mode=login`);
             return;
           }
           const allowed: UserRole[] = ["SUPER_ADMIN", "GROUP_ADMIN", "MEMBER"];

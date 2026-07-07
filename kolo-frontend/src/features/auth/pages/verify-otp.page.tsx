@@ -13,7 +13,8 @@ export function VerifyOTPPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const userId = searchParams.get("userId") ?? "";
-  const [email] = useState(() => sessionStorage.getItem("verifyEmail") ?? "");
+  const mode = searchParams.get("mode") ?? "register";
+  const [email] = useState(() => searchParams.get("email") ?? sessionStorage.getItem("verifyEmail") ?? "");
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
@@ -31,7 +32,9 @@ export function VerifyOTPPage() {
     setError("");
     setLoading(true);
     try {
-      const result = await authService.verifyOtp({ userId, code: otp.join("") });
+      const result = mode === "login"
+        ? await authService.verifyLoginOtp(userId, otp.join(""))
+        : await authService.verifyOtp({ userId, code: otp.join("") });
       setAccessToken(result.accessToken);
       setSession(result.user, result.accessToken);
       const allowed: UserRole[] = ["SUPER_ADMIN", "GROUP_ADMIN", "MEMBER"];
@@ -58,8 +61,8 @@ export function VerifyOTPPage() {
   };
 
   return (
-    <AuthLayout title="Verify your email" subtitle={`We sent a 6-digit code to ${email ? email.replace(/(.{3}).+(@.+)/, "$1•••$2") : "your email"}`}
-      icon={ShieldCheck} showBack onBack={() => navigate("/register")}>
+    <AuthLayout title={mode === "login" ? "Verify login" : "Verify your email"} subtitle={`We sent a 6-digit code to ${email ? email.replace(/(.{3}).+(@.+)/, "$1•••$2") : "your email"}`}
+      icon={ShieldCheck} showBack onBack={() => navigate(mode === "login" ? "/login" : "/register")}>
       {error && (
         <div className="mb-4 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm">
           {error}
@@ -77,13 +80,22 @@ export function VerifyOTPPage() {
         {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
         {loading ? "Verifying\u2026" : "Verify Code"}
       </Button>
-      <p className="text-sm text-gray-500 dark:text-muted-foreground text-center">
-        Didn&apos;t receive it?{" "}
-        <button disabled={resending} onClick={handleResend}
-          className={`font-semibold ${resending ? "text-gray-400 cursor-not-allowed" : "text-primary hover:underline"}`}>
-          {resending ? "Sending\u2026" : "Resend code"}
-        </button>
-      </p>
+      {mode === "login" ? (
+        <p className="text-sm text-gray-500 dark:text-muted-foreground text-center">
+          Didn&apos;t receive it?{" "}
+          <button onClick={() => navigate("/login")} className="font-semibold text-primary hover:underline">
+            Try logging in again
+          </button>
+        </p>
+      ) : (
+        <p className="text-sm text-gray-500 dark:text-muted-foreground text-center">
+          Didn&apos;t receive it?{" "}
+          <button disabled={resending} onClick={handleResend}
+            className={`font-semibold ${resending ? "text-gray-400 cursor-not-allowed" : "text-primary hover:underline"}`}>
+            {resending ? "Sending\u2026" : "Resend code"}
+          </button>
+        </p>
+      )}
     </AuthLayout>
   );
 }

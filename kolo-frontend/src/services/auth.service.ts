@@ -85,6 +85,11 @@ export async function verifyOtp(payload: VerifyOtpPayload): Promise<VerifyOtpRes
   return data.data;
 }
 
+export async function verifyLoginOtp(challengeId: string, code: string): Promise<LoginSuccess> {
+  const { data } = await apiClient.post<{ data: LoginSuccess }>("/auth/verify-login-otp", { challengeId, code });
+  return data.data;
+}
+
 export async function forgotPassword(email: string): Promise<void> {
   await apiClient.post("/auth/forgot-password", { email });
 }
