@@ -7,6 +7,7 @@ import { SwaggerLoader } from "./swagger.loader";
 import { MigrationLoader } from "./migration.loader";
 import { JobLoader } from "../jobs/index";
 import { EventLoader } from "./event-loader";
+import { ErrorMiddleware } from "../middleware/error.middleware";
 import { Logger } from "../logger/core/logger";
 import { AppConfig } from "../config/app.config";
 
@@ -39,6 +40,15 @@ export class AppLoader {
       routeLoader.load(app);
     } catch (error) {
       this.logger.warn("Route registration failed", { error: error instanceof Error ? error.message : String(error) });
+    }
+
+    // Error handler must be registered before listen so Zod validation errors
+    // (400) use our consistent response format instead of Fastify's default.
+    try {
+      const errorMiddleware = new ErrorMiddleware();
+      app.setErrorHandler(errorMiddleware.handle.bind(errorMiddleware));
+    } catch (error) {
+      this.logger.warn("Error handler setup failed", { error: error instanceof Error ? error.message : String(error) });
     }
 
     // Fallback CORS headers — the real CORS plugin (with origin validation)
