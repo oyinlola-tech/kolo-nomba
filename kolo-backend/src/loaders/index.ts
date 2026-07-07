@@ -53,14 +53,22 @@ export class AppLoader {
 
     // Fallback CORS — handles both headers and preflight OPTIONS before the
     // real CORS plugin (with origin validation) registers in background.
+    const allowedOrigins = config.allowedOrigins;
+    const isOriginAllowed = (origin: string): boolean => {
+      if (allowedOrigins.includes(origin)) return true;
+      if (origin.endsWith(".vercel.app")) return true;
+      if (origin.endsWith(".telente.site")) return true;
+      if (origin.startsWith("http://localhost")) return true;
+      return false;
+    };
     app.addHook("onRequest", (request, reply, done) => {
       const origin = request.headers.origin;
-      if (origin) {
+      if (origin && isOriginAllowed(origin)) {
         reply.header("Access-Control-Allow-Origin", origin);
+        reply.header("Access-Control-Allow-Credentials", "true");
       }
       reply.header("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
       reply.header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With");
-      reply.header("Access-Control-Allow-Credentials", "true");
       if (request.method === "OPTIONS") {
         reply.status(204).send();
         return;
