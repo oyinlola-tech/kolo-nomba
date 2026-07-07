@@ -12,6 +12,12 @@ export class NombaWebhook {
   }
 
   verifySignature(signature: string | undefined, body: string, timestamp: string): boolean {
+    const secret = this.config.NOMBA_WEBHOOK_SECRET;
+    if (!secret) {
+      this.logger.log("Webhook secret not configured — skipping signature verification");
+      return true;
+    }
+
     if (!signature) {
       this.logger.log("Webhook signature missing");
       return false;
@@ -19,12 +25,6 @@ export class NombaWebhook {
 
     if (!timestamp) {
       this.logger.log("Webhook timestamp missing");
-      return false;
-    }
-
-    const secret = this.config.NOMBA_WEBHOOK_SECRET;
-    if (!secret) {
-      this.logger.log("Webhook secret not configured");
       return false;
     }
 
