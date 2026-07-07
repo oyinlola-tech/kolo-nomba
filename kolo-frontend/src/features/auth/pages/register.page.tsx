@@ -23,6 +23,7 @@ export function RegisterPage() {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [coopName, setCoopName] = useState("");
 
   const [error, setError] = useState<{ message: string; fieldErrors?: Record<string, string> } | null>(null);
@@ -38,6 +39,8 @@ export function RegisterPage() {
     const p = phone.trim();
     if (p.length < 10) fe.phone = "Phone must be at least 10 characters";
     if (password.length < 8) fe.password = "Password must be at least 8 characters";
+    if (!confirmPassword) fe.confirmPassword = "Confirm your password";
+    else if (password !== confirmPassword) fe.confirmPassword = "Passwords do not match";
     if (Object.keys(fe).length > 0) {
       setError({ message: "Please fix the errors below", fieldErrors: fe });
       return false;
@@ -108,6 +111,7 @@ export function RegisterPage() {
           <Input label="Cooperative / Group Name" placeholder="e.g. Lagos Women Cooperative" value={coopName} onChange={setCoopName} icon={Building2} />
         )}
         <Input label="Password" type="password" placeholder="Min 8 characters" value={password} onChange={setPassword} icon={Lock} required hint="Must be at least 8 characters" />
+        <Input label="Confirm Password" type="password" placeholder="Re-enter your password" value={confirmPassword} onChange={setConfirmPassword} icon={Lock} required />
       </div>
 
       <Button full onClick={handleRegister} disabled={loading} className="mt-6">
