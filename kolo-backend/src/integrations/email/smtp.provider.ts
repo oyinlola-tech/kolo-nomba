@@ -56,7 +56,7 @@ export class SmtpProvider implements EmailProvider {
       return { success: true, providerReference: info.messageId };
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
-      this.logger.error("SMTP send failed", { error: msg });
+      this.logger.error(`SMTP send failed: ${msg}`);
       return { success: false, error: msg };
     }
   }
