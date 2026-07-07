@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router";
-import { ShieldCheck, Check, RefreshCw } from "lucide-react";
+import { ShieldCheck, Check, RefreshCw, ArrowLeft } from "lucide-react";
 import { Button } from "../../../components/shared/Button";
 import { AuthLayout } from "../../../components/layout/AuthLayout";
 import { setAccessToken } from "../../../api/client";
@@ -8,6 +8,8 @@ import { useAppStore } from "../../../app/store";
 import * as authService from "../../../services/auth.service";
 import { extractApiError } from "../../../utils/error";
 import type { UserRole } from "../../../types/auth.types";
+
+const RETRY_COOLDOWN = 60;
 
 export function VerifyOTPPage() {
   const navigate = useNavigate();
@@ -19,7 +21,19 @@ export function VerifyOTPPage() {
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
   const [error, setError] = useState("");
+  const [countdown, setCountdown] = useState(RETRY_COOLDOWN);
   const setSession = useAppStore((state) => state.setSession);
+
+  useEffect(() => {
+    if (countdown <= 0) return;
+    const id = setInterval(() => setCountdown((c) => c - 1), 1000);
+    return () => clearInterval(id);
+  }, [countdown]);
+
+  const resetCooldown = useCallback(() => {
+    setCountdown(RETRY_COOLDOWN);
+    setResending(false);
+  }, []);
 
   const handleChange = (i: number, v: string) => {
     if (!/^\d?$/.test(v)) return;
@@ -80,22 +94,33 @@ export function VerifyOTPPage() {
         {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
         {loading ? "Verifying\u2026" : "Verify Code"}
       </Button>
-      {mode === "login" ? (
-        <p className="text-sm text-gray-500 dark:text-muted-foreground text-center">
-          Didn&apos;t receive it?{" "}
-          <button onClick={() => navigate("/login")} className="font-semibold text-primary hover:underline">
-            Try logging in again
+      <div className="flex flex-col items-center gap-3 mt-4">
+        {countdown > 0 && resending ? (
+          <p className="text-sm text-gray-500 dark:text-muted-foreground">
+            Resending in {countdown}s&hellip;
+          </p>
+        ) : null}
+        {mode === "login" ? (
+          <>
+            <button
+              disabled={countdown > 0}
+              onClick={() => navigate("/login")}
+              className="text-sm font-semibold text-primary hover:underline disabled:text-gray-400 disabled:cursor-not-allowed"
+            >
+              {countdown > 0 ? `Retry in ${countdown}s` : "Resend code"}
+            </button>
+            <button onClick={() => navigate("/login")} className="text-sm text-gray-500 hover:text-primary flex items-center gap-1">
+              <ArrowLeft className="w-3.5 h-3.5" />
+              Try logging in again
+            </button>
+          </>
+        ) : (
+          <button disabled={resending || countdown > 0} onClick={() => { handleResend().finally(resetCooldown); }}
+            className={`text-sm font-semibold ${resending || countdown > 0 ? "text-gray-400 cursor-not-allowed" : "text-primary hover:underline"}`}>
+            {resending ? "Sending\u2026" : countdown > 0 ? `Resend code (${countdown}s)` : "Resend code"}
           </button>
-        </p>
-      ) : (
-        <p className="text-sm text-gray-500 dark:text-muted-foreground text-center">
-          Didn&apos;t receive it?{" "}
-          <button disabled={resending} onClick={handleResend}
-            className={`font-semibold ${resending ? "text-gray-400 cursor-not-allowed" : "text-primary hover:underline"}`}>
-            {resending ? "Sending\u2026" : "Resend code"}
-          </button>
-        </p>
-      )}
+        )}
+      </div>
     </AuthLayout>
   );
 }

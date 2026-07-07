@@ -28,6 +28,9 @@ export class SmtpProvider implements EmailProvider {
           user: env.SMTP_USER,
           pass: env.SMTP_PASSWORD,
         },
+        connectionTimeout: 10000,
+        greetingTimeout: 10000,
+        socketTimeout: 15000,
       });
     }
   }
