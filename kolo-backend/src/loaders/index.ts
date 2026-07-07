@@ -31,14 +31,26 @@ export class AppLoader {
     const loggerLoader = new LoggerLoader();
     loggerLoader.load();
 
-    const middlewareLoader = new MiddlewareLoader();
-    await middlewareLoader.load(app);
+    try {
+      const middlewareLoader = new MiddlewareLoader();
+      await middlewareLoader.load(app);
+    } catch (error) {
+      this.logger.warn(`Middleware setup failed: ${error instanceof Error ? error.message : String(error)}`);
+    }
 
-    const routeLoader = new RouteLoader();
-    routeLoader.load(app);
+    try {
+      const routeLoader = new RouteLoader();
+      routeLoader.load(app);
+    } catch (error) {
+      this.logger.warn(`Route registration failed: ${error instanceof Error ? error.message : String(error)}`);
+    }
 
-    const swaggerLoader = new SwaggerLoader();
-    await swaggerLoader.load(app);
+    try {
+      const swaggerLoader = new SwaggerLoader();
+      await swaggerLoader.load(app);
+    } catch (error) {
+      this.logger.warn(`Swagger not available: ${error instanceof Error ? error.message : String(error)}`);
+    }
 
     this.logger.info("Core application loaded — will start listening now");
   }
