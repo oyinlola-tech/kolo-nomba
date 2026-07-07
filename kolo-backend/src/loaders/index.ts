@@ -9,7 +9,6 @@ import { JobLoader } from "../jobs/index";
 import { EventLoader } from "./event-loader";
 import { Logger } from "../logger/core/logger";
 import { AppConfig } from "../config/app.config";
-import { healthCheck } from "../controllers/health.controller";
 
 export class AppLoader {
   private readonly logger: Logger;
@@ -18,9 +17,9 @@ export class AppLoader {
     this.logger = new Logger("app-loader");
   }
 
-  async load(app: FastifyInstance): Promise<void> {
+  async loadMinimal(app: FastifyInstance): Promise<void> {
     const config = new AppConfig();
-    this.logger.info("Starting application load...");
+    this.logger.info("Starting minimal application load...");
     this.logger.info("Environment loaded", {
       nodeEnv: config.nodeEnv,
       port: config.port,
@@ -32,13 +31,6 @@ export class AppLoader {
     const loggerLoader = new LoggerLoader();
     loggerLoader.load();
 
-    const migrationLoader = new MigrationLoader();
-    migrationLoader.load();
-
-    // Register health routes BEFORE middleware so they bypass CORS, helmet, rate-limit
-    app.get("/api/v1/health", healthCheck);
-    app.get("/v1/health", healthCheck);
-
     const middlewareLoader = new MiddlewareLoader();
     await middlewareLoader.load(app);
 
@@ -47,6 +39,19 @@ export class AppLoader {
 
     const swaggerLoader = new SwaggerLoader();
     await swaggerLoader.load(app);
+
+    this.logger.info("Core application loaded");
+  }
+
+  async loadRemaining(_app: FastifyInstance): Promise<void> {
+    this.logger.info("Starting background initialization...");
+
+    try {
+      const migrationLoader = new MigrationLoader();
+      migrationLoader.load();
+    } catch (error) {
+      this.logger.warn("Migration not available", { error: error instanceof Error ? error.message : String(error) });
+    }
 
     try {
       const databaseLoader = new DatabaseLoader();
@@ -69,6 +74,6 @@ export class AppLoader {
       this.logger.warn("Event handlers not available", { error: error instanceof Error ? error.message : String(error) });
     }
 
-    this.logger.info("Application loaded successfully");
+    this.logger.info("Background initialization complete");
   }
 }

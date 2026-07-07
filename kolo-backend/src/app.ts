@@ -2,6 +2,7 @@ import Fastify, { type FastifyInstance } from "fastify";
 import cookie from "@fastify/cookie";
 import { AppConfig } from "./config/app.config";
 import { AppLoader } from "./loaders/index";
+import { healthCheck } from "./controllers/health.controller";
 import { Logger } from "./logger/core/logger";
 import { PrismaDatabase } from "./database/prisma";
 import { RedisClient } from "./database/redis";
@@ -55,14 +56,19 @@ export class Application {
     this.logger.info("Server starting", { host, port, nodeEnv: this.config.nodeEnv });
 
     try {
-      await this.loader.load(this.app);
-      this.logger.info("Fastify bootstrap complete");
-      await this.app.ready();
-      this.logger.info("Fastify ready", { host, port, nodeEnv: this.config.nodeEnv });
+      // Register health endpoint FIRST so Railway health checks pass immediately
+      this.app.get("/api/v1/health", healthCheck);
+      this.app.get("/v1/health", healthCheck);
 
+      await this.loader.loadMinimal(this.app);
       await this.app.listen({ port, host });
       this.logger.info("Server listening", { host, port, nodeEnv: this.config.nodeEnv });
       console.log(`[Kolo] Server listening on ${host}:${port}`);
+
+      // Load the rest (middleware, routes, DB, jobs) in background after listen
+      this.loader.loadRemaining(this.app).catch(err =>
+        this.logger.error("Background initialization failed", { error: String(err) })
+      );
 
       this.ensurePlatformWallet().catch(err =>
         this.logger.error("Background wallet initialization failed", { error: String(err) })
