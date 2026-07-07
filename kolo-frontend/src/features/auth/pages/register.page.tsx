@@ -25,11 +25,19 @@ export function RegisterPage() {
 
   const handleRegister = async () => {
     setError("");
+    const trimmedEmail = email.trim();
+    const trimmedPhone = phone.trim();
+    if (!firstName.trim()) { setError("First name is required"); return; }
+    if (!lastName.trim()) { setError("Last name is required"); return; }
+    if (!trimmedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) { setError("Please enter a valid email address"); return; }
+    if (trimmedPhone.length < 10) { setError("Phone number must be at least 10 characters"); return; }
+    if (password.length < 8) { setError("Password must be at least 8 characters"); return; }
+
     setLoading(true);
     try {
       const payload = mode === "member"
-        ? { firstName, lastName, email, phone, password }
-        : { firstName, lastName: lastName || firstName, email, phone, password, coopName };
+        ? { firstName: firstName.trim(), lastName: lastName.trim(), email: trimmedEmail, phone: trimmedPhone, password }
+        : { firstName: firstName.trim(), lastName: lastName.trim() || firstName.trim(), email: trimmedEmail, phone: trimmedPhone, password, coopName: coopName.trim() || undefined };
       const result = await authService.register(payload);
       sessionStorage.setItem("verifyEmail", email);
       navigate(`/verify-otp?userId=${result.userId}`);
