@@ -31,8 +31,9 @@ export class AppLoader {
     const loggerLoader = new LoggerLoader();
     loggerLoader.load();
 
-    // Routes and middleware are sync (just define routes/register plugins) —
-    // run before listen so CORS headers are set on every response immediately.
+    // Routes are synchronous (just define route handlers) — register before listen
+    // so they're always available. Middleware uses async plugin registrations that
+    // could hang, so those run in background.
     try {
       const routeLoader = new RouteLoader();
       routeLoader.load(app);
@@ -40,18 +41,29 @@ export class AppLoader {
       this.logger.warn("Route registration failed", { error: error instanceof Error ? error.message : String(error) });
     }
 
-    try {
-      const middlewareLoader = new MiddlewareLoader();
-      await middlewareLoader.load(app);
-    } catch (error) {
-      this.logger.warn("Middleware setup failed", { error: error instanceof Error ? error.message : String(error) });
-    }
+    // Fallback CORS headers — the real CORS plugin (with origin validation)
+    // registers in background. This ensures browsers see CORS headers on every
+    // response immediately. Duplicate headers are harmless once real plugin kicks in.
+    app.addHook("onRequest", (_request, reply, done) => {
+      reply.header("Access-Control-Allow-Origin", "*");
+      reply.header("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
+      reply.header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With");
+      reply.header("Access-Control-Allow-Credentials", "true");
+      done();
+    });
 
     this.logger.info("Core application loaded — server will start listening immediately");
   }
 
   async loadRemaining(app: FastifyInstance): Promise<void> {
     this.logger.info("Starting background initialization...");
+
+    try {
+      const middlewareLoader = new MiddlewareLoader();
+      await middlewareLoader.load(app);
+    } catch (error) {
+      this.logger.warn("Middleware setup failed", { error: error instanceof Error ? error.message : String(error) });
+    }
 
     try {
       const swaggerLoader = new SwaggerLoader();
