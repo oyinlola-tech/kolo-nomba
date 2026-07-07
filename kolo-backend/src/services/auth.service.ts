@@ -46,12 +46,12 @@ export class AuthService {
   async register(dto: RegisterDto, ipAddress?: string, userAgent?: string): Promise<{ userId: string }> {
     const existingEmail = await this.userRepository.findByEmail(dto.email);
     if (existingEmail) {
-      throw new ValidationError("Registration failed. Please check your information and try again.");
+      throw new ValidationError("Registration failed. Please check your information and try again.", { email: ["This email is already registered"] });
     }
 
     const existingPhone = await this.userRepository.findByPhone(dto.phone);
     if (existingPhone) {
-      throw new ValidationError("Registration failed. Please check your information and try again.");
+      throw new ValidationError("Registration failed. Please check your information and try again.", { phone: ["This phone number is already registered"] });
     }
     // Validate password strength
     const passwordValidation = new PasswordValidationService().validatePassword(dto.password);
