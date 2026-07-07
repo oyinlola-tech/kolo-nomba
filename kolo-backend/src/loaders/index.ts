@@ -17,7 +17,7 @@ export class AppLoader {
     this.logger = new Logger("app-loader");
   }
 
-  async loadMinimal(_app: FastifyInstance): Promise<void> {
+  async loadMinimal(app: FastifyInstance): Promise<void> {
     const config = new AppConfig();
     this.logger.info("Starting minimal application load...");
     this.logger.info("Environment loaded", {
@@ -31,6 +31,16 @@ export class AppLoader {
     const loggerLoader = new LoggerLoader();
     loggerLoader.load();
 
+    // Routes are synchronous (just define route handlers) — register before listen
+    // so they're always available. Middleware & swagger use async plugin registrations
+    // that could hang, so those run in background.
+    try {
+      const routeLoader = new RouteLoader();
+      routeLoader.load(app);
+    } catch (error) {
+      this.logger.warn("Route registration failed", { error: error instanceof Error ? error.message : String(error) });
+    }
+
     this.logger.info("Core application loaded — server will start listening immediately");
   }
 
@@ -42,13 +52,6 @@ export class AppLoader {
       await middlewareLoader.load(app);
     } catch (error) {
       this.logger.warn("Middleware setup failed", { error: error instanceof Error ? error.message : String(error) });
-    }
-
-    try {
-      const routeLoader = new RouteLoader();
-      routeLoader.load(app);
-    } catch (error) {
-      this.logger.warn("Route registration failed", { error: error instanceof Error ? error.message : String(error) });
     }
 
     try {
