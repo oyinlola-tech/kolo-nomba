@@ -17,7 +17,7 @@ export class AppLoader {
     this.logger = new Logger("app-loader");
   }
 
-  async loadMinimal(app: FastifyInstance): Promise<void> {
+  async loadMinimal(_app: FastifyInstance): Promise<void> {
     const config = new AppConfig();
     this.logger.info("Starting minimal application load...");
     this.logger.info("Environment loaded", {
@@ -31,20 +31,32 @@ export class AppLoader {
     const loggerLoader = new LoggerLoader();
     loggerLoader.load();
 
-    const middlewareLoader = new MiddlewareLoader();
-    await middlewareLoader.load(app);
-
-    const routeLoader = new RouteLoader();
-    routeLoader.load(app);
-
-    const swaggerLoader = new SwaggerLoader();
-    await swaggerLoader.load(app);
-
-    this.logger.info("Core application loaded");
+    this.logger.info("Core application loaded — server will start listening immediately");
   }
 
-  async loadRemaining(_app: FastifyInstance): Promise<void> {
+  async loadRemaining(app: FastifyInstance): Promise<void> {
     this.logger.info("Starting background initialization...");
+
+    try {
+      const middlewareLoader = new MiddlewareLoader();
+      await middlewareLoader.load(app);
+    } catch (error) {
+      this.logger.warn("Middleware setup failed", { error: error instanceof Error ? error.message : String(error) });
+    }
+
+    try {
+      const routeLoader = new RouteLoader();
+      routeLoader.load(app);
+    } catch (error) {
+      this.logger.warn("Route registration failed", { error: error instanceof Error ? error.message : String(error) });
+    }
+
+    try {
+      const swaggerLoader = new SwaggerLoader();
+      await swaggerLoader.load(app);
+    } catch (error) {
+      this.logger.warn("Swagger documentation not available", { error: error instanceof Error ? error.message : String(error) });
+    }
 
     try {
       const migrationLoader = new MigrationLoader();

@@ -55,16 +55,21 @@ export class Application {
     this.logger.info("Server starting", { host, port, nodeEnv: this.config.nodeEnv });
 
     try {
-      // Register health endpoint FIRST so Railway health checks pass immediately
+      this.logger.info("Startup phase 1: registering health routes");
       this.app.get("/api/v1/health", healthCheck);
       this.app.get("/v1/health", healthCheck);
+      this.logger.info("Startup phase 1 complete: health routes registered");
 
+      this.logger.info("Startup phase 2: loading minimal (logger)");
       await this.loader.loadMinimal(this.app);
+      this.logger.info("Startup phase 2 complete: minimal load done");
+
+      this.logger.info("Startup phase 3: starting HTTP listener");
       await this.app.listen({ port, host });
-      this.logger.info("Server listening", { host, port, nodeEnv: this.config.nodeEnv });
+      this.logger.info("Startup phase 3 complete: server listening", { host, port });
       console.log(`[Kolo] Server listening on ${host}:${port}`);
 
-      // Load the rest (middleware, routes, DB, jobs) in background after listen
+      this.logger.info("Startup phase 4: background initialization starting");
       this.loader.loadRemaining(this.app).catch(err =>
         this.logger.error("Background initialization failed", { error: String(err) })
       );
