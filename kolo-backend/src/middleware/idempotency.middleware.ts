@@ -20,6 +20,8 @@ export class IdempotencyMiddleware {
     }
 
     const redis = QueueManager.getInstance().getConnection();
+    if (!redis) return;
+
     const cacheKey = `idempotent:${key}`;
 
     try {

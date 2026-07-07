@@ -13,7 +13,7 @@ export interface JobProcessor {
 
 export class QueueManager {
   private static instance: QueueManager;
-  private readonly connection: IORedis;
+  private readonly connection: IORedis | null;
   private readonly prefix: string;
   private readonly queues: Map<string, Queue>;
   private readonly workers: Map<string, Worker>;
@@ -29,6 +29,12 @@ export class QueueManager {
     this.processors = new Map();
     this.jobRepo = new BackgroundJobRepository();
     this.logger = new Logger("queue-manager");
+
+    if (!env.REDIS_URL && !env.REDIS_HOST) {
+      this.logger.warn("Redis not configured — queue manager running without Redis");
+      this.connection = null;
+      return;
+    }
 
     let redisConnection: IORedis;
     if (env.REDIS_URL) {
@@ -59,11 +65,19 @@ export class QueueManager {
     return QueueManager.instance;
   }
 
-  getConnection(): IORedis {
+  getConnection(): IORedis | null {
     return this.connection;
   }
 
-  createQueue(name: string): Queue {
+  isAvailable(): boolean {
+    return this.connection !== null;
+  }
+
+  createQueue(name: string): Queue | null {
+    if (!this.connection) {
+      this.logger.warn("Redis unavailable — skipping queue creation", { queue: name });
+      return null;
+    }
     if (this.queues.has(name)) {
       return this.queues.get(name)!;
     }
@@ -91,7 +105,11 @@ export class QueueManager {
     this.processors.set(queueName, processor);
   }
 
-  createWorker(queueName: string): Worker {
+  createWorker(queueName: string): Worker | null {
+    if (!this.connection) {
+      this.logger.warn("Redis unavailable — skipping worker creation", { queue: queueName });
+      return null;
+    }
     const processor = this.processors.get(queueName);
     if (!processor) {
       throw new Error(`No processor registered for queue: ${queueName}`);
@@ -155,6 +173,10 @@ export class QueueManager {
   }
 
   async addJob(queueName: string, type: JobType, payload: JobPayload, opts?: Record<string, unknown>): Promise<string | undefined> {
+    if (!this.connection) {
+      this.logger.warn("Redis unavailable — job not queued", { queue: queueName, type });
+      return undefined;
+    }
     const queue = this.getQueue(queueName);
     if (!queue) {
       throw new Error(`Queue not found: ${queueName}`);
@@ -175,6 +197,10 @@ export class QueueManager {
     pattern: string,
     opts?: Record<string, unknown>,
   ): Promise<void> {
+    if (!this.connection) {
+      this.logger.warn("Redis unavailable — repeatable job not scheduled", { queue: queueName, type });
+      return;
+    }
     const queue = this.getQueue(queueName);
     if (!queue) {
       throw new Error(`Queue not found: ${queueName}`);
@@ -211,6 +237,10 @@ export class QueueManager {
   }
 
   async close(): Promise<void> {
+    if (!this.connection) {
+      this.logger.info("Queue manager closed (no Redis)");
+      return;
+    }
     for (const worker of this.workers.values()) {
       await worker.close();
     }

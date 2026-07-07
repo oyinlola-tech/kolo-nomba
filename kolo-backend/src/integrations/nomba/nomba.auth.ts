@@ -24,17 +24,23 @@ export class NombaAuthService {
 
   async getAccessToken(): Promise<string> {
     const redis = QueueManager.getInstance().getConnection();
-    const cached = await redis.get(this.tokenKey);
-    if (cached) return cached;
+    if (redis) {
+      const cached = await redis.get(this.tokenKey);
+      if (cached) return cached;
+    }
 
     const token = await this.authenticate();
-    await redis.set(this.tokenKey, token.accessToken, "EX", token.ttlSeconds);
+    if (redis) {
+      await redis.set(this.tokenKey, token.accessToken, "EX", token.ttlSeconds);
+    }
     return token.accessToken;
   }
 
   async refreshAccessToken(): Promise<string> {
     const redis = QueueManager.getInstance().getConnection();
-    await redis.del(this.tokenKey);
+    if (redis) {
+      await redis.del(this.tokenKey);
+    }
     return this.getAccessToken();
   }
 
