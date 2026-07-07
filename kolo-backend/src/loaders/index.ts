@@ -43,9 +43,13 @@ export class AppLoader {
 
     // Fallback CORS headers — the real CORS plugin (with origin validation)
     // registers in background. This ensures browsers see CORS headers on every
-    // response immediately. Duplicate headers are harmless once real plugin kicks in.
-    app.addHook("onRequest", (_request, reply, done) => {
-      reply.header("Access-Control-Allow-Origin", "*");
+    // response immediately. Must echo the origin (not `*`) because the frontend
+    // sends credentials with requests.
+    app.addHook("onRequest", (request, reply, done) => {
+      const origin = request.headers.origin;
+      if (origin) {
+        reply.header("Access-Control-Allow-Origin", origin);
+      }
       reply.header("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
       reply.header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With");
       reply.header("Access-Control-Allow-Credentials", "true");
