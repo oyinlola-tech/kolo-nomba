@@ -45,14 +45,26 @@ export class AuthService {
 
   async register(dto: RegisterDto, ipAddress?: string, userAgent?: string): Promise<{ userId: string }> {
     const existingEmail = await this.userRepository.findByEmail(dto.email);
-    if (existingEmail) {
+
+    // If a user with this email already exists and is verified, reject
+    if (existingEmail && existingEmail.status !== "PENDING") {
       throw new ValidationError("Registration failed. Please check your information and try again.", { email: ["This email is already registered"] });
     }
 
+    // If a user with this email exists and is PENDING, update instead of creating new
+    if (existingEmail && existingEmail.status === "PENDING") {
+      return this.updatePendingRegistration(existingEmail.id, dto, ipAddress, userAgent);
+    }
+
     const existingPhone = await this.userRepository.findByPhone(dto.phone);
-    if (existingPhone) {
+    if (existingPhone && existingPhone.status !== "PENDING") {
       throw new ValidationError("Registration failed. Please check your information and try again.", { phone: ["This phone number is already registered"] });
     }
+
+    if (existingPhone && existingPhone.status === "PENDING") {
+      return this.updatePendingRegistration(existingPhone.id, dto, ipAddress, userAgent);
+    }
+
     // Validate password strength
     const passwordValidation = new PasswordValidationService().validatePassword(dto.password);
     if (!passwordValidation.valid) {
@@ -69,28 +81,41 @@ export class AuthService {
       lastName: dto.lastName,
     });
 
-    await this.otpService.invalidatePrevious(user.id);
-    const code = await this.otpService.create(user.id);
-
-    QueueManager.getInstance().addJob("email.queue", "send-email", {
-      userId: user.id,
-      template: "accountVerification",
-      vars: { firstName: user.firstName, verificationCode: code },
-    }).catch(err => this.logger.error("Failed to queue verification email", { userId: user.id, error: String(err) }));
-
-    await this.eventBus.publish(new UserEvent("verification_required", {
-      userId: user.id,
-    }));
-
-    await this.auditService.log("USER_REGISTERED", {
-      userId: user.id,
-      ipAddress,
-      userAgent,
-    });
-
-    this.logger.info("User registered", { userId: user.id, email: user.email });
+    await this.sendVerification(user.id, user.firstName, ipAddress, userAgent);
 
     return { userId: user.id };
+  }
+
+  private async updatePendingRegistration(userId: string, dto: RegisterDto, ipAddress?: string, userAgent?: string): Promise<{ userId: string }> {
+    const passwordHash = await HashUtil.hashPassword(dto.password);
+
+    await this.userRepository.update(userId, {
+      firstName: dto.firstName,
+      lastName: dto.lastName,
+      phone: dto.phone,
+      passwordHash,
+    });
+
+    await this.sendVerification(userId, dto.firstName, ipAddress, userAgent);
+
+    return { userId };
+  }
+
+  private async sendVerification(userId: string, firstName: string, ipAddress?: string, userAgent?: string): Promise<void> {
+    await this.otpService.invalidatePrevious(userId);
+    const code = await this.otpService.create(userId);
+
+    QueueManager.getInstance().addJob("email.queue", "send-email", {
+      userId,
+      template: "accountVerification",
+      vars: { firstName, verificationCode: code },
+    }).catch(err => this.logger.error("Failed to queue verification email", { userId, error: String(err) }));
+
+    await this.eventBus.publish(new UserEvent("verification_required", { userId }));
+
+    await this.auditService.log("USER_REGISTERED", { userId, ipAddress, userAgent });
+
+    this.logger.info("User re-registration updated", { userId, email: "updated" });
   }
 
   async verifyEmailOtp(userId: string, code: string, ipAddress?: string, userAgent?: string): Promise<LoginResponse> {

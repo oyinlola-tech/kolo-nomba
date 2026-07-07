@@ -41,7 +41,9 @@ export class UserRepository {
   async update(id: string, data: {
     firstName?: string;
     lastName?: string;
+    email?: string;
     phone?: string;
+    passwordHash?: string;
     status?: string;
   }) {
     return this.db.user.update({ where: { id }, data: data as never });
