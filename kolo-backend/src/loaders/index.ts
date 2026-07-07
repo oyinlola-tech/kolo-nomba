@@ -51,10 +51,8 @@ export class AppLoader {
       this.logger.warn("Error handler setup failed", { error: error instanceof Error ? error.message : String(error) });
     }
 
-    // Fallback CORS headers — the real CORS plugin (with origin validation)
-    // registers in background. This ensures browsers see CORS headers on every
-    // response immediately. Must echo the origin (not `*`) because the frontend
-    // sends credentials with requests.
+    // Fallback CORS — handles both headers and preflight OPTIONS before the
+    // real CORS plugin (with origin validation) registers in background.
     app.addHook("onRequest", (request, reply, done) => {
       const origin = request.headers.origin;
       if (origin) {
@@ -63,6 +61,10 @@ export class AppLoader {
       reply.header("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
       reply.header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With");
       reply.header("Access-Control-Allow-Credentials", "true");
+      if (request.method === "OPTIONS") {
+        reply.status(204).send();
+        return;
+      }
       done();
     });
 
