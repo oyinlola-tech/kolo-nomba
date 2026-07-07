@@ -31,9 +31,8 @@ export class AppLoader {
     const loggerLoader = new LoggerLoader();
     loggerLoader.load();
 
-    // Routes are synchronous (just define route handlers) — register before listen
-    // so they're always available. Middleware & swagger use async plugin registrations
-    // that could hang, so those run in background.
+    // Routes and middleware are sync (just define routes/register plugins) —
+    // run before listen so CORS headers are set on every response immediately.
     try {
       const routeLoader = new RouteLoader();
       routeLoader.load(app);
@@ -41,18 +40,18 @@ export class AppLoader {
       this.logger.warn("Route registration failed", { error: error instanceof Error ? error.message : String(error) });
     }
 
-    this.logger.info("Core application loaded — server will start listening immediately");
-  }
-
-  async loadRemaining(app: FastifyInstance): Promise<void> {
-    this.logger.info("Starting background initialization...");
-
     try {
       const middlewareLoader = new MiddlewareLoader();
       await middlewareLoader.load(app);
     } catch (error) {
       this.logger.warn("Middleware setup failed", { error: error instanceof Error ? error.message : String(error) });
     }
+
+    this.logger.info("Core application loaded — server will start listening immediately");
+  }
+
+  async loadRemaining(app: FastifyInstance): Promise<void> {
+    this.logger.info("Starting background initialization...");
 
     try {
       const swaggerLoader = new SwaggerLoader();
