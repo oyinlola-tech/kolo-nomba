@@ -1,6 +1,9 @@
-import { execSync } from "child_process";
+import { exec } from "node:child_process";
+import { promisify } from "node:util";
 import { Logger } from "../logger/core/logger";
 import { EnvConfig } from "../config/env.config";
+
+const asyncExec = promisify(exec);
 
 export class MigrationLoader {
   private readonly logger: Logger;
@@ -9,7 +12,7 @@ export class MigrationLoader {
     this.logger = new Logger("migration-loader");
   }
 
-  load(): void {
+  async load(): Promise<void> {
     const env = EnvConfig.getInstance();
     if (!env.AUTO_MIGRATE) {
       this.logger.info("AUTO_MIGRATE is disabled, skipping migrations");
@@ -18,16 +21,16 @@ export class MigrationLoader {
 
     try {
       this.logger.info("Running database migrations...");
-      const result = execSync("npx prisma migrate deploy", {
+      const { stdout, stderr } = await asyncExec("npx prisma migrate deploy", {
         env: { ...process.env, DATABASE_URL: env.DATABASE_URL },
-        stdio: "pipe",
         timeout: 60000,
       });
-      this.logger.info("Database migrations completed", { stdout: result.toString() });
+      if (stdout) this.logger.info("Database migrations completed", { stdout });
+      if (stderr) this.logger.warn("Migration stderr", { stderr });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       const stderr = error instanceof Error && "stderr" in error
-        ? Buffer.from((error as { stderr: Buffer }).stderr).toString()
+        ? String((error as { stderr: string }).stderr)
         : "";
       this.logger.error(`Database migration failed: ${message}${stderr ? ` | stderr: ${stderr}` : ""}`);
     }

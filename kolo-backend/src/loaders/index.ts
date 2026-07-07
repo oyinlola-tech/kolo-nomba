@@ -48,7 +48,7 @@ export class AppLoader {
 
     try {
       const migrationLoader = new MigrationLoader();
-      migrationLoader.load();
+      await migrationLoader.load();
     } catch (error) {
       this.logger.warn("Migration not available", { error: error instanceof Error ? error.message : String(error) });
     }
