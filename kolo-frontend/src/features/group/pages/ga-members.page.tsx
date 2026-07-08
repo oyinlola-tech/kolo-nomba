@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, UserPlus, Eye, Send, MoreVertical, Loader2 } from "lucide-react";
+import { Search, UserPlus, Eye, Send, MoreVertical, Loader2, Check, X } from "lucide-react";
 import { Card } from "../../../components/shared/Card";
 import { Badge } from "../../../components/shared/Badge";
 import { Avatar } from "../../../components/shared/Avatar";
@@ -11,6 +11,8 @@ import { useGroupMembers } from "../../../hooks/use-group-members";
 
 export function GAMembers() {
   const [search, setSearch] = useState("");
+  const [inviting, setInviting] = useState(false);
+  const [inviteResult, setInviteResult] = useState<{ type: "success" | "error"; message: string } | null>(null);
   const { data: groupData } = useCooperatives();
   const groups = groupData?.items ?? [];
   const groupId = groups.length > 0 ? groups[0].id : "";
@@ -33,10 +35,34 @@ export function GAMembers() {
   return (
     <div>
       <PageHeader title="Member Management" subtitle={`${memberList.length} members in your group`}>
-        <Button size="sm" onClick={() => { const email = prompt("Enter email to invite:"); if (email) apiClient.post(`/groups/${groupId}/invitations`, { email }).catch(() => {}); }}>
-          <UserPlus className="w-4 h-4" />Invite Member
+        <Button size="sm" onClick={async () => {
+          const email = prompt("Enter email to invite:");
+          if (!email) return;
+          setInviting(true);
+          setInviteResult(null);
+          try {
+            await apiClient.post(`/groups/${groupId}/invitations`, { email });
+            setInviteResult({ type: "success", message: `Invitation sent to ${email}` });
+          } catch {
+            setInviteResult({ type: "error", message: "Failed to send invitation. Please try again." });
+          } finally {
+            setInviting(false);
+          }
+        }} disabled={inviting}>
+          {inviting ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}{inviting ? "Sending..." : "Invite Member"}
         </Button>
       </PageHeader>
+      {inviteResult && (
+        <div className={`mb-4 p-3 rounded-xl text-sm flex items-center gap-2 ${
+          inviteResult.type === "success"
+            ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800"
+            : "bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800"
+        }`}>
+          {inviteResult.type === "success" ? <Check className="w-4 h-4 flex-shrink-0" /> : <X className="w-4 h-4 flex-shrink-0" />}
+          {inviteResult.message}
+          <button onClick={() => setInviteResult(null)} className="ml-auto text-current opacity-60 hover:opacity-100"><X className="w-3.5 h-3.5" /></button>
+        </div>
+      )}
       <Card className="overflow-hidden">
         <div className="p-4 border-b border-gray-100 dark:border-border flex gap-3">
           <div className="relative flex-1">

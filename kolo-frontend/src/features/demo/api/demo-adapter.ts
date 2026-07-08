@@ -256,8 +256,8 @@ export function handleDemoRequest(config: AxiosRequestConfig): AxiosResponse | n
   if (path === "/notifications/preferences" && method === "patch") return r({ message: "Preferences updated" });
 
   // Virtual accounts
-  if (path === "/virtual-accounts/my" && method === "get") return r({ id: "va-demo", accountNumber: "0123456790", accountName: "Adaobi Okonkwo - Kolo Savings", bankName: "Wema Bank", providerReference: "NOM-VA-DEMO", status: "ACTIVE", createdAt: new Date().toISOString() });
-  if (path === "/virtual-accounts" && method === "post") return r({ id: `va-${Date.now()}`, accountNumber: "0123456799", accountName: "Demo User - Kolo Savings", bankName: "Wema Bank", providerReference: "NOM-VA-NEW", status: "ACTIVE", createdAt: new Date().toISOString() });
+  if (path === "/virtual-accounts/my" && method === "get") return r({ id: "va-demo", accountNumber: "0123456790", accountName: "Adaobi Okonkwo - Kolo Savings", bankName: "Nomba Bank", providerReference: "NOM-VA-DEMO", status: "ACTIVE", createdAt: new Date().toISOString() });
+  if (path === "/virtual-accounts" && method === "post") return r({ id: `va-${Date.now()}`, accountNumber: "0123456799", accountName: "Demo User - Kolo Savings", bankName: "Nomba Bank", providerReference: "NOM-VA-NEW", status: "ACTIVE", createdAt: new Date().toISOString() });
 
   // Withdrawals
   if (path === "/withdrawals" && method === "get") {
@@ -326,10 +326,35 @@ export function handleDemoRequest(config: AxiosRequestConfig): AxiosResponse | n
   // Contact
   if (path === "/contact" && method === "post") return r({ message: "Message sent" });
 
-  // Receipt
+  // Receipt — per-transaction content
   const receiptMatch = path.match(/^\/payments\/receipt\/(.+)$/);
   if (receiptMatch) {
-    return { data: new Blob(["Demo receipt PDF content"], { type: "application/pdf" }), status: 200, statusText: "OK", headers: { "content-type": "application/pdf" }, config: {} as any };
+    const refOrId = receiptMatch[1];
+    let payment = store.getPayments(1, 200).items.find((p) => p.reference === refOrId || p.id === refOrId || p.contributionId === refOrId);
+    if (!payment) {
+      const contrib = store.getContributionById(refOrId);
+      if (contrib) payment = store.getPayments(1, 200).items.find((p) => p.contributionId === contrib.id);
+    }
+    const payerName = payment?.virtualAccount?.accountName || "Kolo Member";
+    const bankName = payment?.virtualAccount?.bankName || "Nomba Bank";
+    const receiptText = [
+      "========================================",
+      "         KOLO PAYMENT RECEIPT",
+      "========================================",
+      "",
+      `Reference:    ${payment?.reference || refOrId}`,
+      `Date:         ${payment?.createdAt ? new Date(payment.createdAt).toLocaleDateString("en-NG", { day: "numeric", month: "long", year: "numeric" }) : new Date().toLocaleDateString("en-NG", { day: "numeric", month: "long", year: "numeric" })}`,
+      `Payer:        ${payerName}`,
+      `Amount:       ₦${(payment?.amount || 0).toLocaleString()}`,
+      `Status:       ${payment?.status === "SUCCESSFUL" ? "PAID" : payment?.status || "COMPLETED"}`,
+      `Bank:         ${bankName}`,
+      `Provider:     Nomba`,
+      "",
+      "----------------------------------------",
+      "       Thank you for saving with Kolo!",
+      "----------------------------------------",
+    ].join("\n");
+    return { data: new Blob([receiptText], { type: "application/pdf" }), status: 200, statusText: "OK", headers: { "content-type": "application/pdf" }, config: {} as any };
   }
 
   // Unrecognized

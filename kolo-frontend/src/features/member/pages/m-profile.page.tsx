@@ -1,8 +1,6 @@
 import {
-  Lock, Bell, Wallet, ShieldCheck, ChevronRight, LogOut, Pencil,
+  Lock, Bell, Wallet, ShieldCheck, ChevronRight, LogOut, Pencil, Mail, Phone, User,
 } from "lucide-react";
-import { Card } from "../../../components/shared/Card";
-import { Badge } from "../../../components/shared/Badge";
 import { AccountNumberCard } from "../../../components/shared/AccountNumberCard";
 import { Button } from "../../../components/shared/Button";
 import { Input } from "../../../components/shared/Input";
@@ -29,6 +27,8 @@ export function MProfile() {
   const [phone, setPhone] = useState(user?.phone ?? "");
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  const userName = user ? `${user.firstName} ${user.lastName}` : "Member";
+  const initials = ((user?.firstName?.[0] ?? "") + (user?.lastName?.[0] ?? "")).toUpperCase() || "?";
 
   const handleSave = async () => {
     setSaving(true);
@@ -53,21 +53,37 @@ export function MProfile() {
   };
 
   return (
-    <div className="px-5 py-5">
-      <p className="text-lg font-bold text-gray-900 dark:text-white mb-5">Profile</p>
-      <div className="flex flex-col items-center mb-7">
-        <div className="w-16 h-16 bg-emerald-100 dark:bg-emerald-900/40 rounded-full flex items-center justify-center text-emerald-700 dark:text-emerald-400 text-2xl font-extrabold mb-2">
-          {((user?.firstName?.[0] ?? "") + (user?.lastName?.[0] ?? "")).toUpperCase() || "?"}
+    <div className="px-4 sm:px-5 lg:px-6 py-4 lg:py-5 space-y-5">
+
+      {/* Profile Header */}
+      <div className="bg-gradient-to-br from-emerald-700 via-emerald-800 to-emerald-950 rounded-2xl lg:rounded-3xl px-5 lg:px-6 pt-6 lg:pt-7 pb-5 lg:pb-6 text-center relative overflow-hidden">
+        <div className="absolute -top-10 -right-10 w-56 h-56 bg-emerald-500/10 rounded-full blur-3xl" />
+        <div className="relative">
+          <div className="w-16 h-16 lg:w-20 lg:h-20 bg-white/15 backdrop-blur rounded-full flex items-center justify-center mx-auto mb-3 text-white text-2xl lg:text-3xl font-extrabold border-2 border-white/20 shadow-xl shadow-emerald-900/30">
+            {initials}
+          </div>
+          <p className="font-bold text-lg lg:text-xl text-white">{userName}</p>
+          <p className="text-emerald-200/70 text-xs">{user?.email || "—"}</p>
+          <div className="mt-3 inline-flex items-center gap-1.5 bg-emerald-500/20 backdrop-blur text-emerald-200 text-[10px] font-semibold px-3 py-1 rounded-full border border-emerald-400/20">
+            <ShieldCheck className="w-3 h-3" />
+            {user?.role === "MEMBER" ? "Member" : user?.role || "Active"}
+          </div>
         </div>
-        <p className="font-bold text-gray-900 dark:text-white">{user ? `${user.firstName} ${user.lastName}` : "Member"}</p>
-        <p className="text-sm text-gray-500 dark:text-muted-foreground">{user?.email || "—"}</p>
-        <Badge status="active" />
       </div>
-      <Card className="p-4 mb-4">
-        <div className="flex items-center justify-between mb-3">
-          <p className="text-xs font-semibold text-gray-400 dark:text-gray-600 tracking-wider">PERSONAL INFORMATION</p>
+
+      {/* Personal Information */}
+      <div className="bg-white dark:bg-card border border-gray-100 dark:border-border rounded-xl lg:rounded-2xl p-4 lg:p-5 shadow-sm">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg flex items-center justify-center">
+              <User className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+            </div>
+            <p className="text-xs font-semibold text-gray-400 dark:text-muted-foreground uppercase tracking-wider">Personal Info</p>
+          </div>
           {!editing && (
-            <Button variant="ghost" size="sm" onClick={startEdit}><Pencil className="w-3.5 h-3.5" />Edit</Button>
+            <Button variant="ghost" size="sm" onClick={startEdit}>
+              <Pencil className="w-3 h-3" />Edit
+            </Button>
           )}
         </div>
         {editing ? (
@@ -83,18 +99,35 @@ export function MProfile() {
             </div>
           </div>
         ) : (
-          <div className="space-y-3 text-sm">
-            {[["Full Name", user ? `${user.firstName} ${user.lastName}` : "—"], ["Email", user?.email || "—"], ["Phone", user?.phone || "—"], ["Role", user?.role || "—"]].map(([k, v]) => (
-              <div key={k} className="flex justify-between py-1.5 border-b border-gray-50 dark:border-border last:border-0">
-                <span className="text-gray-500 dark:text-muted-foreground">{k}</span>
-                <span className="font-medium text-gray-900 dark:text-white">{v}</span>
+          <div className="space-y-0">
+            {[
+              { icon: User, label: "Full Name", value: userName },
+              { icon: Mail, label: "Email", value: user?.email || "—" },
+              { icon: Phone, label: "Phone", value: user?.phone || "—" },
+              { icon: ShieldCheck, label: "Role", value: user?.role || "—" },
+            ].map(({ icon: I, label, value }) => (
+              <div key={label} className="flex items-center gap-3 py-2.5 border-b border-gray-50 dark:border-border/50 last:border-0">
+                <div className="w-7 h-7 bg-gray-50 dark:bg-muted rounded-lg flex items-center justify-center">
+                  <I className="w-3.5 h-3.5 text-gray-400" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] text-gray-400 dark:text-muted-foreground">{label}</p>
+                  <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{value}</p>
+                </div>
               </div>
             ))}
           </div>
         )}
-      </Card>
-      <div className="mb-4">
-        <p className="text-xs font-semibold text-gray-400 dark:text-gray-600 mb-3 tracking-wider">BANK ACCOUNT</p>
+      </div>
+
+      {/* Bank Account */}
+      <div>
+        <div className="flex items-center gap-2 mb-3">
+          <div className="w-7 h-7 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg flex items-center justify-center">
+            <Wallet className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+          </div>
+          <p className="text-xs font-semibold text-gray-400 dark:text-muted-foreground uppercase tracking-wider">Bank Account</p>
+        </div>
         <AccountNumberCard
           accountNumber={virtualAccount?.accountNumber}
           accountName={virtualAccount?.accountName}
@@ -104,23 +137,32 @@ export function MProfile() {
           generating={createVA.isPending}
         />
       </div>
-      <Card className="p-4 mb-4">
-        <p className="text-xs font-semibold text-gray-400 dark:text-gray-600 mb-3 tracking-wider">ACCOUNT SETTINGS</p>
-        <div className="space-y-1">
+
+      {/* Account Settings */}
+      <div className="bg-white dark:bg-card border border-gray-100 dark:border-border rounded-xl lg:rounded-2xl p-4 lg:p-5 shadow-sm">
+        <div className="flex items-center gap-2 mb-3">
+          <div className="w-7 h-7 bg-gray-50 dark:bg-muted rounded-lg flex items-center justify-center">
+            <ShieldCheck className="w-3.5 h-3.5 text-gray-400" />
+          </div>
+          <p className="text-xs font-semibold text-gray-400 dark:text-muted-foreground uppercase tracking-wider">Settings</p>
+        </div>
+        <div className="space-y-0.5">
           {[
             { icon: Lock, label: "Change Password", path: "/reset-password" },
             { icon: Bell, label: "Notification Preferences", path: "/member/notifications" },
             { icon: Wallet, label: "Payment Preferences", path: "/member/pay" },
-            { icon: ShieldCheck, label: "Security Settings", path: "/member/home" },
           ].map(({ icon: I, label, path }) => (
-            <button key={label} onClick={() => navigate(path)} className="w-full flex items-center gap-3 px-2 py-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-muted transition-colors text-sm font-medium text-gray-700 dark:text-gray-300">
+            <button key={label} onClick={() => navigate(path)}
+              className="w-full flex items-center gap-3 px-2 py-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-muted/50 transition-colors text-sm font-medium text-gray-700 dark:text-gray-300">
               <I className="w-4 h-4 text-gray-400" />{label}<ChevronRight className="w-4 h-4 text-gray-300 ml-auto" />
             </button>
           ))}
         </div>
-      </Card>
+      </div>
+
+      {/* Sign Out */}
       <button onClick={() => { logout.mutate(undefined, { onSettled: () => navigate("/") }); }}
-        className="w-full flex items-center justify-center gap-2 py-3 border border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 rounded-xl text-sm font-semibold hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors">
+        className="w-full flex items-center justify-center gap-2 py-3 border border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 rounded-xl lg:rounded-2xl text-sm font-semibold hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors">
         <LogOut className="w-4 h-4" />Sign Out
       </button>
     </div>

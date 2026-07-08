@@ -12,6 +12,7 @@ import { useWithdrawals, useApproveWithdrawal, useRejectWithdrawal } from "../..
 
 export function SAWithdrawals() {
   const [page, setPage] = useState(1);
+  const [actionStatus, setActionStatus] = useState<{ id: string; type: "success" | "error"; message: string } | null>(null);
   const { data, isLoading } = useWithdrawals(page);
   const withdrawals = data?.items ?? [];
   const pagination = data?.pagination;
@@ -72,13 +73,33 @@ export function SAWithdrawals() {
                     <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{w.createdAt}</td>
                     <td className="px-4 py-3">
                       {w.status === "pending" && (
-                        <div className="flex gap-1">
-                          <Button variant="primary" size="sm" onClick={() => approve.mutate(w.id)} aria-label="Approve withdrawal">
-                            {approve.isPending ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
-                          </Button>
-                          <Button variant="danger" size="sm" onClick={() => reject.mutate(w.id)} aria-label="Reject withdrawal">
-                            {reject.isPending ? <RefreshCw className="w-3 h-3 animate-spin" /> : <X className="w-3 h-3" />}
-                          </Button>
+                        <div className="flex flex-col gap-1 items-end">
+                          <div className="flex gap-1">
+                            <Button variant="primary" size="sm" onClick={() => {
+                              setActionStatus(null);
+                              approve.mutate(w.id, {
+                                onSuccess: () => setActionStatus({ id: w.id, type: "success", message: "Approved" }),
+                                onError: () => setActionStatus({ id: w.id, type: "error", message: "Failed to approve" }),
+                              });
+                            }} disabled={approve.isPending} aria-label="Approve withdrawal">
+                              {approve.isPending ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
+                            </Button>
+                            <Button variant="danger" size="sm" onClick={() => {
+                              setActionStatus(null);
+                              reject.mutate(w.id, {
+                                onSuccess: () => setActionStatus({ id: w.id, type: "success", message: "Rejected" }),
+                                onError: () => setActionStatus({ id: w.id, type: "error", message: "Failed to reject" }),
+                              });
+                            }} disabled={reject.isPending} aria-label="Reject withdrawal">
+                              {reject.isPending ? <RefreshCw className="w-3 h-3 animate-spin" /> : <X className="w-3 h-3" />}
+                            </Button>
+                          </div>
+                          {actionStatus && actionStatus.id === w.id && (
+                            <span className={`text-[10px] flex items-center gap-1 ${actionStatus.type === "success" ? "text-emerald-600" : "text-red-500"}`}>
+                              {actionStatus.type === "success" ? <Check className="w-2.5 h-2.5" /> : <X className="w-2.5 h-2.5" />}
+                              {actionStatus.message}
+                            </span>
+                          )}
                         </div>
                       )}
                     </td>

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { XCircle, AlertTriangle, Info, Check, Loader2, RefreshCw } from "lucide-react";
+import { XCircle, AlertTriangle, Info, Check, Loader2, RefreshCw, X } from "lucide-react";
 import { Card } from "../../../components/shared/Card";
 import { Button } from "../../../components/shared/Button";
 import { PageHeader } from "../../../components/shared/PageHeader";
@@ -11,13 +11,18 @@ export function SANotifications() {
   const { data, isLoading } = useNotifications();
   const notifications = data?.items ?? [];
   const [marking, setMarking] = useState(false);
+  const [markResult, setMarkResult] = useState<{ type: "success" | "error"; message: string } | null>(null);
   const queryClient = useQueryClient();
 
   const handleMarkAllRead = async () => {
     setMarking(true);
+    setMarkResult(null);
     try {
       await markAllNotificationsRead();
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      setMarkResult({ type: "success", message: "All notifications marked as read" });
+    } catch {
+      setMarkResult({ type: "error", message: "Failed to mark all as read" });
     } finally {
       setMarking(false);
     }
@@ -31,6 +36,17 @@ export function SANotifications() {
           {marking ? "Marking..." : "Mark all read"}
         </Button>
       </PageHeader>
+      {markResult && (
+        <div className={`mb-4 p-3 rounded-xl text-sm flex items-center gap-2 ${
+          markResult.type === "success"
+            ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800"
+            : "bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800"
+        }`}>
+          {markResult.type === "success" ? <Check className="w-4 h-4 flex-shrink-0" /> : <X className="w-4 h-4 flex-shrink-0" />}
+          {markResult.message}
+          <button onClick={() => setMarkResult(null)} className="ml-auto text-current opacity-60 hover:opacity-100"><X className="w-3.5 h-3.5" /></button>
+        </div>
+      )}
       {isLoading ? (
         <div className="flex items-center justify-center py-12">
           <Loader2 className="w-8 h-8 animate-spin text-primary" />

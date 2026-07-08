@@ -256,9 +256,9 @@ function seedDatabase(): DemoDatabase {
   ];
 
   const payments: DemoPayment[] = [
-    { id: "pay-1", userId: "demo-group-admin", groupId: "group-market-traders", contributionId: "mc-1", amount: 50000, currency: "NGN", provider: "nomba", providerReference: "NOM-REF-001", status: "SUCCESSFUL", paymentMethod: "bank_transfer", reference: "KOLO-REF-001", checkoutUrl: null, virtualAccount: { accountNumber: "0123456789", accountName: "Chioma Eze", bankName: "Wema Bank", amount: 50000, paymentId: "pay-1" }, createdAt: fmtDate(5) },
+    { id: "pay-1", userId: "demo-group-admin", groupId: "group-market-traders", contributionId: "mc-1", amount: 50000, currency: "NGN", provider: "nomba", providerReference: "NOM-REF-001", status: "SUCCESSFUL", paymentMethod: "bank_transfer", reference: "KOLO-REF-001", checkoutUrl: null, virtualAccount: { accountNumber: "0123456789", accountName: "Chioma Eze", bankName: "Nomba Bank", amount: 50000, paymentId: "pay-1" }, createdAt: fmtDate(5) },
     { id: "pay-2", userId: "demo-member", groupId: "group-market-traders", contributionId: "mc-2", amount: 50000, currency: "NGN", provider: "nomba", providerReference: "NOM-REF-002", status: "SUCCESSFUL", paymentMethod: "card", reference: "KOLO-REF-002", checkoutUrl: null, virtualAccount: null, createdAt: fmtDate(3) },
-    { id: "pay-3", userId: "demo-member", groupId: "group-community", contributionId: "mc-100", amount: 10000, currency: "NGN", provider: "nomba", providerReference: "NOM-REF-003", status: "SUCCESSFUL", paymentMethod: "bank_transfer", reference: "KOLO-REF-003", checkoutUrl: null, virtualAccount: { accountNumber: "0123456790", accountName: "Adaobi Okonkwo", bankName: "Wema Bank", amount: 10000, paymentId: "pay-3" }, createdAt: fmtDate(2) },
+    { id: "pay-3", userId: "demo-member", groupId: "group-community", contributionId: "mc-100", amount: 10000, currency: "NGN", provider: "nomba", providerReference: "NOM-REF-003", status: "SUCCESSFUL", paymentMethod: "bank_transfer", reference: "KOLO-REF-003", checkoutUrl: null, virtualAccount: { accountNumber: "0123456790", accountName: "Adaobi Okonkwo", bankName: "Nomba Bank", amount: 10000, paymentId: "pay-3" }, createdAt: fmtDate(2) },
   ];
 
   const transactions: DemoTransaction[] = [
@@ -282,8 +282,8 @@ function seedDatabase(): DemoDatabase {
   ];
 
   const virtualAccounts: DemoVirtualAccount[] = [
-    { id: "va-1", accountNumber: "0123456789", accountName: "Chioma Eze - Kolo Savings", bankName: "Wema Bank", providerReference: "NOM-VA-001", status: "ACTIVE", createdAt: fmtDate(180) },
-    { id: "va-2", accountNumber: "0123456790", accountName: "Adaobi Okonkwo - Kolo Savings", bankName: "Wema Bank", providerReference: "NOM-VA-002", status: "ACTIVE", createdAt: fmtDate(170) },
+    { id: "va-1", accountNumber: "0123456789", accountName: "Chioma Eze - Kolo Savings", bankName: "Nomba Bank", providerReference: "NOM-VA-001", status: "ACTIVE", createdAt: fmtDate(180) },
+    { id: "va-2", accountNumber: "0123456790", accountName: "Adaobi Okonkwo - Kolo Savings", bankName: "Nomba Bank", providerReference: "NOM-VA-002", status: "ACTIVE", createdAt: fmtDate(170) },
   ];
 
   const withdrawals: DemoWithdrawal[] = [
@@ -586,7 +586,7 @@ export function getSecurityEvents(): Record<string, unknown>[] {
 }
 
 export function getNombaStatus(): Record<string, unknown> {
-  return { status: "connected", environment: "sandbox", lastHealthCheck: new Date().toISOString(), bank: "Wema Bank" };
+  return { status: "connected", environment: "sandbox", lastHealthCheck: new Date().toISOString(), bank: "Nomba Bank" };
 }
 
 export function getNombaTransactions(): Record<string, unknown>[] {
@@ -630,7 +630,7 @@ export function createPayment(payload: { contributionId: string; amount?: number
     virtualAccount: payload.paymentMethod === "card" ? null : {
       accountNumber: "0123456799",
       accountName: "Adaobi Okonkwo - Kolo Savings",
-      bankName: "Wema Bank",
+      bankName: "Nomba Bank",
       amount: payload.amount ?? 50000,
       paymentId: nextId("pay"),
     },

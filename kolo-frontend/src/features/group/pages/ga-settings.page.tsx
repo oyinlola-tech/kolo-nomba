@@ -23,7 +23,9 @@ export function GASettings() {
   const [frequency, setFrequency] = useState<string>("MONTHLY");
   const [collectionDay, setCollectionDay] = useState("");
   const [profileSaved, setProfileSaved] = useState(false);
+  const [profileError, setProfileError] = useState("");
   const [rulesSaved, setRulesSaved] = useState(false);
+  const [rulesError, setRulesError] = useState("");
 
   useEffect(() => {
     if (settings) {
@@ -49,6 +51,7 @@ export function GASettings() {
   }
 
   const handleSaveProfile = () => {
+    setProfileError("");
     updateSettings.mutate(
       { name, description: description || null, category: category || null, location: location || null },
       {
@@ -56,11 +59,15 @@ export function GASettings() {
           setProfileSaved(true);
           setTimeout(() => setProfileSaved(false), 2000);
         },
+        onError: () => {
+          setProfileError("Failed to save changes. Please try again.");
+        },
       },
     );
   };
 
   const handleSaveRules = () => {
+    setRulesError("");
     updateSettings.mutate(
       {
         contributionAmount: amount ? parseInt(amount, 10) : null,
@@ -71,6 +78,9 @@ export function GASettings() {
         onSuccess: () => {
           setRulesSaved(true);
           setTimeout(() => setRulesSaved(false), 2000);
+        },
+        onError: () => {
+          setRulesError("Failed to update rules. Please try again.");
         },
       },
     );
@@ -87,6 +97,7 @@ export function GASettings() {
           <Input label="Description" value={description} onChange={setDescription} icon={FileText} />
           <Input label="Category" value={category} onChange={setCategory} icon={Archive} />
           <Input label="Location" value={location} onChange={setLocation} icon={MapPin} />
+          {profileError && <p className="text-xs text-red-500 mb-2">{profileError}</p>}
           <Button onClick={handleSaveProfile} disabled={updateSettings.isPending}>
             {updateSettings.isPending ? (
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -119,6 +130,7 @@ export function GASettings() {
             </div>
           </div>
           <Input label="Collection Day" value={collectionDay} onChange={setCollectionDay} icon={Calendar} type="number" />
+          {rulesError && <p className="text-xs text-red-500 mb-2">{rulesError}</p>}
           <Button variant="secondary" onClick={handleSaveRules} disabled={updateSettings.isPending}>
             {updateSettings.isPending ? (
               <Loader2 className="w-4 h-4 animate-spin" />

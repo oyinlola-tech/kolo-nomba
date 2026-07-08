@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { AlertCircle, Loader2, RefreshCw } from "lucide-react";
+import { AlertCircle, Loader2, RefreshCw, Check, X } from "lucide-react";
 import { Card } from "../../../components/shared/Card";
 import { Badge } from "../../../components/shared/Badge";
 import { Button } from "../../../components/shared/Button";
@@ -10,6 +10,7 @@ import { useDisputes, useResolveDispute } from "../../../hooks/use-disputes";
 
 export function SADisputes() {
   const [page, setPage] = useState(1);
+  const [resolveStatus, setResolveStatus] = useState<{ id: string; type: "success" | "error"; message: string } | null>(null);
   const { data, isLoading } = useDisputes(page);
   const disputes = data?.items ?? [];
   const pagination = data?.pagination;
@@ -66,9 +67,21 @@ export function SADisputes() {
                 <p className="text-lg font-bold text-gray-900 dark:text-white">{formatNaira(d.amount)}</p>
                 {d.status !== "resolved" && (
                   <div className="flex gap-1 mt-2 justify-end">
-                    <Button variant="secondary" size="sm" onClick={() => resolve.mutate(d.id)} disabled={resolve.isPending}>
+                    <Button variant="secondary" size="sm" onClick={() => {
+                      setResolveStatus(null);
+                      resolve.mutate(d.id, {
+                        onSuccess: () => setResolveStatus({ id: d.id, type: "success", message: "Dispute resolved successfully" }),
+                        onError: () => setResolveStatus({ id: d.id, type: "error", message: "Failed to resolve dispute" }),
+                      });
+                    }} disabled={resolve.isPending}>
                       {resolve.isPending ? <RefreshCw className="w-3 h-3 animate-spin" /> : null} Resolve
                     </Button>
+                  </div>
+                )}
+                {resolveStatus && resolveStatus.id === d.id && (
+                  <div className={`mt-2 text-xs flex items-center gap-1 ${resolveStatus.type === "success" ? "text-emerald-600" : "text-red-500"}`}>
+                    {resolveStatus.type === "success" ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
+                    {resolveStatus.message}
                   </div>
                 )}
               </div>
