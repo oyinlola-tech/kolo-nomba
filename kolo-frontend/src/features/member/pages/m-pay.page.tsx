@@ -9,6 +9,7 @@ import { useContribution } from "../../../hooks/use-contributions";
 import { usePaymentPolling } from "../../../hooks/use-payment-polling";
 import { formatNaira } from "../../../utils/format";
 import { extractApiError } from "../../../utils/error";
+import { getAccessToken } from "../../../api/client";
 
 function BankTransferInfoDisplay({ info, onBack, paymentId, onConfirmed, onViewHistory }: { info: { accountNumber: string; accountName: string; bankName: string; amount: number }; onBack: () => void; paymentId: string | null; onConfirmed: () => void; onViewHistory: () => void }) {
   const [copied, setCopied] = useState(false);
@@ -200,7 +201,11 @@ export function MPay() {
         paymentMethod: "card",
       });
       if (result.checkoutUrl) {
-        navigate(result.checkoutUrl);
+        if (getAccessToken()?.startsWith("demo-token-")) {
+          navigate(result.checkoutUrl);
+        } else {
+          window.location.href = result.checkoutUrl;
+        }
       } else {
         navigate(`pay-success?reference=${result.reference}&paymentId=${result.paymentId}`);
       }
