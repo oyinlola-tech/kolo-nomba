@@ -1,13 +1,19 @@
-import { Zap, Edit, Loader2 } from "lucide-react";
+import { Zap, Edit, Loader2, CheckCircle, X } from "lucide-react";
 import { Card } from "../../../components/shared/Card";
 import { Badge } from "../../../components/shared/Badge";
 import { Button } from "../../../components/shared/Button";
 import { PageHeader } from "../../../components/shared/PageHeader";
 import { usePaymentConfig } from "../../../hooks/use-payment-config";
 import { formatNaira } from "../../../utils/format";
+import { apiClient } from "../../../api/client";
+import { useState } from "react";
 
 export function SAPayments() {
   const { data: config, isLoading } = usePaymentConfig();
+  const [editingFees, setEditingFees] = useState(false);
+  const [feePct, setFeePct] = useState("");
+  const [feeFlat, setFeeFlat] = useState("");
+  const [feeResult, setFeeResult] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
   if (isLoading) {
     return (
@@ -65,7 +71,32 @@ export function SAPayments() {
               </div>
             ))}
           </div>
-          <Button variant="secondary" size="sm" className="mt-4 w-full"><Edit className="w-4 h-4" />Edit Fee Structure</Button>
+          {editingFees ? (
+            <div className="mt-4 space-y-2">
+              <input value={feePct} onChange={e => setFeePct(e.target.value)} placeholder="Fee %" className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-border rounded-xl bg-white dark:bg-input-background text-gray-900 dark:text-white" />
+              <input value={feeFlat} onChange={e => setFeeFlat(e.target.value)} placeholder="Flat fee (NGN)" className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-border rounded-xl bg-white dark:bg-input-background text-gray-900 dark:text-white" />
+              <div className="flex gap-2">
+                <Button size="sm" onClick={async () => {
+                  setFeeResult(null);
+                  try {
+                    await apiClient.patch("/admin/payment-config", { feePercentage: parseFloat(feePct || "0"), flatFee: parseFloat(feeFlat || "0") });
+                    setFeeResult({ type: "success", message: "Fee structure updated" });
+                    setEditingFees(false);
+                  } catch {
+                    setFeeResult({ type: "error", message: "Failed to update fees" });
+                  }
+                }}>Save</Button>
+                <Button variant="secondary" size="sm" onClick={() => setEditingFees(false)}>Cancel</Button>
+              </div>
+              {feeResult && <p className={`text-xs ${feeResult.type === "success" ? "text-emerald-600" : "text-red-500"}`}>{feeResult.message}</p>}
+            </div>
+          ) : (
+            <Button variant="secondary" size="sm" className="mt-4 w-full" onClick={() => {
+              setFeePct(String(config?.feeStructure?.percentage ?? 0));
+              setFeeFlat(String(config?.feeStructure?.flatFee ?? 0));
+              setEditingFees(true);
+            }}><Edit className="w-4 h-4" />Edit Fee Structure</Button>
+          )}
         </Card>
       </div>
     </div>

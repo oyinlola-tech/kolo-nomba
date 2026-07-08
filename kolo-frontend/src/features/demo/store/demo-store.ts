@@ -253,6 +253,7 @@ function seedDatabase(): DemoDatabase {
     { id: "mc-3", cycleId: "cycle-6", groupMemberId: "gm-3", expectedAmount: 50000, paidAmount: 50000, status: "PAID", paidAt: fmtDate(4), amount: 50000, memberName: "Emeka Okafor" },
     { id: "mc-4", cycleId: "cycle-6", groupMemberId: "gm-4", expectedAmount: 50000, paidAmount: 0, status: "PENDING", paidAt: null, amount: 0, memberName: "Tunde Balogun" },
     { id: "mc-5", cycleId: "cycle-6", groupMemberId: "gm-5", expectedAmount: 50000, paidAmount: 0, status: "LATE", paidAt: null, amount: 0, memberName: "Ngozi Adichie" },
+    { id: "mc-6", cycleId: "cycle-6", groupMemberId: "gm-7", expectedAmount: 10000, paidAmount: 0, status: "PENDING", paidAt: null, amount: 0, memberName: "Adaobi Okonkwo" },
   ];
 
   const payments: DemoPayment[] = [
@@ -387,6 +388,37 @@ export function getGroupsForUser(userId: string): DemoGroup[] {
 
 export function getGroupById(id: string): DemoGroup | undefined {
   return db().groups.find((g) => g.id === id);
+}
+
+export function getAvailableGroups(userId: string): DemoGroup[] {
+  const memberGroupIds = db().groupMembers.filter((gm) => gm.userId === userId).map((gm) => gm.groupId);
+  return db().groups.filter((g) => !memberGroupIds.includes(g.id));
+}
+
+export function joinGroup(userId: string, groupId: string): DemoGroupMember | null {
+  const d = db();
+  const group = d.groups.find((g) => g.id === groupId);
+  if (!group) return null;
+  const user = d.users.find((u) => u.id === userId);
+  if (!user) return null;
+  const existing = d.groupMembers.find((gm) => gm.userId === userId && gm.groupId === groupId);
+  if (existing) return null;
+  const member: DemoGroupMember = {
+    id: nextId("gm"),
+    groupId,
+    userId,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    name: `${user.firstName} ${user.lastName}`,
+    email: user.email,
+    role: user.role === "MEMBER" ? "MEMBER" : "GROUP_ADMIN",
+    status: "ACTIVE",
+    joinedAt: new Date().toISOString(),
+  };
+  d.groupMembers.push(member);
+  group.memberCount += 1;
+  saveDatabase(d);
+  return member;
 }
 
 export function getContributionPlans(): DemoContributionPlan[] {

@@ -19,10 +19,12 @@ export function MHome() {
   const { data: virtualAccount, isLoading: vaLoading } = useVirtualAccount();
   const createVA = useCreateVirtualAccount();
 
-  const totalContributed = contributions.reduce((s, c) => s + (c.amount ?? 0), 0);
+  const totalContributed = contributions.reduce((s, c) => s + (c.paidAmount ?? c.amount ?? 0), 0);
   const groupTotal = groups.reduce((s, g) => s + (g.savingsBalance ?? 0), 0);
   const activeGroup = groups[0];
   const greeting = new Date().getHours() < 12 ? "Good morning" : new Date().getHours() < 17 ? "Good afternoon" : "Good evening";
+  const pendingContribution = contributions.find(c => c.status === "pending" || c.status === "PENDING" || c.status === "late" || c.status === "LATE");
+  const dueAmount = pendingContribution?.expectedAmount ?? activeGroup?.contributionAmount ?? 0;
 
   const progressPercent = activeGroup && (activeGroup.savingsBalance ?? 0) > 0
     ? Math.min(100, Math.round(((activeGroup.savingsBalance ?? 0) / Math.max(1, (activeGroup.memberCount ?? 1) * (activeGroup.contributionAmount ?? 50000))) * 100))
@@ -59,10 +61,10 @@ export function MHome() {
             <div className="flex items-center gap-2">
               <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
               <span className="text-emerald-200/70 text-xs">
-                {activeGroup ? `Next: ${formatNaira(activeGroup.contributionAmount ?? 0)}` : "No active group"}
+                {pendingContribution ? `Due: ${formatNaira(dueAmount)}` : activeGroup ? `Next: ${formatNaira(dueAmount)}` : "No active group"}
               </span>
             </div>
-            <button onClick={() => navigate("pay")}
+            <button onClick={() => navigate(pendingContribution ? `/member/pay?contributionId=${pendingContribution.id}` : "pay")}
               className="bg-white text-emerald-800 text-xs sm:text-sm font-bold px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl hover:bg-emerald-50 transition-all shadow-lg shadow-emerald-900/20 active:scale-95 flex items-center gap-1.5">
               <Wallet className="w-3.5 h-3.5" />
               Pay Now
@@ -163,7 +165,7 @@ export function MHome() {
       <div>
         <p className="text-xs font-semibold text-gray-400 dark:text-muted-foreground uppercase tracking-wider mb-3">Quick Actions</p>
         <div className="grid grid-cols-2 gap-3">
-          <button onClick={() => navigate("pay")}
+          <button onClick={() => navigate(pendingContribution ? `/member/pay?contributionId=${pendingContribution.id}` : "pay")}
             className="relative overflow-hidden bg-gradient-to-br from-emerald-600 to-emerald-700 rounded-xl lg:rounded-2xl p-4 lg:p-5 text-left hover:shadow-lg hover:from-emerald-500 hover:to-emerald-600 transition-all active:scale-[0.98] group">
             <div className="absolute top-2 right-2 w-16 h-16 bg-emerald-400/10 rounded-full blur-xl" />
             <div className="w-9 h-9 bg-white/15 rounded-xl flex items-center justify-center mb-2.5 group-hover:scale-110 transition-transform">
@@ -171,7 +173,7 @@ export function MHome() {
             </div>
             <p className="font-bold text-sm text-white">Pay Contribution</p>
             <p className="text-emerald-200 text-[11px] mt-0.5 flex items-center gap-1">
-              {activeGroup ? `Due ${formatNaira(activeGroup.contributionAmount ?? 0)}` : "Set up payment"}
+              {pendingContribution ? `Due ${formatNaira(dueAmount)}` : activeGroup ? `Next: ${formatNaira(dueAmount)}` : "Set up payment"}
               <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
             </p>
           </button>

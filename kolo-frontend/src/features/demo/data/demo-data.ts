@@ -72,21 +72,73 @@ export const DEMO_OTP_CODES: DemoOTPCode[] = [
   {
     code: "000000",
     label: "Valid Login",
-    description: "Enter this to log in successfully",
+    description: "Successful verification",
     result: "success",
   },
   {
     code: "111111",
     label: "Wrong Code",
-    description: "Enter this to see an invalid OTP error",
+    description: "Invalid OTP error",
     result: "wrong",
     errorMessage: "Invalid verification code. Please check and try again.",
   },
   {
     code: "222222",
     label: "Expired Code",
-    description: "Enter this to see a timeout error",
+    description: "Expired OTP error",
     result: "expired",
     errorMessage: "This verification code has expired. Request a new one.",
+  },
+];
+
+export interface DemoPaymentCard {
+  id: string;
+  number: string;
+  network: string;
+  cvv: string;
+  expiry: string;
+  holder: string;
+  result: "success" | "wrong" | "expired";
+  description: string;
+  otpToUse: string;
+  gradient: string;
+}
+
+export const DEMO_PAYMENT_CARDS: DemoPaymentCard[] = [
+  {
+    id: "card-success",
+    number: "4084 0812 3456 7890",
+    network: "Verve",
+    cvv: "123",
+    expiry: "12/27",
+    holder: "Adaobi Okonkwo",
+    result: "success",
+    description: "Use OTP 000000 — payment succeeds",
+    otpToUse: "000000",
+    gradient: "from-emerald-700 to-emerald-950",
+  },
+  {
+    id: "card-wrong",
+    number: "4084 0812 3456 7891",
+    network: "Verve",
+    cvv: "456",
+    expiry: "12/27",
+    holder: "Adaobi Okonkwo",
+    result: "wrong",
+    description: "Use OTP 111111 — wrong-code error",
+    otpToUse: "111111",
+    gradient: "from-rose-700 to-rose-950",
+  },
+  {
+    id: "card-expired",
+    number: "4084 0812 3456 7892",
+    network: "Verve",
+    cvv: "789",
+    expiry: "12/27",
+    holder: "Adaobi Okonkwo",
+    result: "expired",
+    description: "Use OTP 222222 — expired-code error",
+    otpToUse: "222222",
+    gradient: "from-amber-700 to-amber-950",
   },
 ];

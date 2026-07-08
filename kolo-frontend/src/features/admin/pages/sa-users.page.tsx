@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, Filter, Download, UserPlus, Eye, Edit, Loader2, AlertTriangle } from "lucide-react";
+import { Search, Filter, Download, UserPlus, Eye, Edit, Loader2, AlertTriangle, CheckCircle, X } from "lucide-react";
 import { Card } from "../../../components/shared/Card";
 import { Badge } from "../../../components/shared/Badge";
 import { Avatar } from "../../../components/shared/Avatar";
@@ -8,6 +8,7 @@ import { PageHeader } from "../../../components/shared/PageHeader";
 import { Pagination } from "../../../components/shared/Pagination";
 import { useUsers } from "../../../hooks/use-users";
 import { downloadCsv } from "../../../utils/csv";
+import { apiClient } from "../../../api/client";
 
 export function SAUsers() {
   const [page, setPage] = useState(1);
@@ -15,6 +16,8 @@ export function SAUsers() {
   const users = data?.items ?? [];
   const pagination = data?.pagination;
   const [search, setSearch] = useState("");
+  const [addingUser, setAddingUser] = useState(false);
+  const [addResult, setAddResult] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
   const filtered = users.filter(u =>
     u.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -56,9 +59,39 @@ export function SAUsers() {
 
   return (
     <div>
+      {addResult && (
+        <div className={`mb-4 p-3 rounded-xl text-sm flex items-center gap-2 ${
+          addResult.type === "success"
+            ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800"
+            : "bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800"
+        }`}>
+          {addResult.type === "success" ? <CheckCircle className="w-4 h-4 flex-shrink-0" /> : <X className="w-4 h-4 flex-shrink-0" />}
+          {addResult.message}
+          <button onClick={() => setAddResult(null)} className="ml-auto text-current opacity-60 hover:opacity-100"><X className="w-3.5 h-3.5" /></button>
+        </div>
+      )}
       <PageHeader title="User Management" subtitle={`${pagination?.total ?? users.length} total users`}>
         <Button size="sm" variant="secondary" onClick={handleExport}><Download className="w-4 h-4" />Export</Button>
-        <Button size="sm"><UserPlus className="w-4 h-4" />Add User</Button>
+        <Button size="sm" onClick={async () => {
+          const email = prompt("Enter new user email:");
+          if (!email) return;
+          const name = prompt("Enter full name:");
+          if (!name) return;
+          const role = prompt("Enter role (MEMBER/GROUP_ADMIN):") || "MEMBER";
+          setAddingUser(true);
+          setAddResult(null);
+          try {
+            await apiClient.post("/auth/register", { email, name, role });
+            setAddResult({ type: "success", message: `User ${email} created` });
+          } catch {
+            setAddResult({ type: "error", message: "Failed to create user" });
+          } finally {
+            setAddingUser(false);
+          }
+        }} disabled={addingUser}>
+          {addingUser ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
+          {addingUser ? "Adding..." : "Add User"}
+        </Button>
       </PageHeader>
       <Card className="overflow-hidden">
         <div className="p-4 border-b border-gray-100 dark:border-border flex flex-col sm:flex-row gap-3">

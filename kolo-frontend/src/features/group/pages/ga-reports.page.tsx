@@ -1,4 +1,4 @@
-import { Download, Loader2 } from "lucide-react";
+import { Download, Loader2, CheckCircle } from "lucide-react";
 import {
   LineChart, Line, BarChart, Bar,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -9,10 +9,12 @@ import { Avatar } from "../../../components/shared/Avatar";
 import { Button } from "../../../components/shared/Button";
 import { PageHeader } from "../../../components/shared/PageHeader";
 import { formatNaira } from "../../../utils/format";
+import { downloadCsv } from "../../../utils/csv";
 import { useChartTheme } from "../../../hooks/use-chart-theme";
 import { useGroupAnalytics } from "../../../hooks/use-analytics";
 import { useCooperatives } from "../../../hooks/use-cooperatives";
 import { useGroupMembers } from "../../../hooks/use-group-members";
+import { useState } from "react";
 
 export function GAReports() {
   const ct = useChartTheme();
@@ -21,6 +23,7 @@ export function GAReports() {
   const groupId = groups.length > 0 ? groups[0].id : "";
   const { data: analytics, isLoading } = useGroupAnalytics(groupId);
   const { data: members } = useGroupMembers(groupId);
+  const [csvExported, setCsvExported] = useState(false);
 
   if (isLoading) {
     return (
@@ -36,11 +39,26 @@ export function GAReports() {
   const savingsTrend = analytics?.savingsTrend || [];
   const memberList = members || [];
 
+  const handleExportCsv = () => {
+    downloadCsv(
+      "member-report.csv",
+      ["Member", "Email", "Status", "Joined"],
+      memberList.map(m => [m.name || `${m.firstName} ${m.lastName}`, m.email, m.status, m.joinedAt]),
+    );
+    setCsvExported(true);
+    setTimeout(() => setCsvExported(false), 2000);
+  };
+
   return (
     <div>
       <PageHeader title="Reports & Analytics" subtitle="Group performance and financial summaries.">
-        <Button variant="secondary" size="sm"><Download className="w-4 h-4" />Export PDF</Button>
-        <Button variant="secondary" size="sm"><Download className="w-4 h-4" />Export CSV</Button>
+        <Button variant="secondary" size="sm" onClick={handleExportCsv} disabled={memberList.length === 0}>
+          {csvExported ? <CheckCircle className="w-4 h-4" /> : <Download className="w-4 h-4" />}
+          {csvExported ? "Exported!" : "Export CSV"}
+        </Button>
+        <Button variant="secondary" size="sm" onClick={() => window.print()}>
+          <Download className="w-4 h-4" />Export PDF
+        </Button>
       </PageHeader>
       <div className="grid lg:grid-cols-2 gap-5 mb-5">
         <Card className="p-5">

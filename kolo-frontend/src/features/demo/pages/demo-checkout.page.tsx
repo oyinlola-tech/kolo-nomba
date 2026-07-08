@@ -1,15 +1,44 @@
 import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import {
-  CreditCard, Check, RefreshCw, ShieldCheck, X, Clock, Lock, Smartphone,
+  CreditCard, Check, RefreshCw, ShieldCheck, X, Clock, Lock, Smartphone, ChevronDown,
 } from "lucide-react";
 import { Button } from "../../../components/shared/Button";
 import { Logo } from "../../../components/shared/Logo";
 import { ThemeToggle } from "../../../components/shared/ThemeToggle";
-import { DEMO_OTP_CODES } from "../data/demo-data";
+import { DEMO_OTP_CODES, DEMO_PAYMENT_CARDS } from "../data/demo-data";
+import type { DemoPaymentCard } from "../data/demo-data";
 import { completePayment } from "../store/demo-store";
 
 type Step = "form" | "processing" | "otp" | "success";
+
+function CardVisual({ card, mini }: { card: DemoPaymentCard; mini?: boolean }) {
+  return (
+    <div className={`relative bg-gradient-to-br ${card.gradient} ${mini ? "rounded-xl p-3 h-[100px]" : "rounded-2xl p-5 h-[200px]"} text-white shadow-xl flex flex-col justify-between overflow-hidden flex-shrink-0`}>
+      <div className="absolute top-2 right-2 w-16 h-16 bg-white/5 rounded-full blur-2xl" />
+      <div className="absolute -bottom-4 -left-4 w-20 h-20 bg-white/5 rounded-full blur-2xl" />
+      <div className="flex items-start justify-between relative z-10">
+        <span className={`${mini ? "text-[7px]" : "text-[10px]"} text-emerald-200/80 font-medium tracking-wider`}>KOLO</span>
+        <span className={`${mini ? "text-[8px]" : "text-[10px]"} font-semibold text-white/80 tracking-wider`}>{card.network}</span>
+      </div>
+      <div className="relative z-10">
+        <p className={`${mini ? "text-xs tracking-[2px]" : "text-lg tracking-[4px]"} font-mono`}>{mini ? `**** **** **** ${card.number.slice(-4)}` : card.number}</p>
+        {!mini && (
+          <div className="flex gap-6 mt-3">
+            <div>
+              <p className="text-[9px] text-white/60 tracking-wider">EXPIRY</p>
+              <p className="text-xs font-mono font-semibold">{card.expiry}</p>
+            </div>
+            <div>
+              <p className="text-[9px] text-white/60 tracking-wider">CVV</p>
+              <p className="text-xs font-mono font-semibold">{card.cvv}</p>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export function DemoCheckoutPage() {
   const navigate = useNavigate();
@@ -20,17 +49,17 @@ export function DemoCheckoutPage() {
   const groupName = searchParams.get("group") ?? "Market Traders Ajo";
 
   const [step, setStep] = useState<Step>("form");
-  const [cardNumber] = useState("4084 0812 3456 7890");
-  const [cardName] = useState("Adaobi Okonkwo");
-  const [expiry] = useState("12/27");
-  const [cvv] = useState("123");
+  const [selectedCardId, setSelectedCardId] = useState(DEMO_PAYMENT_CARDS[0].id);
+  const [showCardPicker, setShowCardPicker] = useState(false);
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [otpError, setOtpError] = useState<string | null>(null);
   const [verifying, setVerifying] = useState(false);
 
+  const selectedCard = DEMO_PAYMENT_CARDS.find((c) => c.id === selectedCardId) ?? DEMO_PAYMENT_CARDS[0];
+
   const maskCard = (num: string) => {
     const digits = num.replace(/\s/g, "");
-    return `${digits.slice(0, 4)} ${"•".repeat(4)} ${"•".repeat(4)} ${digits.slice(-4)}`;
+    return `${digits.slice(0, 4)} **** **** ${digits.slice(-4)}`;
   };
 
   const handlePayNow = () => {
@@ -76,7 +105,6 @@ export function DemoCheckoutPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-background flex flex-col">
-      {/* Minimal header */}
       <div className="bg-white dark:bg-card border-b border-gray-100 dark:border-border px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Logo size="sm" />
@@ -90,11 +118,10 @@ export function DemoCheckoutPage() {
 
       <div className="flex-1 flex items-center justify-center p-4">
         <div className="w-full max-w-md">
-          {/* Step 1: Card form */}
           {step === "form" && (
             <div className="bg-white dark:bg-card border border-gray-200 dark:border-border rounded-2xl shadow-sm overflow-hidden">
-              <div className="p-6 bg-gradient-to-br from-emerald-700 to-emerald-900 text-white">
-                <div className="flex items-center justify-between mb-6">
+              <div className="p-5 bg-gradient-to-br from-emerald-700 to-emerald-900 text-white">
+                <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
                     <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
                       <CreditCard className="w-4 h-4" />
@@ -103,53 +130,83 @@ export function DemoCheckoutPage() {
                   </div>
                   <span className="text-xs bg-white/20 px-2 py-1 rounded-full">Demo Mode</span>
                 </div>
-                <p className="text-3xl font-extrabold mb-1">₦{parseInt(amount).toLocaleString()}</p>
+                <p className="text-3xl font-extrabold mb-1">N{parseInt(amount).toLocaleString()}</p>
                 <p className="text-emerald-200 text-xs">{groupName}</p>
-                <div className="mt-4 pt-4 border-t border-white/20">
-                  <p className="text-xs text-emerald-200 mb-1">Card number</p>
-                  <p className="text-lg font-mono tracking-wider">{maskCard(cardNumber)}</p>
-                </div>
-                <div className="flex gap-4 mt-3 text-xs">
-                  <div>
-                    <p className="text-emerald-200">Expiry</p>
-                    <p className="font-semibold font-mono">{expiry}</p>
-                  </div>
-                  <div>
-                    <p className="text-emerald-200">CVV</p>
-                    <p className="font-semibold font-mono">{cvv}</p>
-                  </div>
-                </div>
               </div>
+
               <div className="p-5 space-y-4">
+                {/* Card selector */}
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 dark:text-muted-foreground mb-2 block">Test Card</label>
+                  <button onClick={() => setShowCardPicker(!showCardPicker)}
+                    className="w-full flex items-center gap-3 p-3 bg-gray-50 dark:bg-muted border border-gray-200 dark:border-border rounded-xl hover:bg-gray-100 dark:hover:bg-muted/70 transition-colors">
+                    <CardVisual card={selectedCard} mini />
+                    <div className="flex-1 text-left min-w-0">
+                      <p className="text-sm font-semibold text-gray-900 dark:text-white">{maskCard(selectedCard.number)}</p>
+                      <p className={`text-xs font-medium ${
+                        selectedCard.result === "success" ? "text-emerald-600" :
+                        selectedCard.result === "wrong" ? "text-red-500" : "text-amber-600"
+                      }`}>
+                        {selectedCard.description}
+                      </p>
+                    </div>
+                    <ChevronDown className={`w-4 h-4 text-gray-400 flex-shrink-0 transition-transform ${showCardPicker ? "rotate-180" : ""}`} />
+                  </button>
+
+                  {showCardPicker && (
+                    <div className="mt-2 space-y-2 bg-white dark:bg-card border border-gray-200 dark:border-border rounded-xl p-2">
+                      {DEMO_PAYMENT_CARDS.map((card) => (
+                        <button key={card.id} onClick={() => { setSelectedCardId(card.id); setShowCardPicker(false); }}
+                          className={`w-full flex items-center gap-3 p-2.5 rounded-lg transition-colors ${
+                            card.id === selectedCardId
+                              ? "bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800"
+                              : "hover:bg-gray-50 dark:hover:bg-muted border border-transparent"
+                          }`}>
+                          <CardVisual card={card} mini />
+                          <div className="flex-1 text-left min-w-0">
+                            <p className="text-xs font-semibold text-gray-900 dark:text-white">{card.number}</p>
+                            <p className={`text-[10px] ${
+                              card.result === "success" ? "text-emerald-600" :
+                              card.result === "wrong" ? "text-red-500" : "text-amber-600"
+                            }`}>
+                              OTP {card.otpToUse} &mdash; {card.result === "success" ? "Success" : card.result === "wrong" ? "Wrong OTP" : "Expired"}
+                            </p>
+                          </div>
+                          <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
+                            card.id === selectedCardId ? "border-emerald-600" : "border-gray-300"
+                          }`}>
+                            {card.id === selectedCardId && <div className="w-2 h-2 bg-emerald-600 rounded-full" />}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
                 <div>
                   <label className="text-xs font-semibold text-gray-500 dark:text-muted-foreground mb-1.5 block">Cardholder Name</label>
                   <div className="px-3 py-2.5 bg-gray-50 dark:bg-muted rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-100 dark:border-border">
-                    {cardName}
-                  </div>
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-gray-500 dark:text-muted-foreground mb-1.5 block">Card Number</label>
-                  <div className="px-3 py-2.5 bg-gray-50 dark:bg-muted rounded-xl text-sm font-mono text-gray-700 dark:text-gray-300 border border-gray-100 dark:border-border">
-                    {cardNumber}
+                    Adaobi Okonkwo
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="text-xs font-semibold text-gray-500 dark:text-muted-foreground mb-1.5 block">Expiry Date</label>
                     <div className="px-3 py-2.5 bg-gray-50 dark:bg-muted rounded-xl text-sm font-mono text-gray-700 dark:text-gray-300 border border-gray-100 dark:border-border">
-                      {expiry}
+                      {selectedCard.expiry}
                     </div>
                   </div>
                   <div>
                     <label className="text-xs font-semibold text-gray-500 dark:text-muted-foreground mb-1.5 block">CVV</label>
                     <div className="px-3 py-2.5 bg-gray-50 dark:bg-muted rounded-xl text-sm font-mono text-gray-700 dark:text-gray-300 border border-gray-100 dark:border-border">
-                      {cvv}
+                      {selectedCard.cvv}
                     </div>
                   </div>
                 </div>
+
                 <Button full size="lg" onClick={handlePayNow}>
                   <Lock className="w-4 h-4" />
-                  Pay ₦{parseInt(amount).toLocaleString()}
+                  Pay N{parseInt(amount).toLocaleString()} Now
                 </Button>
                 <p className="text-center text-xs text-gray-400 flex items-center justify-center gap-1">
                   <ShieldCheck className="w-3 h-3" />Secured by Nomba Payment Gateway
@@ -158,32 +215,30 @@ export function DemoCheckoutPage() {
             </div>
           )}
 
-          {/* Step 2: Processing */}
           {step === "processing" && (
             <div className="bg-white dark:bg-card border border-gray-200 dark:border-border rounded-2xl p-8 text-center shadow-sm">
               <div className="w-16 h-16 rounded-2xl bg-primary flex items-center justify-center mx-auto mb-6">
                 <RefreshCw className="w-8 h-8 text-white animate-spin" />
               </div>
               <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Processing Payment</h2>
-              <p className="text-sm text-gray-500 dark:text-muted-foreground">Please don&apos;t close this page&hellip;</p>
-              <p className="text-xs text-gray-400 mt-4">₦{parseInt(amount).toLocaleString()} to {groupName}</p>
+              <p className="text-sm text-gray-500 dark:text-muted-foreground">Please don&apos;t close this page...</p>
+              <p className="text-xs text-gray-400 mt-4">N{parseInt(amount).toLocaleString()} to {groupName}</p>
             </div>
           )}
 
-          {/* Step 3: OTP */}
           {step === "otp" && (
-            <div className="bg-white dark:bg-card border border-gray-200 dark:border-border rounded-2xl p-8 shadow-sm">
+            <div className="bg-white dark:bg-card border border-gray-200 dark:border-border rounded-2xl p-6 lg:p-8 shadow-sm">
               <div className="w-12 h-12 bg-amber-50 dark:bg-amber-900/20 rounded-2xl flex items-center justify-center mb-4 mx-auto">
                 <Smartphone className="w-6 h-6 text-amber-600 dark:text-amber-400" />
               </div>
               <h2 className="text-xl font-extrabold text-gray-900 dark:text-white mb-1 text-center">
                 Card Verification
               </h2>
-              <p className="text-sm text-gray-500 dark:text-muted-foreground mb-2 text-center">
+              <p className="text-sm text-gray-500 dark:text-muted-foreground text-center mb-1">
                 Enter the OTP sent to your registered phone
               </p>
               <p className="text-xs text-gray-400 text-center mb-6">
-                (Demo: use sample codes below)
+                Using card ending in {selectedCard.number.slice(-4)} &mdash; use sample codes below
               </p>
 
               {otpError && (
@@ -204,19 +259,28 @@ export function DemoCheckoutPage() {
 
               <Button full onClick={handleVerify} disabled={verifying || otp.some((d) => !d)} className="mb-5">
                 {verifying ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-                {verifying ? "Verifying\u2026" : "Verify OTP"}
+                {verifying ? "Verifying..." : "Verify OTP"}
               </Button>
 
               <div className="bg-gray-50 dark:bg-muted rounded-xl p-4">
-                <p className="text-xs font-semibold text-gray-500 dark:text-muted-foreground mb-2 flex items-center gap-1.5">
+                <p className="text-xs font-semibold text-gray-500 dark:text-muted-foreground mb-3 flex items-center gap-1.5">
                   <ShieldCheck className="w-3.5 h-3.5" />
                   Sample OTP codes
                 </p>
-                <div className="space-y-1.5">
+                <div className="grid gap-2">
                   {DEMO_OTP_CODES.map((c) => (
-                    <div key={c.code} className="flex items-center justify-between text-xs">
-                      <span className="font-mono font-bold text-gray-700 dark:text-gray-300">{c.code}</span>
-                      <span className={`${c.result === "success" ? "text-emerald-600 dark:text-emerald-400" : c.result === "wrong" ? "text-red-500" : "text-amber-600 dark:text-amber-400"}`}>
+                    <div key={c.code} className="flex items-center justify-between text-xs bg-white dark:bg-card rounded-lg px-3 py-2 border border-gray-100 dark:border-border">
+                      <div className="flex items-center gap-2">
+                        <span className={`w-2 h-2 rounded-full ${
+                          c.result === "success" ? "bg-emerald-500" :
+                          c.result === "wrong" ? "bg-red-500" : "bg-amber-500"
+                        }`} />
+                        <span className="font-mono font-bold text-gray-900 dark:text-white">{c.code}</span>
+                      </div>
+                      <span className={`text-[11px] ${
+                        c.result === "success" ? "text-emerald-600 dark:text-emerald-400" :
+                        c.result === "wrong" ? "text-red-500" : "text-amber-600 dark:text-amber-400"
+                      }`}>
                         {c.description}
                       </span>
                     </div>
@@ -226,15 +290,14 @@ export function DemoCheckoutPage() {
             </div>
           )}
 
-          {/* Step 4: Success */}
           {step === "success" && (
             <div className="bg-white dark:bg-card border border-gray-200 dark:border-border rounded-2xl p-8 text-center shadow-sm">
-              <div className="w-16 h-16 rounded-2xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mx-auto mb-6">
+              <div className="w-16 h-16 rounded-2xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mx-auto mb-6 ring-8 ring-emerald-50 dark:ring-emerald-900/10">
                 <Check className="w-8 h-8 text-emerald-600 dark:text-emerald-400" />
               </div>
               <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Payment Successful!</h2>
               <p className="text-sm text-gray-500 dark:text-muted-foreground mb-1">
-                ₦{parseInt(amount).toLocaleString()} paid to {groupName}
+                N{parseInt(amount).toLocaleString()} paid to {groupName}
               </p>
               <p className="text-xs text-gray-400 mb-6">Reference: {reference || "KOLO-DEMO-REF"}</p>
               <Button full onClick={() => navigate("/member/pay-success?reference=" + reference + "&paymentId=" + paymentId)}>
@@ -248,7 +311,7 @@ export function DemoCheckoutPage() {
       <div className="bg-white dark:bg-card border-t border-gray-100 dark:border-border px-4 py-3 text-center">
         <p className="text-xs text-gray-400 flex items-center justify-center gap-2">
           <ShieldCheck className="w-3 h-3" />
-          Demo Mode — No real transaction will be processed
+          Demo Mode &mdash; No real transaction will be processed
           <Clock className="w-3 h-3 ml-1" />
         </p>
       </div>

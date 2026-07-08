@@ -160,6 +160,24 @@ export function handleDemoRequest(config: AxiosRequestConfig): AxiosResponse | n
   }
   if (membersMatch && method === "post") return r({ id: `inv-${Date.now()}`, message: "Member invited" });
 
+  // Join group
+  const joinMatch = path.match(/^\/groups\/([^/]+)\/join$/);
+  if (joinMatch && method === "post") {
+    const userId = store.getActiveDemoUserId();
+    if (!userId) return e("Not authenticated", 401);
+    const member = store.joinGroup(userId, joinMatch[1]);
+    if (!member) return e("Could not join group", 400);
+    store.addActivity("Member joined group", member.name, joinMatch[1]);
+    return r({ message: "Joined group", member });
+  }
+
+  // Available groups (for member browsing)
+  if (path === "/groups/available" && method === "get") {
+    const userId = store.getActiveDemoUserId();
+    if (!userId) return r([]);
+    return r(store.getAvailableGroups(userId));
+  }
+
   // Group analytics
   const analyticsMatch = path.match(/^\/groups\/([^/]+)\/analytics$/);
   if (analyticsMatch && method === "get") return r(store.getGroupAnalytics());
@@ -189,7 +207,8 @@ export function handleDemoRequest(config: AxiosRequestConfig): AxiosResponse | n
 
   // Contributions
   if (path === "/contributions/my" && method === "get") {
-    const c = store.getContributions(page, limit);
+    const userId = store.getActiveDemoUserId();
+    const c = userId ? store.getContributions(page, limit, userId) : store.getContributions(page, limit);
     return pr(c.items.map((mc) => ({ id: mc.id, cycleId: mc.cycleId, groupMemberId: mc.groupMemberId, expectedAmount: mc.expectedAmount, paidAmount: mc.paidAmount, amount: mc.expectedAmount, status: mc.status, paidAt: mc.paidAt, memberName: mc.memberName })), c.pagination);
   }
 

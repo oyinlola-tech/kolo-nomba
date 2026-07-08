@@ -1,15 +1,17 @@
 import { useState } from "react";
-import { Shield, Activity, Clock, User, Filter, Download, Loader2, AlertTriangle } from "lucide-react";
+import { Shield, Activity, Clock, User, Filter, Download, Loader2, AlertTriangle, CheckCircle } from "lucide-react";
 import { Card } from "../../../components/shared/Card";
 import { PageHeader } from "../../../components/shared/PageHeader";
 import { Pagination } from "../../../components/shared/Pagination";
 import { useAuditLogs } from "../../../hooks/use-audit-logs";
+import { downloadCsv } from "../../../utils/csv";
 
 export function SAAuditLogs() {
   const [page, setPage] = useState(1);
   const { data, isLoading } = useAuditLogs(page);
   const auditLogs = data?.items ?? [];
   const pagination = data?.pagination;
+  const [exported, setExported] = useState(false);
 
   return (
     <div>
@@ -60,8 +62,12 @@ export function SAAuditLogs() {
             <button className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-muted rounded-lg hover:bg-gray-200 dark:hover:bg-muted/80 transition-colors">
               <Filter className="w-3.5 h-3.5" /> Filter
             </button>
-            <button className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-muted rounded-lg hover:bg-gray-200 dark:hover:bg-muted/80 transition-colors">
-              <Download className="w-3.5 h-3.5" /> Export
+            <button onClick={() => {
+              downloadCsv("audit-logs.csv", ["Action", "Target", "Actor", "Date", "IP"], auditLogs.map(a => [a.action, a.target, a.actorName, a.createdAt, a.ipAddress]));
+              setExported(true);
+              setTimeout(() => setExported(false), 2000);
+            }} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-muted rounded-lg hover:bg-gray-200 dark:hover:bg-muted/80 transition-colors">
+              {exported ? <CheckCircle className="w-3.5 h-3.5 text-emerald-500" /> : <Download className="w-3.5 h-3.5" />} {exported ? "Exported!" : "Export"}
             </button>
           </div>
         </div>

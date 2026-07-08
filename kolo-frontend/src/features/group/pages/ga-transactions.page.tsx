@@ -1,4 +1,4 @@
-import { Download, Loader2 } from "lucide-react";
+import { Download, Loader2, CheckCircle } from "lucide-react";
 import { Card } from "../../../components/shared/Card";
 import { Badge } from "../../../components/shared/Badge";
 import { Avatar } from "../../../components/shared/Avatar";
@@ -6,15 +6,31 @@ import { Button } from "../../../components/shared/Button";
 import { PageHeader } from "../../../components/shared/PageHeader";
 import { formatNaira } from "../../../utils/format";
 import { useTransactions } from "../../../hooks/use-transactions";
+import { downloadCsv } from "../../../utils/csv";
+import { useState } from "react";
 
 export function GATransactions() {
   const { data, isLoading } = useTransactions();
   const txns = data?.items ?? [];
+  const [exported, setExported] = useState(false);
+
+  const handleExport = () => {
+    downloadCsv(
+      "transactions.csv",
+      ["Reference", "Member", "Amount", "Date", "Status"],
+      txns.map(t => [t.id, t.userName, formatNaira(t.amount), t.createdAt, t.status]),
+    );
+    setExported(true);
+    setTimeout(() => setExported(false), 2000);
+  };
 
   return (
     <div>
       <PageHeader title="Transactions" subtitle="All payments within your group.">
-        <Button variant="secondary" size="sm"><Download className="w-4 h-4" />Export</Button>
+        <Button variant="secondary" size="sm" onClick={handleExport} disabled={txns.length === 0}>
+          {exported ? <CheckCircle className="w-4 h-4" /> : <Download className="w-4 h-4" />}
+          {exported ? "Exported!" : "Export"}
+        </Button>
       </PageHeader>
       {isLoading ? (
         <div className="flex items-center justify-center py-12">
