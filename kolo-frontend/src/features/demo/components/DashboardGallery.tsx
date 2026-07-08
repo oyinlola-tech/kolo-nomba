@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ShieldCheck, ChevronLeft, ChevronRight } from "lucide-react";
+import { ShieldCheck, ChevronLeft, ChevronRight, X } from "lucide-react";
 
 interface Shot {
   img: string;
@@ -52,6 +52,7 @@ const TABS: Tab[] = [
 export function DashboardGallery() {
   const [activeTab, setActiveTab] = useState(TABS[0].id);
   const [slideIdx, setSlideIdx] = useState(0);
+  const [previewImg, setPreviewImg] = useState<string | null>(null);
   const tab = TABS.find((t) => t.id === activeTab) ?? TABS[0];
   const shots = tab.screenshots;
   const current = shots[slideIdx];
@@ -83,12 +84,14 @@ export function DashboardGallery() {
 
       <div className="bg-white dark:bg-card border border-gray-200 dark:border-border rounded-2xl overflow-hidden">
         <div className="relative">
-          <img
-            src={`/demo-screenshots/${current.img}.png`}
-            alt={current.label}
-            className="w-full object-cover border-b border-gray-100 dark:border-border"
-            style={{ maxHeight: 420 }}
-          />
+          <button onClick={() => setPreviewImg(`/demo-screenshots/${current.img}.png`)} className="w-full block text-left cursor-pointer">
+            <img
+              src={`/demo-screenshots/${current.img}.png`}
+              alt={current.label}
+              className="w-full object-cover border-b border-gray-100 dark:border-border"
+              style={{ maxHeight: 420 }}
+            />
+          </button>
           {shots.length > 1 && (
             <>
               <button onClick={() => setSlideIdx((i) => Math.max(0, i - 1))} disabled={slideIdx === 0}
@@ -117,6 +120,22 @@ export function DashboardGallery() {
           </div>
         </div>
       </div>
+
+      {previewImg && (
+        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4 backdrop-blur-sm"
+          onClick={() => setPreviewImg(null)}
+          onKeyDown={(e) => e.key === "Escape" && setPreviewImg(null)}
+          tabIndex={0}>
+          <div className="relative max-w-5xl w-full max-h-[90vh] flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+            <button onClick={() => setPreviewImg(null)}
+              className="absolute -top-3 -right-3 z-10 w-8 h-8 rounded-full bg-white dark:bg-card shadow-lg flex items-center justify-center hover:bg-gray-100 dark:hover:bg-muted transition-colors">
+              <X className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+            </button>
+            <img src={previewImg} alt="Preview"
+              className="max-w-full max-h-[90vh] rounded-2xl shadow-2xl object-contain bg-white" />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
