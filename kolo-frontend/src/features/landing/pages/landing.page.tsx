@@ -30,6 +30,7 @@ export function LandingPage() {
               <button onClick={() => navigate("/how-it-works")} className="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">How It Works</button>
               <button onClick={() => navigate("/pricing")} className="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">Pricing</button>
               <button onClick={() => navigate("/security")} className="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">Security</button>
+              <button onClick={() => navigate("/demo")} className="text-sm font-medium text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 transition-colors">Demo</button>
               <button onClick={() => navigate("/about")} className="text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">About</button>
             </div>
             <div className="hidden md:flex items-center gap-3">
@@ -50,6 +51,7 @@ export function LandingPage() {
             <button onClick={() => { navigate("/how-it-works"); setMobileMenu(false); }} className="block text-sm font-medium text-gray-600 dark:text-gray-400 py-1">How It Works</button>
             <button onClick={() => { navigate("/pricing"); setMobileMenu(false); }} className="block text-sm font-medium text-gray-600 dark:text-gray-400 py-1">Pricing</button>
             <button onClick={() => { navigate("/security"); setMobileMenu(false); }} className="block text-sm font-medium text-gray-600 dark:text-gray-400 py-1">Security</button>
+            <button onClick={() => { navigate("/demo"); setMobileMenu(false); }} className="block text-sm font-medium text-amber-600 dark:text-amber-400 py-1">Demo</button>
             <button onClick={() => { navigate("/about"); setMobileMenu(false); }} className="block text-sm font-medium text-gray-600 dark:text-gray-400 py-1">About</button>
             <div className="pt-2 flex flex-col gap-2">
               <Button full variant="secondary" onClick={() => navigate("/login")}>Sign In</Button>
