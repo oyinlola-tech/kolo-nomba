@@ -10,7 +10,7 @@ import { usePaymentPolling } from "../../../hooks/use-payment-polling";
 import { formatNaira } from "../../../utils/format";
 import { extractApiError } from "../../../utils/error";
 
-function BankTransferInfoDisplay({ info, onBack, paymentId, onConfirmed }: { info: { accountNumber: string; accountName: string; bankName: string; amount: number }; onBack: () => void; paymentId: string | null; onConfirmed: () => void }) {
+function BankTransferInfoDisplay({ info, onBack, paymentId, onConfirmed, onViewHistory }: { info: { accountNumber: string; accountName: string; bankName: string; amount: number }; onBack: () => void; paymentId: string | null; onConfirmed: () => void; onViewHistory: () => void }) {
   const [copied, setCopied] = useState(false);
   const { data: paymentStatus } = usePaymentStatus(paymentId, !!paymentId);
 
@@ -48,7 +48,7 @@ function BankTransferInfoDisplay({ info, onBack, paymentId, onConfirmed }: { inf
           </div>
           <p className="text-lg font-bold text-gray-900 dark:text-white mb-2">Payment Confirmed!</p>
           <p className="text-sm text-gray-500 dark:text-muted-foreground mb-6">Your bank transfer has been received.</p>
-          <button onClick={() => window.location.href = "/member/history"}
+          <button onClick={onViewHistory}
             className="w-full py-3 bg-primary text-white font-bold rounded-xl hover:opacity-90 transition-opacity">
             View History
           </button>
@@ -176,7 +176,7 @@ export function MPay() {
 
   if (method === "bank") {
     if (bankTransferInfo) {
-      return <BankTransferInfoDisplay info={bankTransferInfo} onBack={() => { setMethod("card"); setBankTransferInfo(null); }} paymentId={bankTransferInfo.paymentId} onConfirmed={() => { setMethod("card"); setBankTransferInfo(null); }} />;
+      return <BankTransferInfoDisplay info={bankTransferInfo} onBack={() => { setMethod("card"); setBankTransferInfo(null); }} paymentId={bankTransferInfo.paymentId} onConfirmed={() => { setMethod("card"); setBankTransferInfo(null); }} onViewHistory={() => navigate("/member/history")} />;
     }
     return <BankTransferInit amount={amount} contributionId={contributionId}
       onReady={(info) => setBankTransferInfo(info)}
@@ -200,7 +200,7 @@ export function MPay() {
         paymentMethod: "card",
       });
       if (result.checkoutUrl) {
-        window.location.href = result.checkoutUrl;
+        navigate(result.checkoutUrl);
       } else {
         navigate(`pay-success?reference=${result.reference}&paymentId=${result.paymentId}`);
       }

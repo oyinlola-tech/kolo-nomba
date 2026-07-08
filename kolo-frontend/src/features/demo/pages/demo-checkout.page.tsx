@@ -6,6 +6,7 @@ import {
 import { Button } from "../../../components/shared/Button";
 import { Logo } from "../../../components/shared/Logo";
 import { ThemeToggle } from "../../../components/shared/ThemeToggle";
+import { useAppStore } from "../../../app/store";
 import { DEMO_OTP_CODES, DEMO_PAYMENT_CARDS } from "../data/demo-data";
 import type { DemoPaymentCard } from "../data/demo-data";
 import { completePayment } from "../store/demo-store";
@@ -42,6 +43,7 @@ function CardVisual({ card, mini }: { card: DemoPaymentCard; mini?: boolean }) {
 
 export function DemoCheckoutPage() {
   const navigate = useNavigate();
+  const accessToken = useAppStore((state) => state.accessToken);
   const [searchParams] = useSearchParams();
   const paymentId = searchParams.get("paymentId") ?? "";
   const reference = searchParams.get("reference") ?? "";
@@ -300,7 +302,7 @@ export function DemoCheckoutPage() {
                 N{parseInt(amount).toLocaleString()} paid to {groupName}
               </p>
               <p className="text-xs text-gray-400 mb-6">Reference: {reference || "KOLO-DEMO-REF"}</p>
-              <Button full onClick={() => navigate("/member/pay-success?reference=" + reference + "&paymentId=" + paymentId)}>
+              <Button full onClick={() => navigate(accessToken ? "/member/pay-success?reference=" + reference + "&paymentId=" + paymentId : "/demo")}>
                 Continue
               </Button>
             </div>
