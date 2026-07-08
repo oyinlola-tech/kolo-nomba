@@ -13,6 +13,7 @@ import { setAccessToken } from "../../../api/client";
 import { DEMO_USERS, DEMO_OTP_CODES, DEMO_PAYMENT_CARDS } from "../data/demo-data";
 import type { DemoUserConfig, DemoPaymentCard } from "../data/demo-data";
 import { setActiveDemoUser, resetDemoData } from "../store/demo-store";
+import { DashboardGallery } from "../components/DashboardGallery";
 
 const ICON_MAP: Record<string, typeof Shield> = { Shield, Building2, Users };
 
@@ -275,6 +276,8 @@ export function DemoPage() {
                 ))}
               </div>
             </div>
+
+            <DashboardGallery />
 
             {/* Demo metadata + reset */}
             <div className="flex flex-wrap items-center justify-center gap-3 text-sm text-gray-500 dark:text-muted-foreground mb-6">

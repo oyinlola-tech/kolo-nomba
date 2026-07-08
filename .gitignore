@@ -59,6 +59,7 @@ __tests__/
 
 */*.snap
 
+*/scripts/*
 
 
 .vscode/
