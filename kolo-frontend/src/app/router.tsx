@@ -3,7 +3,7 @@ import { createBrowserRouter, Navigate } from "react-router";
 import { ProtectedRoute } from "../components/shared/ProtectedRoute";
 import { LandingPage, HowItWorksPage } from "../features/landing";
 import { LoginPage } from "../features/auth";
-import { DemoPage } from "../features/demo";
+import { DemoPage, DemoCheckoutPage } from "../features/demo";
 import type { UserRole } from "../types/auth.types";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -27,6 +27,7 @@ export const router = createBrowserRouter([
   { path: "/privacy", element: LazyLoad(() => import("../features/landing/pages/privacy.page").then(m => ({ default: m.PrivacyPage }))) },
   { path: "/how-it-works", element: <HowItWorksPage /> },
   { path: "/demo", element: <DemoPage /> },
+  { path: "/demo/checkout", element: <DemoCheckoutPage /> },
 
   { path: "/login", element: <LoginPage /> },
   { path: "/register", element: LazyLoad(() => import("../features/auth/pages/register.page").then(m => ({ default: m.RegisterPage }))) },

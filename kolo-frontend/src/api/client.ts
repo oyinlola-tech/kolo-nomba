@@ -1,5 +1,6 @@
 import axios from "axios";
 import { getApiUrl } from "../utils/env";
+import { handleDemoRequest } from "../features/demo/api/demo-adapter";
 
 const baseURL = getApiUrl();
 
@@ -35,6 +36,30 @@ function processQueue(error: unknown, token: string | null = null) {
   });
   failedQueue = [];
 }
+
+// Demo mode interceptor — runs first to short-circuit requests with mock data
+apiClient.interceptors.request.use((config) => {
+  if (currentAccessToken?.startsWith("demo-token-")) {
+    const response = handleDemoRequest(config);
+    if (response) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (config as any)._demoResponse = response;
+      throw { _demo: true, config };
+    }
+  }
+  return config;
+});
+
+apiClient.interceptors.response.use(
+  (response) => response,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (error: any) => {
+    if (error._demo) {
+      return error.config._demoResponse;
+    }
+    throw error;
+  },
+);
 
 apiClient.interceptors.request.use((config) => {
   if (currentAccessToken) {

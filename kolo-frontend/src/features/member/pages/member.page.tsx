@@ -1,5 +1,5 @@
 import { useNavigate, useLocation, Outlet } from "react-router";
-import { Home, Receipt, Building2, User, Search } from "lucide-react";
+import { Home, Receipt, Building2, User, Search, Bell } from "lucide-react";
 import { ThemeToggle } from "../../../components/shared/ThemeToggle";
 import { Logo } from "../../../components/shared/Logo";
 import { NotificationBell } from "../../../components/layout/NotificationBell";
