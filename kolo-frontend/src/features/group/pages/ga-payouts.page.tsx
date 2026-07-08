@@ -25,6 +25,7 @@ export function GAPayouts() {
   const groups = groupData?.items ?? [];
   const groupId = groups.length > 0 ? groups[0].id : "";
   const requestPayoutMutation = useRequestPayout();
+  const availableBalance = groups.length > 0 ? groups[0].savingsBalance ?? 0 : 0;
 
   if (step === "request") return (
     <div>
@@ -35,7 +36,7 @@ export function GAPayouts() {
         <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-6">Request Payout</h2>
         <Card className="p-5 mb-4">
           <p className="text-sm text-gray-500 dark:text-muted-foreground mb-1">Available Balance</p>
-          <p className="text-3xl font-extrabold text-gray-900 dark:text-white">—</p>
+          <p className="text-3xl font-extrabold text-gray-900 dark:text-white">{formatNaira(availableBalance)}</p>
         </Card>
         <Input label="Payout Amount" placeholder="₦0.00" value={amount} onChange={setAmount} icon={Banknote} required />
         <Input label="Bank Account" placeholder="GTBank •••• 2841" value={bank} onChange={setBank} icon={Landmark} required />
@@ -100,7 +101,7 @@ export function GAPayouts() {
       <div className="grid md:grid-cols-2 gap-4 mb-6">
         <Card className="p-5">
           <p className="text-sm text-gray-500 dark:text-muted-foreground mb-1">Available Balance</p>
-          <p className="text-3xl font-extrabold text-gray-900 dark:text-white">—</p>
+          <p className="text-3xl font-extrabold text-gray-900 dark:text-white">{formatNaira(availableBalance)}</p>
           <Button className="mt-4" onClick={() => setStep("request")}><ArrowDownToLine className="w-4 h-4" />Request Payout</Button>
         </Card>
         <Card className="p-5">

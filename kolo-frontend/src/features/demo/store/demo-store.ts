@@ -172,6 +172,8 @@ export interface DemoPayout {
   type: string;
   status: string;
   reason: string;
+  recipientName?: string;
+  bankName?: string;
   createdAt: string;
 }
 
@@ -271,9 +273,9 @@ function seedDatabase(): DemoDatabase {
   ];
 
   const payouts: DemoPayout[] = [
-    { id: "payout-1", groupId: "group-market-traders", requestedBy: "demo-group-admin", amount: 500000, currency: "NGN", type: "ROTATION", status: "SUCCESSFUL", reason: "Monthly payout to Adaobi Okonkwo", createdAt: fmtDate(120) },
-    { id: "payout-2", groupId: "group-market-traders", requestedBy: "demo-group-admin", amount: 500000, currency: "NGN", type: "ROTATION", status: "SUCCESSFUL", reason: "Monthly payout to Emeka Okafor", createdAt: fmtDate(90) },
-    { id: "payout-3", groupId: "group-market-traders", requestedBy: "demo-group-admin", amount: 500000, currency: "NGN", type: "ROTATION", status: "APPROVED", reason: "Monthly payout to Tunde Balogun", createdAt: fmtDate(3) },
+    { id: "payout-1", groupId: "group-market-traders", requestedBy: "demo-group-admin", amount: 500000, currency: "NGN", type: "ROTATION", status: "SUCCESSFUL", reason: "Monthly payout to Adaobi Okonkwo", recipientName: "Adaobi Okonkwo", bankName: "GTBank", createdAt: fmtDate(120) },
+    { id: "payout-2", groupId: "group-market-traders", requestedBy: "demo-group-admin", amount: 500000, currency: "NGN", type: "ROTATION", status: "SUCCESSFUL", reason: "Monthly payout to Emeka Okafor", recipientName: "Emeka Okafor", bankName: "Access Bank", createdAt: fmtDate(90) },
+    { id: "payout-3", groupId: "group-market-traders", requestedBy: "demo-group-admin", amount: 500000, currency: "NGN", type: "ROTATION", status: "APPROVED", reason: "Monthly payout to Tunde Balogun", recipientName: "Tunde Balogun", bankName: "UBA", createdAt: fmtDate(3) },
   ];
 
   const notifications: DemoNotification[] = [
@@ -421,6 +423,28 @@ export function joinGroup(userId: string, groupId: string): DemoGroupMember | nu
   return member;
 }
 
+export function addGroupMember(groupId: string, data: { firstName: string; lastName: string; email: string; phone?: string }): DemoGroupMember | null {
+  const d = db();
+  const group = d.groups.find((g) => g.id === groupId);
+  if (!group) return null;
+  const member: DemoGroupMember = {
+    id: nextId("gm"),
+    groupId,
+    userId: "",
+    firstName: data.firstName,
+    lastName: data.lastName,
+    name: `${data.firstName} ${data.lastName}`,
+    email: data.email,
+    role: "MEMBER",
+    status: "ACTIVE",
+    joinedAt: new Date().toISOString(),
+  };
+  d.groupMembers.push(member);
+  group.memberCount += 1;
+  saveDatabase(d);
+  return member;
+}
+
 export function getContributionPlans(): DemoContributionPlan[] {
   return db().contributionPlans;
 }
@@ -539,6 +563,7 @@ export function getDashboardAnalytics(): Record<string, unknown> {
     activeGroups: 2,
     totalMembers: 24,
     savingsTrend: d.savingsTrend,
+    revenueTrend: d.revenue,
     latestCycle: { id: "cycle-6", expectedAmount: 1200000, receivedAmount: 850000, status: "OPEN" },
     activities: d.activities.slice(0, 10),
   };
@@ -630,9 +655,20 @@ export function getNombaTransactions(): Record<string, unknown>[] {
 
 export function getKycSubmissions(): Record<string, unknown>[] {
   return [
-    { id: "kyc-1", name: "Emeka Okafor", email: "emeka@example.com", phone: "+2348000000004", type: "BVN", status: "PENDING", submittedAt: fmtDate(2) },
-    { id: "kyc-2", name: "Tunde Balogun", email: "tunde@example.com", phone: "+2348000000005", type: "NIN", status: "VERIFIED", submittedAt: fmtDate(10) },
+    { id: "kyc-1", userId: "demo-member", firstName: "Adaobi", lastName: "Okonkwo", email: "ada@kolo.demo", phone: "+2348000000003", type: "BVN", status: "PENDING", createdAt: fmtDate(2) },
+    { id: "kyc-2", userId: "demo-group-admin", firstName: "Chioma", lastName: "Eze", email: "chioma@kolo.demo", phone: "+2348000000002", type: "NIN", status: "VERIFIED", createdAt: fmtDate(10) },
   ];
+}
+
+export function getKycSubmissionById(id: string): Record<string, unknown> | undefined {
+  return getKycSubmissions().find((k) => k.id === id);
+}
+
+export function rejectKyc(id: string) {
+  const d = db();
+  const u = d.users.find((usr) => usr.id === id);
+  if (u) u.status = "KYC_REJECTED";
+  saveDatabase(d);
 }
 
 export function getQueueStats(): Record<string, unknown> {

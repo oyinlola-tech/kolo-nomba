@@ -158,7 +158,16 @@ export function handleDemoRequest(config: AxiosRequestConfig): AxiosResponse | n
     const members = store.getGroupMembers(membersMatch[1]);
     return r(members.map((m) => ({ id: m.id, userId: m.userId, firstName: m.firstName, lastName: m.lastName, name: m.name, email: m.email, role: m.role, status: m.status, joinedAt: m.joinedAt })));
   }
-  if (membersMatch && method === "post") return r({ id: `inv-${Date.now()}`, message: "Member invited" });
+  if (membersMatch && method === "post") {
+    const member = store.addGroupMember(membersMatch[1], {
+      firstName: body.firstName || "New",
+      lastName: body.lastName || "Member",
+      email: body.email || "guest@example.com",
+    });
+    const id = member?.id ?? `inv-${Date.now()}`;
+    store.addActivity("Member invited", member?.name ?? "New Member", membersMatch[1]);
+    return r({ id, message: "Member invited" });
+  }
 
   // Join group
   const joinMatch = path.match(/^\/groups\/([^/]+)\/join$/);
@@ -271,6 +280,11 @@ export function handleDemoRequest(config: AxiosRequestConfig): AxiosResponse | n
 
   if (path === "/notifications/read-all" && method === "patch") { store.markAllNotificationsRead("demo-member"); return r({ message: "All read" }); }
 
+  if (path === "/notifications/send-reminder" && method === "post") {
+    const memberIds = body.memberIds ?? [];
+    store.addActivity("Reminder sent", "Group Admin", `${memberIds.length} member(s)`);
+    return r({ message: `Reminder sent to ${memberIds.length} member(s)` });
+  }
   if (path === "/notifications/preferences" && method === "get") return r({ smsEnabled: true, emailEnabled: true, pushEnabled: true, whatsappEnabled: false, securityAlerts: true, paymentAlerts: true, marketingMessages: false });
   if (path === "/notifications/preferences" && method === "patch") return r({ message: "Preferences updated" });
 
@@ -318,6 +332,7 @@ export function handleDemoRequest(config: AxiosRequestConfig): AxiosResponse | n
   if (path === "/admin/settings/notifications" && method === "get") return r({ smsEnabled: true, emailEnabled: true, pushEnabled: true, whatsappEnabled: false, securityAlerts: true, paymentAlerts: true, marketingMessages: false });
   if (path === "/admin/settings/notifications" && method === "patch") return r({ message: "Settings updated" });
   if (path === "/admin/payment-config" && method === "get") return r(store.getPaymentConfig());
+  if (path === "/admin/payment-config" && method === "patch") return r({ message: "Payment config updated", ...body });
   if (path === "/admin/disputes" && method === "get") {
     const d = store.getDisputes(page, limit);
     return pr(d.items, d.pagination);
@@ -336,7 +351,15 @@ export function handleDemoRequest(config: AxiosRequestConfig): AxiosResponse | n
 
   // Admin user status/verify
   const adminUserMatch = path.match(/^\/admin\/users\/([^/]+)\/(status|verify)$/);
-  if (adminUserMatch && method === "patch") { store.approveKyc(adminUserMatch[1]); return r({ message: "User updated" }); }
+  if (adminUserMatch && method === "patch") {
+    const rawId = adminUserMatch[1];
+    let targetUserId = rawId;
+    const sub = store.getKycSubmissionById(rawId);
+    if (sub && sub.userId) targetUserId = sub.userId as string;
+    if (adminUserMatch[2] === "verify") store.approveKyc(targetUserId);
+    else store.rejectKyc(targetUserId);
+    return r({ message: "User updated" });
+  }
 
   // Analytics
   if (path.match(/^\/analytics\/groups\/([^/]+)\/payments$/) && method === "get") return r(store.getPaymentAnalytics());

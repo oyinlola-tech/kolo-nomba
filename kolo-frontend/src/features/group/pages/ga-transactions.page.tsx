@@ -1,4 +1,4 @@
-import { Download, Loader2, CheckCircle } from "lucide-react";
+import { Download, Loader2, CheckCircle, ChevronLeft, ChevronRight } from "lucide-react";
 import { Card } from "../../../components/shared/Card";
 import { Badge } from "../../../components/shared/Badge";
 import { Avatar } from "../../../components/shared/Avatar";
@@ -10,8 +10,10 @@ import { downloadCsv } from "../../../utils/csv";
 import { useState } from "react";
 
 export function GATransactions() {
-  const { data, isLoading } = useTransactions();
+  const [page, setPage] = useState(1);
+  const { data, isLoading } = useTransactions(page);
   const txns = data?.items ?? [];
+  const pagination = data?.pagination;
   const [exported, setExported] = useState(false);
 
   const handleExport = () => {
@@ -70,6 +72,23 @@ export function GATransactions() {
               </tbody>
             </table>
           </div>
+          {pagination && pagination.totalPages > 1 && (
+            <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100 dark:border-border">
+              <p className="text-xs text-gray-500">
+                Page {pagination.page} of {pagination.totalPages} ({pagination.total} total)
+              </p>
+              <div className="flex gap-1">
+                <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={!pagination.hasPrev}
+                  className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-muted disabled:opacity-30 text-gray-600 dark:text-gray-400">
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <button onClick={() => setPage((p) => p + 1)} disabled={!pagination.hasNext}
+                  className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-muted disabled:opacity-30 text-gray-600 dark:text-gray-400">
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
         </Card>
       )}
     </div>

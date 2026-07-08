@@ -26,7 +26,7 @@ export function SAPayments() {
     );
   }
 
-  const gatewayStatus = config?.status === "connected" ? "active" : "inactive";
+  const gatewayStatus = config?.status?.toString().toLowerCase() === "active" ? "active" : "inactive";
 
   return (
     <div>
@@ -44,7 +44,7 @@ export function SAPayments() {
           </div>
           <div className="space-y-3 text-sm">
             {[
-              ["API Status", config?.status === "connected" ? "Connected" : "Disconnected"],
+              ["API Status", config?.status?.toString().toLowerCase() === "active" ? "Connected" : "Disconnected"],
               ["Webhook URL", config?.webhookUrl || "Not configured"],
               ["Virtual Accounts", "Enabled"],
               ["Last Ping", config?.lastSync ? new Date(config.lastSync).toLocaleString() : "Never"],
