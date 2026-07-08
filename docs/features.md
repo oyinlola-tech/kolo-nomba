@@ -1,6 +1,21 @@
 # Features
 
-Kolo is organized around three user roles, each with a tailored set of features and dashboards.
+Kolo is organized around three user roles, each with a tailored set of features and dashboards. The platform also includes a fully offline demo mode.
+
+---
+
+## Demo Mode (No Backend Required)
+
+- **Instant Onboarding** — Visit `/demo`, select a role, enter password `Demo@1234`, enter OTP `000000`
+- **3 Demo Roles** — Platform Admin, Group Admin, Member — each with a full set of mock dashboards
+- **13 SA Pages** — Dashboard, Users, Groups, Transactions, Payments, Withdrawals, Revenue, Disputes, Verification, Notifications, Security, Settings, Audit Logs
+- **9 GA Pages** — Dashboard, Members, Contributions, Transactions, Payouts, Reports, Payments Analytics, Notifications, Settings
+- **5 Member Pages** — Home, Groups, History, Notifications, Profile
+- **Simulated Payments** — Demo checkout with 3 test cards (success, wrong OTP, expired OTP outcomes)
+- **Dashboard Gallery** — 27 clickable screenshots with lightbox previews
+- **Offline-First** — Everything runs in the browser in localStorage
+- **Data Reset** — "Reset data" button restores initial seed state
+- **No Backend Required** — Axios interceptor detects `demo-token-` prefix and routes requests to an in-memory adapter
 
 ---
 

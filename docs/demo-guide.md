@@ -1,170 +1,175 @@
 # Demo Guide
 
-This guide walks through a complete Kolo demo scenario — from setting up a savings group to making contributions and processing a payout.
+Kolo includes a fully offline demo system that simulates the entire platform — no backend, no database, no API keys required. Everything runs in your browser using an Axios interceptor and an in-memory data store.
 
 ---
 
-## Demo Story
+## Demo Architecture
 
-**The Scenario:** A group of friends in Lagos want to save money together using the traditional Ajo system. They've heard about Kolo and decide to try it.
+```mermaid
+flowchart LR
+    User["User visits /demo"]
+    DemoPage["Demo Page\nRole selection → Login → OTP"]
+    Login["Login flow\nPassword: Demo@1234\nOTP: 000000"]
+    SetToken["setAccessToken('demo-token-...')\nsetActiveDemoUser(userId)"]
+    Axios["Axios Request Interceptor\ndetects demo-token- prefix"]
+    DemoAdapter["Demo Adapter\nroutes request to local handler"]
+    DemoStore["Demo Store\nIn-memory database\nlocalStorage persistence"]
+    Dashboard["Protected Dashboard\nRenders normally with mock data"]
 
-**Characters:**
+    User --> DemoPage
+    DemoPage --> Login
+    Login --> SetToken
+    SetToken --> Dashboard
+    Dashboard -->|API call| Axios
+    Axios -->|short-circuit| DemoAdapter
+    DemoAdapter --> DemoStore
+```
 
-| Name | Role | Email |
+### How It Works
+
+1. **Login**: Select a role on `/demo`, enter password `Demo@1234`, enter OTP `000000`
+2. **Token**: The app calls `setAccessToken('demo-token-...')` which stores the token in a module-level variable
+3. **Interceptor**: Axios request interceptor checks if `currentAccessToken` starts with `demo-token-`. If so, it short-circuits the request and routes it to `handleDemoRequest()`
+4. **Mock Data**: The demo adapter parses the HTTP method + URL and returns appropriate mock data from the in-memory store
+5. **Persistence**: Demo data is persisted in localStorage and survives page refreshes. A "Reset data" button restores initial state.
+
+### Key Files
+
+| File | Purpose |
+|---|---|
+| `src/features/demo/pages/demo.page.tsx` | Role selection, login form, OTP verification |
+| `src/features/demo/pages/demo-checkout.page.tsx` | Simulated Nomba checkout with card selection |
+| `src/features/demo/components/DashboardGallery.tsx` | Screenshot preview gallery with lightbox |
+| `src/features/demo/data/demo-data.ts` | Seed users, OTP codes, payment cards |
+| `src/features/demo/store/demo-store.ts` | In-memory mock database with CRUD operations |
+| `src/features/demo/api/demo-adapter.ts` | Axios interceptor handler that routes requests |
+| `src/api/client.ts` | Axios client with demo mode interceptor |
+
+---
+
+## Demo Users
+
+| Role | Name | Email | Password | OTP |
+|---|---|---|---|---|
+| **Platform Admin** | Oluwayemi Oyinlola | admin@kolo.demo | `Demo@1234` | `000000` |
+| **Group Admin** | Chioma Eze | chioma@kolo.demo | `Demo@1234` | `000000` |
+| **Member** | Adaobi Okonkwo | ada@kolo.demo | `Demo@1234` | `000000` |
+
+All users share the same password and OTP. The demo login flow has two steps:
+
+1. **Password step**: Enter `Demo@1234` (any other password shows an error)
+2. **OTP step**: Enter a 6-digit code from the OTP reference table
+
+### OTP Codes Reference
+
+| Code | Result | Description |
 |---|---|---|
-| Chioma | Group Admin | chioma@example.com |
-| Ada | Member | ada@example.com |
-| Emeka | Member | emeka@example.com |
-| Tunde | Member | tunde@example.com |
+| `000000` | Success | Successful verification — logs you in |
+| `111111` | Wrong | Shows "Invalid verification code" error |
+| `222222` | Expired | Shows "Code has expired" error |
 
 ---
 
-## Step 1: Chioma Creates an Account
+## Walkthrough
 
-1. Chioma visits Kolo and clicks **"Get Started"**
-2. She fills in the registration form:
-   - First Name: Chioma
-   - Last Name: Okafor
-   - Email: chioma@example.com
-   - Phone: +2348012345678
-   - Password: ********
-3. She clicks **"Create Account"**
-4. Kolo sends a 6-digit verification code to chioma@example.com
-5. Chioma enters the code on the OTP verification page
-6. Her account is activated and she's redirected to the member dashboard
+### 1. Visit the Demo Page
 
----
+Navigate to `/demo`. The landing page shows:
 
-## Step 2: Chioma Creates a Savings Group
+- **Hero section**: "Try Kolo Without Signing Up"
+- **3 role cards**: Platform Admin, Group Admin, Member — each showing the email and password hint
+- **Test Payment Cards**: 3 virtual Verve cards showing different payment outcomes
+- **OTP Codes Reference**: Grid of sample OTP codes with their outcomes
+- **Dashboard Previews**: Tabbed gallery with 27 screenshots across all roles
+- **Demo metadata**: Info about data staying in browser, zero backend, works offline
 
-1. From the dashboard, Chioma navigates to **"Create Group"**
-2. She enters:
-   - Group Name: "Lagos Savings Circle"
-   - Description: "Weekly savings for our annual trip"
-   - Category: "Social"
-3. She clicks **"Create Group"**
-4. The group is created and Chioma is now both a member and admin
+### 2. Select a Role
 
----
+Click **"Continue as [Role]"** on any card. The login form appears with the email pre-filled.
 
-## Step 3: Chioma Creates a Contribution Plan
+### 3. Log In
 
-1. From the group admin dashboard, Chioma selects **"Create Contribution Plan"**
-2. She configures:
-   - Amount per member: ₦5,000
-   - Frequency: Weekly
-   - Duration: 12 weeks
-   - Name: "Trip Fund Q4"
-3. She clicks **"Create Plan"**
-4. Kolo generates 12 contribution cycles automatically
+- Password is pre-hinted: `Demo@1234`
+- Click **"Sign In"** — a 600ms simulated delay adds realism
+- On success, you're taken to the OTP verification screen
 
----
+### 4. Verify OTP
 
-## Step 4: Chioma Invites Members
+- Enter `000000` for successful verification
+- The 6 input fields auto-advance as you type
+- Click **"Verify Code"** — 800ms simulated delay
+- On success, you're redirected to the role's dashboard
 
-1. Chioma navigates to **"Members"** → **"Invite"**
-2. She enters the email addresses of Ada, Emeka, and Tunde
-3. She clicks **"Send Invitations"**
-4. Each member receives an email invitation with a link to join
+### 5. Explore the Dashboard
 
----
+Each dashboard is fully functional with mock data:
 
-## Step 5: Members Join the Group
+#### Platform Admin (`/ajo/admin/*`)
+13 pages: Dashboard, Users, Groups, Transactions, Payments, Withdrawals, Revenue, Disputes, Verification, Notifications, Security, System Settings, Audit Logs
 
-**Ada's experience:**
-1. Ada clicks the invitation link in her email
-2. If she already has a Kolo account, she's taken to the group page
-3. If she's new, she registers first, then is added to the group
-4. She can see the contribution plan, expected amounts, and due dates
+#### Group Admin (`/group/admin/*`)
+9 pages: Dashboard, Members, Contributions, Transactions, Payouts, Reports, Payments Analytics, Notifications, Settings
 
----
+#### Member (`/member/*`)
+5 pages: Home, Groups, History, Notifications, Profile
 
-## Step 6: First Contribution Cycle Begins
+### 6. Make a Payment (Demo Checkout)
 
-1. Kolo automatically opens Cycle 1 (Week 1: Oct 1–7)
-2. All members receive an in-app notification: **"Your ₦5,000 contribution is due"**
-3. Chioma (as admin) can see the payment status of each member on the dashboard
+From the Member dashboard, click **"Pay Now"** on a pending contribution:
+
+1. Select **"Debit / Credit Card"** as payment method
+2. Click **"Pay ₦X Now"**
+3. The payment initiates and you're redirected to the demo checkout page (`/demo/checkout`)
+4. Choose a test card from the dropdown (or use the default)
+5. Click **"Pay Now"** — 2-second processing delay
+6. Enter OTP — use the code matching your chosen card:
+   - Card "ending in 7890" + OTP `000000` → **Success**
+   - Card "ending in 7891" + OTP `111111` → **Wrong OTP error**
+   - Card "ending in 7892" + OTP `222222` → **Expired OTP error**
+7. On success, click **"Continue"** to return to the member dashboard
 
 ---
 
-## Step 7: Ada Makes a Contribution
+## Test Payment Cards
 
-1. Ada opens the Kolo app and navigates to **"Make Payment"**
-2. She sees her pending contribution of ₦5,000
-3. She selects **"Pay Now"**
-4. She chooses a payment method — **"Bank Transfer"**
-5. Kolo generates a virtual account number: **0123456789 (Providus Bank)**
-6. Ada transfers ₦5,000 to that account from her banking app
-7. Nomba detects the incoming transfer and sends a webhook to Kolo
-8. Kolo verifies the webhook signature, records the payment, and credits the group wallet
+| Card | Number | OTP | Outcome |
+|---|---|---|---|
+| **Success** (green) | 4084 0812 3456 7890 | `000000` | Payment succeeds |
+| **Wrong** (red) | 4084 0812 3456 7891 | `111111` | "Invalid OTP" error |
+| **Expired** (amber) | 4084 0812 3456 7892 | `222222` | "OTP expired" error |
 
----
-
-## Step 8: Emeka and Tunde Pay
-
-1. Both members repeat the process
-2. Emeka uses **Card Payment** — enters card details on the Nomba checkout page
-3. Tunde uses **Nomba Wallet** — pays from his Nomba balance
-4. All three payments are recorded and visible on the group dashboard
+All cards are Verve network with CVV `123`/`456`/`789` and expiry `12/27`.
 
 ---
 
-## Step 9: Chioma Monitors Progress
+## Dashboard Previews Gallery
 
-1. Chioma opens the **group admin dashboard**
-2. She sees:
-   - **Total collected**: ₦15,000 (3 of 4 members paid)
-   - **Pending**: Tunde's ₦5,000
-   - **Cycle status**: 1 of 12 complete
-3. She sends a reminder to Tunde from the dashboard
+The demo page includes a tabbed gallery showing 27 real screenshots of every dashboard page. Use the **Platform Admin / Group Admin / Member** tabs to switch between roles, and the left/right arrows or dot indicators to browse screenshots. Click any screenshot to open a full-size lightbox preview.
 
 ---
 
-## Step 10: Chioma Processes a Payout
+## Demo vs Production
 
-At the end of the cycle, the group decides to rotate payouts:
-
-1. Chioma navigates to **"Payouts"** → **"Create Payout"**
-2. She selects:
-   - Recipient: Ada
-   - Amount: ₦15,000 (the full cycle pot minus platform fee)
-   - Reason: "Cycle 1 payout"
-3. She clicks **"Create Payout"**
-4. Ada receives an in-app notification: **"Payout of ₦14,850 initiated"**
-5. Chioma approves and processes the payout
-6. Kolo initiates a Nomba transfer to Ada's saved bank account
-7. Ada receives the money and a receipt via email
-
----
-
-## Step 11: Check Reports
-
-1. Chioma views the **group report** showing:
-   - Total contributions collected
-   - Payouts made
-   - Member payment history
-   - Platform fees deducted
-2. Each member can view their **personal transaction history**
+| Aspect | Demo Mode | Production Mode |
+|---|---|---|
+| Backend | None — all in-browser | Fastify 5 + PostgreSQL + Redis |
+| Payments | Simulated OTP flow | Real Nomba payment gateway |
+| Data | localStorage (ephemeral) | PostgreSQL (persistent) |
+| Auth | Demo token (in-memory) | JWT + refresh cookies |
+| OTP | `000000` / `111111` / `222222` | Real 6-digit SMS/email OTP |
+| Webhooks | Not simulated | HMAC-signed Nomba webhooks |
+| Email | Not sent | Real SMTP delivery |
+| Reset | "Reset data" button restores seed | N/A — real data |
+| Screenshots | 27 preview images in gallery | Not applicable |
 
 ---
 
-## Step 12: Repeat
+## Limitation: Auth Persistence
 
-The group continues through all 12 cycles:
-- Members receive reminders each week
-- Contributions are tracked automatically
-- Payouts rotate to the next member
-- Reports update in real-time
+The demo token is stored in a JavaScript module variable (`currentAccessToken` in `client.ts`), not in localStorage. This means:
 
-At the end, each member has saved ₦60,000 (₦5,000 × 12) and received one payout of ~₦59,400.
+- **SPA navigation** preserves auth (clicking sidebar links, navigating via `navigate()`)
+- **Full page reload** (`window.location.href`, browser refresh) **loses auth** and redirects to `/login`
 
----
-
-## What Makes Kolo Special
-
-1. **No Cash Handling** — Everything is digital
-2. **Transparency** — Every transaction visible to all members
-3. **Automation** — Reminders, cycle management, and payouts
-4. **Trust** — Audit trail and webhook-verified payments
-5. **Security** — OTP challenges, encrypted sessions, rate limiting
-6. **Scale** — Groups of any size, from 5 to 5,000 members
+The payment flow accounts for this: when in demo mode, the checkout redirect uses SPA navigation (`navigate()`) instead of `window.location.href` to preserve the auth state. If you reach `/demo/checkout` via direct URL, the "Continue" button after payment falls back to `/demo` instead of the protected `/member/pay-success` page.

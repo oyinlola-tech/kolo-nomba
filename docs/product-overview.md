@@ -34,7 +34,7 @@ To bridge the gap between informal community savings and modern financial infras
 
 | Layer | Technology |
 |---|---|
-| Frontend | React 18, TypeScript, Vite, Tailwind CSS, TanStack Query, Zustand |
+| Frontend | React 19, TypeScript 6, Vite 8, Tailwind CSS 4, TanStack Query 5, Zustand 5, React Router 8 |
 | Backend | Fastify 5, TypeScript, Prisma ORM |
 | Database | PostgreSQL |
 | Queue | BullMQ (Redis) |

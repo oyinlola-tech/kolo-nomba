@@ -96,8 +96,8 @@ sequenceDiagram
 
 | Layer | Technology | Purpose |
 |---|---|---|
-| **Frontend Framework** | React 18 + TypeScript | UI rendering |
-| **Build Tool** | Vite 6 | Fast dev/build |
+| **Frontend Framework** | React 19 + TypeScript | UI rendering |
+| **Build Tool** | Vite 8 | Fast dev/build |
 | **Styling** | Tailwind CSS 4 + shadcn/ui (Radix UI) | Design system |
 | **Server State** | TanStack Query 5 | API data caching |
 | **Client State** | Zustand 5 | Auth, theme, UI state |

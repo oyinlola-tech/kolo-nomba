@@ -3,11 +3,12 @@
 <p align="center">
   <img src="https://img.shields.io/badge/Platform-Fintech-success"/>
   <img src="https://img.shields.io/badge/Backend-Fastify%205-blue"/>
-  <img src="https://img.shields.io/badge/Frontend-React%2018-61DAFB"/>
+  <img src="https://img.shields.io/badge/Frontend-React%2019-61DAFB"/>
   <img src="https://img.shields.io/badge/Database-PostgreSQL-4169E1"/>
   <img src="https://img.shields.io/badge/Queue-BullMQ%20%2B%20Redis-DC382D"/>
   <img src="https://img.shields.io/badge/Payments-Nomba-green"/>
   <img src="https://img.shields.io/badge/Auth-JWT%20%2B%20Argon2-purple"/>
+  <img src="https://img.shields.io/badge/Demo-Offline-amber"/>
 </p>
 
 <p align="center">
@@ -25,8 +26,24 @@ Millions of people across Africa rely on informal savings systems, yet most grou
 - Transparent contribution tracking via double-entry ledger
 - Automated payment collection through Nomba payment gateway
 - Secure, automated payouts with approval workflows
-- Real-time notifications across email and in-app channels
+- Real-time notifications across in-app and email channels
 - Role-based dashboards for members, group admins, and platform operators
+- A fully offline **demo mode** that simulates the entire platform without any backend
+
+---
+
+## Try the Demo
+
+No installation required — Kolo includes a complete offline demo:
+
+```bash
+cd kolo-frontend
+npm install
+npm run dev
+# Open http://localhost:5173/demo
+```
+
+Select a role, enter password `Demo@1234`, OTP `000000`, and explore all dashboards with realistic mock data. See `docs/demo-guide.md` for a full walkthrough.
 
 ---
 
@@ -34,26 +51,27 @@ Millions of people across Africa rely on informal savings systems, yet most grou
 
 ```mermaid
 flowchart TB
-    subgraph Frontend["Frontend (React SPA)"]
+    subgraph Frontend["Frontend (React 19 SPA)"]
         Landing["Landing Pages\n/, /pricing, /about"]
         Auth["Auth Pages\n/login, /register, /verify-otp"]
         Member["Member Dashboard\n/member/*"]
         GroupAdmin["Group Admin\n/group/admin/*"]
         SuperAdmin["Super Admin\n/ajo/admin/*"]
+        Demo["Demo Mode\n/demo, /demo/checkout"]
     end
 
     subgraph Backend["Backend (Fastify 5)"]
         Router["Route Registry\n/api/v1/*"]
         Middleware["CORS → Helmet → RateLimit\n→ Auth → Role → Group"]
-        Controllers["17 Controllers"]
+        Controllers["18 Controllers"]
         Services["30+ Business Services"]
-        Repositories["31 Prisma Repositories"]
+        Repositories["32 Prisma Repositories"]
     end
 
     subgraph Infrastructure["Infrastructure"]
         PG[("PostgreSQL 15+\n(Prisma ORM)")]
         Redis[("Redis 7+\n(BullMQ + Token Cache)")]
-        Jobs["Background Jobs\n14 queues, 20+ processors"]
+        Jobs["Background Jobs\n14 queues, 10+ processors"]
     end
 
     subgraph External["External Integrations"]
@@ -127,32 +145,36 @@ sequenceDiagram
 
 ### Frontend
 
-| Technology | Purpose |
-|---|---|
-| **React 18** + TypeScript | UI framework |
-| **Vite 6** | Build tool and dev server |
-| **Tailwind CSS 4** + shadcn/ui + MUI | Design system and component library |
-| **TanStack Query 5** | Server state management and caching |
-| **Zustand 5** | Client state (auth, theme, UI) |
-| **React Router 6** | SPA routing |
-| **React Hook Form** + **Zod 4** | Form validation |
-| **Axios** | HTTP client with token refresh interceptor |
-| **Recharts** | Data visualization and charts |
+| Technology | Version | Purpose |
+|---|---|---|
+| **React** | 19 | UI framework |
+| **TypeScript** | 6 | Type safety |
+| **Vite** | 8 | Build tool and dev server |
+| **Tailwind CSS** | 4 | Utility-first CSS |
+| **Radix UI** | — | Accessible UI primitives (26 packages) |
+| **TanStack Query** | 5 | Server state management and caching |
+| **Zustand** | 5 | Client state (auth, theme, UI) |
+| **React Router** | 8 | SPA routing |
+| **React Hook Form** + **Zod** | — | Form validation |
+| **Axios** | 1 | HTTP client with interceptors |
+| **Recharts** | — | Data visualization and charts |
+| **Lucide React** | — | UI icons |
 
 ### Backend
 
-| Technology | Purpose |
-|---|---|
-| **Node.js** + **TypeScript** | Runtime |
-| **Fastify 5** | HTTP server framework |
-| **Prisma 7** | ORM with type-safe queries |
-| **PostgreSQL 15+** | Primary data store |
-| **Redis 7+** | BullMQ queue + token cache |
-| **BullMQ 5** | Background job processing (14 queues) |
-| **JWT (jose)** + **Argon2** | Authentication and password hashing |
-| **Pino 10** | Structured JSON logging |
-| **Zod 4** | Request validation |
-| **Nodemailer** | Email delivery |
+| Technology | Version | Purpose |
+|---|---|---|
+| **Node.js** | 20+ | Runtime |
+| **TypeScript** | 6 | Type safety |
+| **Fastify** | 5 | HTTP server framework |
+| **Prisma** | 7 | ORM with type-safe queries |
+| **PostgreSQL** | 15+ | Primary data store |
+| **Redis** | 7+ | BullMQ queue + token cache |
+| **BullMQ** | 5 | Background job processing (14 queues) |
+| **JWT (jose)** + **Argon2** | — | Authentication and password hashing |
+| **Pino** | 10 | Structured JSON logging |
+| **Zod** | 4 | Request validation |
+| **Nodemailer** | — | Email delivery |
 
 ### External Services
 
@@ -164,6 +186,16 @@ sequenceDiagram
 ---
 
 ## Features
+
+### Demo Mode (Offline)
+- Complete platform simulation — no backend, no database, no API keys
+- 3 demo roles: Platform Admin, Group Admin, Member
+- Interactive login with password (`Demo@1234`) and OTP (`000000`)
+- 13 + 9 + 5 fully functional dashboard pages per role with mock data
+- Simulated Nomba payment checkout with 3 test cards (success/wrong/expired outcomes)
+- Dashboard preview gallery with 27 clickable screenshots in a tabbed carousel
+- localStorage-persisted data with reset capability
+- Works entirely offline
 
 ### Cooperative Management
 - Create and manage savings groups (Ajo/Esusu)
@@ -203,10 +235,10 @@ sequenceDiagram
 - Delivery tracking with retry logic
 - Per-user notification preferences
 
-### Admin Dashboard
-- **Super Admin**: Platform metrics, user management, revenue analytics, security monitoring, reconciliation
-- **Group Admin**: Member management, contribution tracking, payout approval, reports
-- **Member**: Savings progress, payment history, notification center
+### Admin Dashboards
+- **Super Admin** (14 pages): Platform metrics, user management, revenue analytics, transaction monitoring, payout approval, KYC verification, dispute resolution, security monitoring, audit logs
+- **Group Admin** (11 pages): Member management, contribution tracking, payout approval, reports, payment analytics, notifications
+- **Member** (11 pages): Savings progress, payment history, groups, notification center, profile settings
 
 ---
 
@@ -216,11 +248,11 @@ sequenceDiagram
 kolo/
 ├── kolo-backend/                    # Fastify API server
 │   ├── prisma/                      # Schema, migrations, seed
-│   │   └── schema.prisma            # 25 models, 30+ enums
+│   │   └── schema.prisma            # 25+ models, 30+ enums
 │   ├── src/
 │   │   ├── config/                  # App, env, DB, Nomba config
 │   │   ├── constants/               # Roles, error codes, payment
-│   │   ├── controllers/             # 17 HTTP handlers
+│   │   ├── controllers/             # 18 HTTP handlers
 │   │   ├── database/                # Prisma + Redis singletons
 │   │   ├── dto/                     # Data transfer objects
 │   │   ├── errors/                  # Custom error classes
@@ -230,44 +262,58 @@ kolo/
 │   │   ├── jobs/                    # BullMQ queues, workers, scheduler
 │   │   │   ├── processors/          # 10 processor files
 │   │   │   ├── queue-manager.ts     # Singleton queue factory
-│   │   │   ├── scheduler.ts         # Cron job registration
-│   │   │   └── background-job.repository.ts
-│   │   ├── loaders/                 # App bootstrap (7 loaders)
+│   │   │   └── scheduler.ts         # Cron job registration
+│   │   ├── loaders/                 # App bootstrap (9 loaders)
 │   │   ├── logger/                  # Pino-based structured logging
-│   │   │   ├── core/                # Base Logger class
+│   │   │   ├── core/                # Base Logger + types
 │   │   │   ├── implementations/     # Domain-specific loggers
 │   │   │   └── transports/          # Console, file, DB
 │   │   ├── middleware/              # Auth, Role, Group, RateLimit, Error
-│   │   ├── repositories/           # 31 Prisma data access classes
-│   │   ├── routes/                  # 17 route definitions
-│   │   ├── services/               # 30+ business logic classes
-│   │   ├── utils/                  # JWT, hash, encryption, pagination
-│   │   └── validators/             # 16 Zod schemas
+│   │   ├── models/                  # Domain models
+│   │   ├── repositories/            # 32 Prisma data access classes
+│   │   ├── routes/                  # 18 route definitions
+│   │   ├── services/                # 30+ business logic classes
+│   │   ├── utils/                   # JWT, hash, encryption, pagination
+│   │   └── validators/              # 14 Zod schemas
 │   ├── .env.example
 │   └── package.json
 │
-├── public/                          # React frontend
+├── kolo-frontend/                   # React SPA
+│   ├── public/                      # Static assets, demo screenshots
 │   ├── src/
-│   │   ├── api/                     # Axios client with auth interceptor
+│   │   ├── api/                     # Axios client with auth + demo interceptors
 │   │   ├── app/                     # Router, providers, Zustand store
-│   │   ├── components/              # Shared UI + shadcn/ui primitives
-│   │   ├── features/                # Feature-based modules
+│   │   ├── components/              # Shared UI + layout components
+│   │   ├── features/
 │   │   │   ├── auth/                # Login, register, OTP, password reset
-│   │   │   ├── landing/             # Public marketing pages
+│   │   │   ├── landing/             # Public marketing pages (10 pages)
 │   │   │   ├── admin/               # Super Admin (14 pages)
-│   │   │   ├── group/               # Group Admin (10 pages)
-│   │   │   └── member/              # Member dashboard (9 pages)
-│   │   ├── hooks/                   # TanStack Query hooks (15 files)
-│   │   ├── services/               # API service functions (13 files)
+│   │   │   ├── group/               # Group Admin (11 pages)
+│   │   │   ├── member/              # Member (11 pages)
+│   │   │   ├── demo/                # Offline demo system
+│   │   │   │   ├── api/             # Demo request adapter
+│   │   │   │   ├── components/      # DashboardGallery with lightbox
+│   │   │   │   ├── data/            # Seed users, OTP codes, payment cards
+│   │   │   │   ├── pages/           # Demo login + checkout simulation
+│   │   │   │   └── store/           # In-memory database with localStorage
+│   │   │   ├── contribution/        # Contribution hooks/services
+│   │   │   ├── cooperative/         # Cooperative hooks/services
+│   │   │   └── payment/             # Payment hooks/services
+│   │   ├── hooks/                   # 28 TanStack Query hooks
+│   │   ├── services/                # 20 API service functions
+│   │   ├── styles/                  # CSS files
 │   │   ├── types/                   # TypeScript type definitions
-│   │   └── utils/                   # Formatting utilities
-│   ├── .env
+│   │   └── utils/                   # Formatting, CSV, error, env
+│   ├── scripts/                     # Playwright screenshot generation
+│   ├── .env.example
 │   └── package.json
 │
 ├── docs/                            # Engineering documentation
-│   ├── architecture.md              # System architecture with Mermaid
+│   ├── architecture.md              # System architecture overview
 │   ├── authentication.md            # Auth flows with sequence diagrams
 │   ├── database-design.md           # ER diagram + model documentation
+│   ├── demo-guide.md                # Offline demo walkthrough
+│   ├── frontend-architecture.md     # React app structure + demo interceptors
 │   ├── webhook-flow.md              # Webhook processing pipeline
 │   ├── queue-system.md              # BullMQ architecture and jobs
 │   ├── notification-system.md       # Event-driven notification system
@@ -275,7 +321,10 @@ kolo/
 │   ├── nomba-integration.md         # Nomba API integration details
 │   ├── payout-flow.md               # Payout lifecycle and transfers
 │   ├── deployment.md                # Production deployment guide
-│   └── ...                          # (22 total documentation files)
+│   ├── security-architecture.md     # Security layers, auth, audit
+│   ├── environment.md               # Environment variables reference
+│   ├── api-endpoints.md             # Complete API reference
+│   └── ...                          # (26 total documentation files)
 │
 ├── README.md
 ├── LICENSE.md
@@ -292,7 +341,7 @@ All engineering documentation is in the `docs/` directory and uses **Mermaid dia
 |---|---|---|
 | `docs/architecture.md` | System architecture overview | Flowchart, sequence, job architecture |
 | `docs/authentication.md` | Registration, login, OTP, token mgmt | 5 sequence + flowchart diagrams |
-| `docs/database-design.md` | 25 models, relationships, ledger | ER diagram (20+ relations) |
+| `docs/database-design.md` | 25+ models, relationships, ledger | ER diagram (30+ entities) |
 | `docs/webhook-flow.md` | Nomba webhook verification & processing | Pipeline flowchart + sequence diagram |
 | `docs/queue-system.md` | BullMQ queues, workers, schedules | Architecture + state diagrams |
 | `docs/notification-system.md` | EventBus, channels, templates | Architecture + ER diagrams |
@@ -300,10 +349,22 @@ All engineering documentation is in the `docs/` directory and uses **Mermaid dia
 | `docs/nomba-integration.md` | Payment gateway integration | 7 flowcharts + sequence diagrams |
 | `docs/payout-flow.md` | Payout lifecycle, transfers | State + sequence diagrams |
 | `docs/security-architecture.md` | Security layers, auth, audit | 5 flowchart + sequence diagrams |
+| `docs/frontend-architecture.md` | React app + demo mode interceptors | 6 architecture diagrams |
+| `docs/demo-guide.md` | Offline demo walkthrough | Architecture + reference tables |
 | `docs/deployment.md` | Production deployment steps | Architecture + Nginx flow diagrams |
-| `docs/frontend-architecture.md` | React app structure, data flow | 6 architecture diagrams |
 | `docs/api-endpoints.md` | Complete API reference | (495 lines) |
 | `docs/environment.md` | Environment variables | (206 lines) |
+| `docs/features.md` | Features by role | Role-based tables |
+| `docs/product-overview.md` | Product overview and vision | Strategic |
+| `docs/problem-and-solution.md` | Problem and value proposition | Strategic |
+| `docs/user-flow.md` | User flows by role | 10+ flow diagrams |
+| `docs/pricing.md` | Pricing and business model | 3-tier comparison |
+| `docs/business-model.md` | Business model details | Fee architecture |
+| `docs/judging-guide.md` | Competition judging document | Evaluation criteria |
+| `docs/monitoring.md` | Monitoring and observability | Architecture + alert config |
+| `docs/backend-architecture.md` | Backend architecture details | Layer diagrams |
+| `docs/api-overview.md` | API principles and standards | Reference |
+| `docs/system-architecture.md` | Overall architecture | Reference |
 
 ---
 
@@ -312,14 +373,25 @@ All engineering documentation is in the `docs/` directory and uses **Mermaid dia
 ### Prerequisites
 
 - Node.js 20+
-- PostgreSQL 15+
-- Redis 7+
+- PostgreSQL 15+ (not needed for demo mode)
+- Redis 7+ (not needed for demo mode)
 
-### API
+### Demo Mode (No Backend Required)
+
+```bash
+cd kolo-frontend
+npm install
+npm run dev
+# Open http://localhost:5173/demo
+# Password: Demo@1234
+# OTP: 000000
+```
+
+### Full Stack Setup
 
 The backend API runs on **`http://localhost:4000`** by default. All routes are prefixed with `/api/v1/*`.
 
-### Backend Setup
+#### Backend Setup
 
 ```bash
 cd kolo-backend
@@ -337,20 +409,20 @@ npm run prisma:seed
 npm run dev
 ```
 
-### Frontend Setup
+#### Frontend Setup
 
 ```bash
-cd public
+cd kolo-frontend
 npm install
 
 # Configure environment
-# Edit public/.env with your API URL
+# Edit kolo-frontend/.env with your API URL
 
 # Start development server
 npm run dev
 ```
 
-### Environment Variables
+#### Environment Variables
 
 Required variables (see `docs/environment.md` for full list):
 
@@ -366,8 +438,8 @@ NOMBA_TEST_PRIVATE_KEY=<nomba-test-private-key>
 SUPER_ADMIN_EMAIL=admin@kolo.com
 SUPER_ADMIN_PASSWORD=<strong-password>
 
-# Frontend (public/.env)
-VITE_API_URL=http://localhost:4000
+# Frontend (kolo-frontend/.env)
+VITE_API_URL=http://localhost:4000/api/v1
 ```
 
 ---
@@ -451,9 +523,25 @@ See `docs/deployment.md` for complete production deployment guide including:
 cd kolo-backend
 npm test
 
-# TypeScript type checking
-npm run build
+# Frontend type checking
+cd kolo-frontend
+npm run typecheck
 ```
+
+---
+
+## Screenshot Generation
+
+Dashboard previews for the demo page are generated with Playwright:
+
+```bash
+cd kolo-frontend
+pip install playwright
+playwright install chromium
+python scripts/screenshots.py
+```
+
+The script logs in as each demo role and captures 27 screenshots saved to `public/demo-screenshots/`.
 
 ---
 
@@ -462,6 +550,7 @@ npm run build
 - **Real African Problem**: Solves a challenge affecting millions in cooperative communities
 - **Production Ready**: Admin systems, security controls, payment reconciliation, deployment docs
 - **Strong Architecture**: Clean layered architecture, double-entry accounting, event-driven processing
+- **Demo-First Design**: Fully interactive demo lets anyone explore the platform instantly
 - **Scalable Foundation**: Designed for expansion into SME finance, community banking, digital wallets
 
 ---

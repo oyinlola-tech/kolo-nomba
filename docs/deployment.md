@@ -294,7 +294,7 @@ If using Namecheap shared hosting with Node.js support:
 Build and serve the static files from Nginx:
 
 ```bash
-cd public
+cd kolo-frontend
 npm run build
 # Output: dist/
 ```
